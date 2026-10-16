@@ -116,6 +116,52 @@ describe("Tienda pública", () => {
     expect(JSON.stringify(store)).not.toMatch(/businessId|imageKey|position|archivedAt|"id":"[^"]+","name":"Sabores/);
   });
 
+  it("destaca los más pedidos con foto; sin ventas suficientes, los productos con foto del menú", async () => {
+    const { agent, businessId } = await registerMerchant({ businessName: "Sabores del Caribe" });
+    const photo = await sharp({ create: { width: 800, height: 600, channels: 3, background: "#b07d00" } }).jpeg().toBuffer();
+    const product = async (name: string, withPhoto: boolean, extra: Record<string, unknown> = {}) => {
+      const created = (await agent.post("/api/v1/products").send({ name, price: 10000, ...extra }).expect(201)).body.data;
+      if (withPhoto) await agent.post(`/api/v1/products/${created.id}/image`).set("Content-Type", "image/jpeg").send(photo).expect(200);
+      return created.id as string;
+    };
+    const burger = await product("Hamburguesa", true);
+    const fries = await product("Papas", true);
+    const juice = await product("Jugo", true);
+    const water = await product("Agua", false);
+    const soldOut = await product("Agotado", true, { isAvailable: false });
+
+    const first = (await newAgent().get("/api/v1/store/sabores-del-caribe").expect(200)).body.data.featured;
+    expect(first).toEqual({ kind: "photos", productIds: [burger, fries, juice] });
+
+    // Ventas: jugo 5, papas 3, hamburguesa 2, agua 9 (sin foto: no entra). Un pedido cancelado no cuenta.
+    const customer = await prisma.customer.create({ data: { businessId, name: "Luis", phone: "573001112233" } });
+    let number = 0;
+    const sell = (productId: string, quantity: number, status: "CONFIRMED" | "CANCELLED" = "CONFIRMED") =>
+      prisma.order.create({
+        data: {
+          businessId,
+          customerId: customer.id,
+          number: ++number,
+          status,
+          deliveryType: "PICKUP",
+          customerName: "Luis",
+          customerPhone: "573001112233",
+          subtotal: 10000 * quantity,
+          total: 10000 * quantity,
+          items: { create: { productId, productName: "x", unitPrice: 10000, quantity, subtotal: 10000 * quantity } },
+        },
+      });
+    await sell(juice, 5);
+    await sell(fries, 3);
+    await sell(burger, 2);
+    await sell(water, 9);
+    await sell(soldOut, 7);
+    await sell(burger, 20, "CANCELLED");
+
+    const popular = (await newAgent().get("/api/v1/store/sabores-del-caribe").expect(200)).body.data.featured;
+    expect(popular).toEqual({ kind: "popular", productIds: [juice, fries, burger] });
+  });
+
   it("indica cuando el negocio pausó los pedidos", async () => {
     const { agent } = await seedStore();
     await agent.patch("/api/v1/businesses/current/settings").send({ acceptingOrders: false }).expect(200);

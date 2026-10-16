@@ -640,6 +640,133 @@
     }
   }
 
+  /* ─── Fotografía de comida (public/assets/images/food, ver scripts/photos.ts) ─── */
+  .photo {
+    display: block;
+    overflow: hidden;
+    background: var(--color-ink-2);
+  }
+  .photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Tarjeta con foto a sangre y título encima (tipos de negocio en la portada). */
+  .food-card {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    border-radius: 20px;
+    background: var(--color-ink-2);
+    color: var(--color-paper);
+  }
+  .food-card img {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 900ms var(--ease-out-expo);
+  }
+  .food-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgb(23 22 28 / 0) 38%, rgb(23 22 28 / 0.88) 100%);
+  }
+  .food-card:hover img {
+    transform: scale(1.06);
+  }
+
+  /* Textura de puntos (letrero impreso) sobre el mostaza. */
+  .dots {
+    background-image: radial-gradient(rgb(23 22 28 / 0.09) 1.2px, transparent 1.5px);
+    background-size: 18px 18px;
+  }
+
+  /* Cinta que se desplaza con los tipos de comida. */
+  .marquee {
+    overflow: hidden;
+  }
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 40s linear infinite;
+  }
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  /* Sello circular que gira despacio ("14 días gratis"). */
+  .sticker-spin {
+    animation: spin 22s linear infinite;
+  }
+
+  /* Aparición al bajar por la página: solo si hay JavaScript (clase en <html>); sin él, todo se ve. */
+  .js-reveal [data-reveal] {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 800ms var(--ease-out-expo),
+      transform 800ms var(--ease-out-expo);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .js-reveal [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Fila con casilla para elegir productos (Mi menú → «Elegir productos» de una categoría). */
+  .pick {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 4rem;
+    padding: 0.5rem 1.25rem;
+    cursor: pointer;
+    transition: background-color 150ms var(--ease-out-expo);
+  }
+  .pick:hover {
+    background: var(--color-ground);
+  }
+  .pick input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .pick-check {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 7px;
+    border: 2px solid var(--color-line-strong);
+    background: var(--color-paper);
+    color: transparent;
+    transition:
+      background-color 150ms var(--ease-out-expo),
+      border-color 150ms var(--ease-out-expo);
+  }
+  .pick:has(input:checked) {
+    background: var(--color-mustard-soft);
+  }
+  .pick:has(input:checked) .pick-check {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-mustard);
+  }
+  .pick:has(input:focus-visible) .pick-check {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
   /* Miniatura de producto (con o sin foto). */
   .thumb {
     flex: none;
@@ -853,9 +980,51 @@
   }
 
   /* Producto agotado en la tienda. */
-  .is-sold-out .thumb img {
+  .is-sold-out .thumb img,
+  .is-sold-out .product-photo img {
     filter: grayscale(1);
     opacity: 0.55;
+  }
+
+  /* ─── Tienda: tarjetas de producto ─── */
+  .product-card {
+    position: relative;
+  }
+  /* El nombre es un botón que cubre toda la tarjeta (abre la ficha); el control de cantidad queda encima. */
+  .product-open::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .product-open:focus-visible {
+    outline: none;
+  }
+  .product-card:has(.product-open:focus-visible) {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+    border-radius: 12px;
+  }
+  .product-card [data-qty] {
+    position: relative;
+    z-index: 1;
+  }
+  .product-photo img {
+    transition: transform 700ms var(--ease-out-expo);
+  }
+  @media (hover: hover) {
+    .product-card:hover .product-photo img {
+      transform: scale(1.05);
+    }
+  }
+  /* Producto sin foto: bloque mostaza con textura (solo en la cuadrícula de escritorio y en la ficha). */
+  .food-placeholder {
+    display: grid;
+    place-items: center;
+    background-color: var(--color-mustard-soft);
+    background-image: radial-gradient(rgb(122 86 0 / 0.16) 1.2px, transparent 1.5px);
+    background-size: 16px 16px;
+    color: var(--color-mustard-deep);
   }
 
   .no-scrollbar {
@@ -927,6 +1096,12 @@
   inset: 0 0 auto;
   height: 4px;
   background: repeating-linear-gradient(-45deg, var(--color-mustard) 0 8px, var(--color-ink) 8px 16px);
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 @keyframes toast-in {

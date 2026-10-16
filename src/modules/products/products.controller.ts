@@ -5,6 +5,7 @@ import { productsService } from "./products.service.js";
 import type {
   CategoryInput,
   CategoryParams,
+  CategoryProductsInput,
   CreateProductInput,
   ListProductsQuery,
   ProductParams,
@@ -82,6 +83,12 @@ export const categoriesController = {
   async remove(req: Request, res: Response) {
     const { id } = req.params as CategoryParams;
     res.json({ data: await categoriesService.remove(getTenant(req), id) });
+  },
+
+  async setProducts(req: Request, res: Response) {
+    const { id } = req.params as CategoryParams;
+    const { productIds } = req.body as CategoryProductsInput;
+    res.json({ data: await categoriesService.setProducts(getTenant(req), id, productIds) });
   },
 
   async reorder(req: Request, res: Response) {

@@ -1,7 +1,7 @@
 import { prisma } from "../../config/database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type { TenantContext } from "../../types/common.js";
-import { conflict, notFound } from "../../utils/errors.js";
+import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { categoriesRepository } from "./categories.repository.js";
 import { productsRepository } from "./products.repository.js";
 
@@ -63,6 +63,37 @@ export const categoriesService = {
       }
       await categoriesRepository.delete(id, tenant.businessId, tx);
       return { movedProducts: productIds.length };
+    });
+  },
+
+  /**
+   * Elige los productos de una categoría (casillas en "Mi menú"). Los marcados quedan en ella: los que
+   * ya estaban conservan su orden y los nuevos llegan al final. Los desmarcados pasan a "Sin categoría".
+   */
+  async setProducts(tenant: TenantContext, id: string, productIds: string[]) {
+    return prisma.$transaction(async (tx) => {
+      const category = await categoriesRepository.findById(id, tenant.businessId, tx);
+      if (!category) throw categoryNotFound();
+
+      const found = await productsRepository.findCurrentByIds(tenant.businessId, productIds, tx);
+      if (found.length !== productIds.length) {
+        throw badRequest("Algunos productos ya no están en tu menú. Recarga la página e intenta de nuevo.", "PRODUCT_NOT_FOUND");
+      }
+
+      const wanted = new Set(productIds);
+      const current = await productsRepository.currentIdsInCategory(tenant.businessId, id, tx);
+      const kept = current.filter((productId) => wanted.has(productId));
+      const added = productIds.filter((productId) => !current.includes(productId));
+      const removed = current.filter((productId) => !wanted.has(productId));
+
+      for (const [position, productId] of [...kept, ...added].entries()) {
+        await productsRepository.update(productId, tenant.businessId, { categoryId: id, position }, tx);
+      }
+      let position = await productsRepository.nextPosition(tenant.businessId, null, tx);
+      for (const productId of removed) {
+        await productsRepository.update(productId, tenant.businessId, { categoryId: null, position: position++ }, tx);
+      }
+      return { added: added.length, removed: removed.length, productCount: productIds.length };
     });
   },
 

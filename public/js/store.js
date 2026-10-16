@@ -83,12 +83,13 @@ function orderingNotice(store) {
 
 function cover(business) {
   if (business.bannerUrl) {
-    return html`<div class="aspect-[16/9] overflow-hidden bg-ink sm:aspect-[3/1] lg:rounded-b-[18px]">
+    return html`<div class="relative aspect-[16/10] overflow-hidden bg-ink sm:aspect-[5/2] lg:rounded-b-[24px]">
       <img src="${business.bannerUrl}" alt="" class="h-full w-full object-cover" fetchpriority="high" />
+      <div class="absolute inset-0 bg-linear-to-t from-ink/50 via-ink/0 to-ink/15"></div>
     </div>`;
   }
-  // Sin portada: franja de letrero con el nombre en grande.
-  return html`<div class="relative flex h-28 items-end overflow-hidden bg-mustard px-4 sm:h-40 sm:px-8 lg:rounded-b-[18px]" aria-hidden="true">
+  // Sin portada: letrero mostaza con el nombre en grande.
+  return html`<div class="dots relative flex h-32 items-end overflow-hidden bg-mustard px-4 sm:h-44 sm:px-8 lg:rounded-b-[24px]" aria-hidden="true">
     <span class="display translate-y-[18%] whitespace-nowrap text-[4.5rem] text-ink/10 sm:text-[7.5rem]">${business.name}</span>
   </div>`;
 }
@@ -183,26 +184,94 @@ function header(store) {
   </header>`;
 }
 
+/** Producto del menú: fila con foto a la derecha en el celular; tarjeta con foto arriba en escritorio. */
 function productCard(product, orderable) {
   const soldOut = !product.isAvailable;
-  return html`<li class="flex gap-4 py-4 ${soldOut ? "is-sold-out" : ""}">
-    <div class="flex min-w-0 flex-1 flex-col">
-      <h3 class="text-[1.0625rem] leading-snug font-[680] [font-stretch:100%] ${soldOut ? "text-muted" : ""}">${product.name}</h3>
+  return html`<li
+    class="product-card grid grid-cols-[minmax(0,1fr)_auto] gap-4 py-4 lg:grid-cols-1 lg:content-start lg:gap-0 lg:overflow-hidden lg:rounded-[18px] lg:border lg:border-line lg:bg-paper lg:py-0 lg:transition-shadow lg:hover:shadow-[var(--shadow-lift)] ${soldOut ? "is-sold-out" : ""}"
+  >
+    <div class="flex min-w-0 flex-col lg:order-2 lg:h-full lg:p-4">
+      <h3>
+        <button type="button" class="product-open text-left text-[1.0625rem] leading-snug font-[680] ${soldOut ? "text-muted" : ""}" data-product="${product.id}">
+          ${product.name}
+        </button>
+      </h3>
       ${product.description
         ? html`<p class="mt-1 line-clamp-2 text-[0.9375rem] leading-snug text-muted">${product.description}</p>`
         : ""}
-      <p class="mt-auto flex flex-wrap items-center gap-2 pt-2">
+      <p class="mt-auto flex flex-wrap items-center gap-2 pt-2.5">
         <span class="num text-[1.0625rem] font-[760] ${soldOut ? "text-muted line-through decoration-1" : ""}">${formatCOP(product.price)}</span>
         ${soldOut ? html`<span class="badge bg-tomato-soft text-tomato">Agotado</span>` : ""}
         ${orderable && !soldOut ? html`<span class="ml-auto" data-qty="${product.id}"></span>` : ""}
       </p>
     </div>
     ${product.imageUrl
-      ? html`<div class="thumb h-[6.5rem] w-[6.5rem] rounded-[12px] sm:h-28 sm:w-28">
-          <img src="${product.imageUrl}" alt="${product.name}" loading="lazy" decoding="async" width="112" height="112" />
+      ? html`<div class="product-photo photo h-[6.75rem] w-[6.75rem] rounded-[14px] sm:h-28 sm:w-28 lg:order-1 lg:aspect-[4/3] lg:h-auto lg:w-full lg:rounded-none">
+          <img src="${product.imageUrl}" alt="${product.name}" loading="lazy" decoding="async" width="400" height="300" />
         </div>`
-      : ""}
+      : html`<div class="food-placeholder hidden lg:order-1 lg:grid lg:aspect-[4/3]" aria-hidden="true">${icon("utensils", "h-8 w-8")}</div>`}
   </li>`;
+}
+
+/** Carrusel con fotos grandes: los más pedidos del último mes (o, sin ventas aún, los productos con foto). */
+function featured(store, orderable) {
+  const byId = new Map(store.categories.flatMap((category) => category.products).map((product) => [product.id, product]));
+  const items = (store.featured?.productIds ?? []).map((id) => byId.get(id)).filter(Boolean);
+  if (items.length < 2) return "";
+  const popular = store.featured.kind === "popular";
+  return html`<section class="mb-8" aria-labelledby="featured-title">
+    <div class="flex items-center justify-between gap-4 px-4 sm:px-8">
+      <h2 id="featured-title" class="display text-[1.75rem] sm:text-[2.125rem]">${popular ? "Los más pedidos" : "Para abrir el apetito"}</h2>
+      ${popular ? html`<span class="badge bg-ink text-mustard">${icon("flame", "h-3.5 w-3.5")} Este mes</span>` : ""}
+    </div>
+    <ul class="no-scrollbar mt-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 sm:scroll-px-8 sm:gap-4 sm:px-8">
+      ${items.map(
+        (product, index) => html`<li class="product-card w-[15rem] flex-none snap-start sm:w-[17.5rem]">
+          <div class="product-photo photo relative aspect-[4/3] rounded-[18px]">
+            <img src="${product.imageUrl}" alt="${product.name}" loading="${index < 2 ? "eager" : "lazy"}" decoding="async" width="400" height="300" />
+            ${popular && index < 3 ? html`<span class="display absolute top-2.5 left-2.5 grid h-9 min-w-9 place-items-center rounded-full bg-mustard px-2 text-[1.25rem] text-ink">${index + 1}</span>` : ""}
+            ${orderable ? html`<span class="absolute right-2.5 bottom-2.5" data-qty="${product.id}"></span>` : ""}
+          </div>
+          <button type="button" class="product-open mt-2.5 block w-full text-left" data-product="${product.id}">
+            <span class="block truncate text-[1.0625rem] font-[700]">${product.name}</span>
+            <span class="num block text-[1rem] font-[760]">${formatCOP(product.price)}</span>
+          </button>
+        </li>`,
+      )}
+    </ul>
+  </section>`;
+}
+
+/** Ficha del producto con la foto en grande (se abre al tocar un producto). */
+function detailView(product, orderable) {
+  const soldOut = !product.isAvailable;
+  return html`<div class="relative flex min-h-0 flex-1 flex-col">
+    <div class="min-h-0 flex-1 overflow-y-auto">
+      ${product.imageUrl
+        ? html`<div class="photo aspect-[4/3] w-full sm:aspect-[16/10]">
+            <img src="${product.imageUrl}" alt="${product.name}" class="${soldOut ? "opacity-70 grayscale" : ""}" />
+          </div>`
+        : html`<div class="food-placeholder h-28" aria-hidden="true">${icon("utensils", "h-8 w-8")}</div>`}
+      <div class="grid gap-3 px-5 pt-5 pb-6 sm:px-6">
+        <h2 id="detail-title" class="text-[1.75rem] leading-[1.05] font-[820] [font-stretch:78%] outline-none" tabindex="-1">${product.name}</h2>
+        <p class="flex flex-wrap items-center gap-2">
+          <span class="num text-[1.375rem] font-[780] ${soldOut ? "text-muted line-through decoration-1" : ""}">${formatCOP(product.price)}</span>
+          ${soldOut ? html`<span class="badge bg-tomato-soft text-tomato">Agotado</span>` : ""}
+        </p>
+        ${product.description ? html`<p class="text-[1.0625rem] leading-relaxed text-muted">${product.description}</p>` : ""}
+      </div>
+    </div>
+    <footer class="border-t border-line px-5 pt-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))] sm:px-6">
+      ${orderable && !soldOut
+        ? html`<div data-qty="${product.id}" data-qty-size="lg"></div>`
+        : html`<p class="py-2 text-center text-[0.9375rem] text-muted">
+            ${soldOut ? "Este producto está agotado por ahora." : "Por ahora no recibimos pedidos en línea."}
+          </p>`}
+    </footer>
+    <button type="button" class="btn btn-icon absolute top-3 right-3 rounded-full bg-paper/95 shadow-[var(--shadow-lift)] hover:bg-paper" data-close-detail aria-label="Cerrar">
+      ${icon("x")}
+    </button>
+  </div>`;
 }
 
 const sectionId = (index) => `cat-${index}`;
@@ -230,14 +299,14 @@ function menu(store) {
       : "";
 
   const orderable = canOrder(store);
-  return html`${nav}
+  return html`${featured(store, orderable)} ${nav}
     <div class="pt-6"></div>
     ${orderingNotice(store)}
     <div class="grid gap-8 px-4 sm:px-8 lg:gap-10">
       ${store.categories.map(
         (category, index) => html`<section id="${sectionId(index)}" class="scroll-mt-20" aria-labelledby="${sectionId(index)}-title">
           <h2 id="${sectionId(index)}-title" class="display text-[1.75rem] sm:text-[2.125rem]">${category.name}</h2>
-          <ul class="mt-1 divide-y divide-line lg:grid lg:grid-cols-2 lg:gap-x-10 lg:divide-y-0 lg:[&>li]:border-b lg:[&>li]:border-line">
+          <ul class="mt-1 divide-y divide-line lg:mt-4 lg:grid lg:grid-cols-3 lg:gap-4 lg:divide-y-0">
             ${category.products.map((product) => productCard(product, orderable))}
           </ul>
         </section>`,
@@ -264,9 +333,10 @@ function page(store) {
         ${header(store)}
         <div class="mx-4 mt-6 rounded-[14px] border border-line px-4 sm:mx-8 lg:mx-0 lg:mt-8">${details(store)}</div>
       </div>
-      <main id="menu" class="mt-8 ${store.settings.whatsappPhone ? "pb-20" : ""}">${menu(store)}</main>
+      <main id="menu" class="mt-10 ${store.settings.whatsappPhone ? "pb-20" : ""}">${menu(store)}</main>
     </div>
-    ${footer(store)}`;
+    ${footer(store)}
+    <dialog id="product-detail" class="sheet" aria-labelledby="detail-title"></dialog>`;
 }
 
 function errorPage(error) {
@@ -318,12 +388,36 @@ async function loadStore() {
   return payload.data;
 }
 
+/** Ficha del producto: se abre al tocar un producto; el control de cantidad lo dibuja el carrito. */
+function bindDetail(store, cart) {
+  const dialog = document.getElementById("product-detail");
+  const products = new Map(store.categories.flatMap((category) => category.products).map((product) => [product.id, product]));
+  let opener = null;
+
+  root.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-product]");
+    const product = button && products.get(button.dataset.product);
+    if (!product) return;
+    opener = button;
+    render(dialog, detailView(product, Boolean(cart) && canOrder(store)));
+    cart?.refresh();
+    dialog.showModal();
+    dialog.querySelector("#detail-title")?.focus();
+  });
+  dialog.addEventListener("click", (event) => {
+    // "Ver mi pedido" abre el carrito: primero se cierra la ficha.
+    if (event.target === dialog || event.target.closest("[data-close-detail], [data-open-cart]")) dialog.close();
+  });
+  dialog.addEventListener("close", () => opener?.focus());
+}
+
 try {
   const store = await loadStore();
   render(root, page(store));
   trackCategories();
   // Con la tienda cerrada igual se inicia: muestra el aviso de un pedido que quedó sin enviar.
-  if (store.settings.whatsappPhone) initCart({ store, slug, root, orderable: canOrder(store) });
+  const cart = store.settings.whatsappPhone ? initCart({ store, slug, root, orderable: canOrder(store) }) : null;
+  bindDetail(store, cart);
 } catch (error) {
   const failure =
     error instanceof ApiError ? error : new ApiError(0, "NETWORK_ERROR", "Sin conexión. Revisa tu internet e intenta de nuevo.");

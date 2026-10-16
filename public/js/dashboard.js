@@ -729,12 +729,20 @@ async function renderHome(context) {
     render(
       main,
       html`<div class="grid gap-6 lg:gap-8">
-        <header class="flex flex-wrap items-center justify-between gap-4">
-          <div class="min-w-0">
-            <h1 class="text-[1.875rem] leading-tight font-[780] sm:text-[2.375rem]">Hola, ${firstName}</h1>
-            <p class="mt-1 text-[0.9375rem] text-muted">${todayLabel()} · ${business.name}</p>
+        <header class="relative isolate overflow-hidden rounded-[22px] bg-ink text-paper shadow-[var(--shadow-lift)]">
+          <img
+            src="${business.bannerUrl ?? "/assets/images/food/friends-table-960.webp"}"
+            alt=""
+            class="absolute inset-0 -z-10 h-full w-full object-cover"
+          />
+          <div class="absolute inset-0 -z-10 bg-linear-to-r from-ink/90 via-ink/60 to-ink/5"></div>
+          <div class="flex min-h-[11rem] flex-wrap items-end justify-between gap-4 p-5 sm:min-h-[13.5rem] sm:p-8">
+            <div class="min-w-0">
+              <h1 class="text-[2.125rem] leading-[1.05] font-[820] [font-stretch:82%] sm:text-[3rem]">Hola, ${firstName}</h1>
+              <p class="mt-1.5 text-[0.9375rem] text-paper/85"><span class="font-[680] text-mustard">${todayLabel()}</span> · ${business.name}</p>
+            </div>
+            ${acceptingControl(business, settings)}
           </div>
-          ${acceptingControl(business, settings)}
         </header>
 
         <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">

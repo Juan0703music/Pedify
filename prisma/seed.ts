@@ -6,12 +6,14 @@
  * En el entorno de pruebas (APP_ENV=staging) también se puede usar, con DEMO_PASSWORD definida
  * (ese servidor es público: la contraseña de ejemplo no sirve allí). En producción no se ejecuta.
  */
+import { readFile } from "node:fs/promises";
 import { prisma } from "../src/config/database.js";
 import { isProduction, isStaging } from "../src/config/env.js";
 import { authRepository } from "../src/modules/auth/auth.repository.js";
 import { hashPassword } from "../src/modules/auth/password.js";
 import { businessesService } from "../src/modules/businesses/businesses.service.js";
 import { calculateOrder } from "../src/services/pricing.service.js";
+import { saveImage } from "../src/services/storage.service.js";
 import { addDays, dateIn, startOfDay } from "../src/utils/dates.js";
 
 const DEMO_EMAIL = "demo@pedifyai.com";
@@ -59,6 +61,42 @@ const DEMO_MENU: { category: string; products: { name: string; price: number; de
     ],
   },
 ];
+
+/** Fotos de ejemplo (public/assets/images/food, de dominio público; ver scripts/photos.ts). "Agua" y el queso quedan sin foto a propósito. */
+const DEMO_PHOTOS: Record<string, string> = {
+  "Hamburguesa especial": "burger-closeup",
+  "Hamburguesa sencilla": "burger-classic",
+  "Hamburguesa doble carne": "burger-dark",
+  Salchipapa: "fries-bowl",
+  "Salchipapa especial": "fries-sauce",
+  "Salchipapa ranchera": "sausages-grill",
+  "Perro sencillo": "hotdog-classic",
+  "Perro suizo": "hotdog-loaded",
+  Bebida: "soda-glass",
+  "Jugo natural": "juice-orange",
+  "Porción de papas": "fries-cup",
+};
+const DEMO_BANNER = "burger-board";
+
+const demoPhoto = (name: string) => readFile(new URL(`../public/assets/images/food/${name}-960.webp`, import.meta.url));
+
+/** Pone las fotos de ejemplo a los productos demo que no tienen y la portada del negocio si falta. */
+async function ensurePhotos(businessId: string): Promise<number> {
+  const products = await prisma.product.findMany({
+    where: { businessId, imageUrl: null, archivedAt: null, name: { in: Object.keys(DEMO_PHOTOS) } },
+    select: { id: true, name: true },
+  });
+  for (const product of products) {
+    const saved = await saveImage(await demoPhoto(DEMO_PHOTOS[product.name]!), "product", `businesses/${businessId}/products/${product.id}`);
+    await prisma.product.update({ where: { id: product.id }, data: { imageUrl: saved.url, imageKey: saved.key } });
+  }
+  const business = await prisma.business.findUniqueOrThrow({ where: { id: businessId }, select: { bannerUrl: true } });
+  if (!business.bannerUrl) {
+    const saved = await saveImage(await demoPhoto(DEMO_BANNER), "banner", `businesses/${businessId}/banner`);
+    await prisma.business.update({ where: { id: businessId }, data: { bannerUrl: saved.url, bannerKey: saved.key } });
+  }
+  return products.length;
+}
 
 async function ensureMenu(businessId: string): Promise<number> {
   if ((await prisma.category.count({ where: { businessId } })) > 0) return 0;
@@ -239,7 +277,12 @@ async function main() {
     });
     const added = membership ? await ensureMenu(membership.businessId) : 0;
     const orders = membership ? await ensureDemoOrders(membership.businessId) : 0;
-    const changes = [added ? `menú de ejemplo (${added} productos)` : "", orders ? `historial de ejemplo (${orders} pedidos)` : ""].filter(Boolean);
+    const photos = membership ? await ensurePhotos(membership.businessId) : 0;
+    const changes = [
+      added ? `menú de ejemplo (${added} productos)` : "",
+      orders ? `historial de ejemplo (${orders} pedidos)` : "",
+      photos ? `fotos de ejemplo (${photos} productos)` : "",
+    ].filter(Boolean);
     console.log(`El usuario ${DEMO_EMAIL} ya existe.${changes.length ? ` Se agregó: ${changes.join(" y ")}.` : " No se cambió nada."}`);
     return;
   }
@@ -273,11 +316,12 @@ async function main() {
   });
   const products = await ensureMenu(business.id);
   const orders = await ensureDemoOrders(business.id);
+  await ensurePhotos(business.id);
 
   console.log("Datos de demostración creados:");
   console.log(`  Correo:     ${DEMO_EMAIL}`);
   console.log(`  Contraseña: ${process.env.DEMO_PASSWORD ? "la de DEMO_PASSWORD" : DEMO_PASSWORD}`);
-  console.log(`  Negocio:    Sabores del Caribe (/tienda/${business.slug}), ${products} productos, ${orders} pedidos de ejemplo`);
+  console.log(`  Negocio:    Sabores del Caribe (/tienda/${business.slug}), ${products} productos con fotos, ${orders} pedidos de ejemplo`);
 }
 
 try {

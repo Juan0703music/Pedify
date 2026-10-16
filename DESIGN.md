@@ -59,13 +59,40 @@ Una sola familia: **Archivo** variable (peso 100–900, ancho 62–125 %), autoa
 - **Fichas de categoría** (`.cat-chip`) en la tienda: barra fija desplazable; la activa en tinta.
 - **Íconos**: Lucide (trazo 2 px) desde `public/assets/icons/sprite.svg` con `icon(nombre)`; nunca emojis ni glifos.
 
+## Fotografía
+
+La comida es la protagonista: fotos grandes, con recortes generosos y esquinas redondeadas (18–30 px).
+
+- **Banco propio**: `public/assets/images/food/` (WebP de 960 y 480 px), generado por `scripts/photos.ts` desde StockSnap y Rawpixel. Todas son de **dominio público (CC0)**; el script registra la fuente y el autor de cada una.
+- Se usan con `srcset` (480w/960w), `width`/`height` para no saltar al cargar, `loading="lazy"` fuera de la primera pantalla y `object-position` cuando el plato no está centrado.
+- **Las fotos de stock nunca representan a un negocio real en su tienda**: allí solo van las fotos que sube el comerciante (la excepción es el negocio ficticio de demostración del seed). En el panel, una foto de stock solo decora cuando el negocio aún no tiene portada.
+- `.photo` (contenedor con fondo tinta mientras carga), `.food-card` (foto a sangre con degradado inferior y título en `.display` blanco; se acerca al pasar el mouse), `.food-placeholder` (producto sin foto: mostaza claro con puntos y el ícono de cubiertos), `.dots` (textura de puntos de letrero sobre el mostaza).
+
+## Portada
+
+Mostaza con puntos y collage de fotos (hamburguesa grande, bebida y papas) con la comanda y el mensaje de WhatsApp flotando encima, y un sello tinta que gira con «14 días gratis · sin tarjeta». Debajo, una cinta tinta que se desplaza con los tipos de comida, una cuadrícula tipo mosaico de tipos de negocio (`.food-card`), los pasos, la tienda en un teléfono con fotos, el tablero (tinta) con una foto de cocina, los planes (tiquetes) y el cierre con fotos circulares.
+
 ## Tienda pública
 
-Es la vitrina del comerciante, no de PedifyAI: manda la portada, el logo y el nombre del negocio. Sin portada se usa una franja mostaza con el nombre en grande como letrero. Nombres de categoría en `.display`; productos en filas con la foto a la derecha (patrón conocido de las apps de domicilios). Agotado: foto en gris, precio tachado e insignia tomate. El estado (Abierto / Cerrado · abre… / Pedidos en pausa) va en una pastilla de color bajo el nombre. En escritorio el detalle (domicilio, horario, pagos) pasa a una columna a la derecha y los productos a dos columnas.
+Es la vitrina del comerciante, no de PedifyAI: manda la portada, el logo y el nombre del negocio. Portada grande (16:10 en celular, 5:2 en escritorio) con un degradado tinta suave; sin portada, letrero mostaza con puntos y el nombre en grande.
+
+- **Los más pedidos**: carrusel horizontal con fotos 4:3 grandes, número mostaza (1–3) y el botón de agregar sobre la foto. Si aún no hay ventas, «Para abrir el apetito» con los productos que tienen foto.
+- **Productos**: en el celular, filas con la foto a la derecha (patrón de las apps de domicilios); en escritorio, tarjetas en tres columnas con la foto arriba (o `.food-placeholder`). Toda la tarjeta abre la **ficha del producto**; el control de cantidad queda encima.
+- **Ficha del producto** (`<dialog class="sheet">`): foto grande, nombre, precio y descripción completa; abajo, «Agregar a mi pedido · $precio» (mostaza) y, con el producto ya en el pedido, el contador y «Ver mi pedido».
+- Agotado: foto en gris, precio tachado e insignia tomate. El estado (Abierto / Cerrado · abre… / Pedidos en pausa) va en una pastilla de color bajo el nombre. En escritorio el detalle (domicilio, horario, pagos) pasa a una columna a la derecha.
+
+## Panel
+
+- **Inicio**: saludo sobre la portada del negocio (o una foto de comida si aún no tiene) con degradado tinta de izquierda a derecha; el interruptor de pedidos va encima.
+- **Mi menú**: aviso tinta con fotos circulares cuando hay productos sin foto («Agregar foto» abre el primero). Cada categoría termina con «Agregar producto» y **«Elegir productos»**: hoja con toda la carta agrupada por categoría, casillas (`.pick`, `.pick-check`), búsqueda, «Seleccionar todo» / «Quitar selección», insignias «Entra» (tinta) y «Sale» (tomate), y el resumen de cambios antes de guardar.
+- **Ingreso y registro**: columna mostaza con puntos, foto grande inclinada detrás de la comanda (o mosaico de tres fotos en el registro); en el celular, una tira de tres fotos sobre el formulario.
 
 ## Movimiento
 
-Un solo gesto propio: el **tiquete que se imprime** (`.print-in`, revelado de arriba hacia abajo con `clip-path`, 0.9–1 s, curva exponencial). Transiciones de interfaz de 150–250 ms. Todo se anula con `prefers-reduced-motion`.
+- El gesto propio es el **tiquete que se imprime** (`.print-in`, revelado de arriba hacia abajo con `clip-path`, 0.9–1 s, curva exponencial).
+- En la portada: la cinta de comidas se desplaza (`.marquee`, se detiene al pasar el mouse), el sello gira despacio (`.sticker-spin`) y las secciones aparecen al bajar (`[data-reveal]`, solo con JavaScript: sin él, todo se ve).
+- Las fotos se acercan un 5–6 % al pasar el mouse (solo en dispositivos con puntero).
+- Transiciones de interfaz de 150–250 ms. Todo se anula con `prefers-reduced-motion`.
 
 ## Reglas
 

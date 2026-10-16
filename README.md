@@ -80,6 +80,16 @@ Arquitectura: **monolito modular** con Node.js + Express + TypeScript, PostgreSQ
 - Cierre ordenado ante `SIGTERM` y reinicio limpio ante errores no controlados; `robots.txt` para producción.
 - 131 pruebas en total (8 nuevas). Guía paso a paso del servidor, el entorno de pruebas y el piloto con un negocio real: [`docs/deployment.md`](docs/deployment.md).
 
+### Rediseño con fotos y «Elegir productos»
+
+- **Fotos de comida** en toda la plataforma (23 fotos de dominio público, WebP de 960 y 480 px; fuentes en `scripts/photos.ts`).
+- **Portada** nueva: collage de fotos con la comanda y el mensaje de WhatsApp, cinta animada de comidas, mosaico de tipos de negocio, la tienda en un teléfono y animaciones al bajar (respetan «reducir movimiento»).
+- **Tienda pública**: portada grande, carrusel **«Los más pedidos»** (los más vendidos del último mes con foto; `featured` en la API), tarjetas con foto en escritorio y **ficha del producto** con la foto en grande y «Agregar a mi pedido».
+- **Panel**: bienvenida sobre la portada del negocio, aviso de productos sin foto e ingreso/registro con fotos.
+- **Mi menú → «Elegir productos»** en cada categoría: marca y desmarca productos de toda la carta (con búsqueda, seleccionar todo y quitar selección); los desmarcados pasan a «Sin categoría» (`PUT /api/v1/categories/:id/products`).
+- El menú de demostración (`npm run db:seed`) trae fotos y portada.
+- 134 pruebas en total.
+
 ## Requisitos
 
 - Node.js 22.12 o superior (probado con Node 24).
@@ -122,7 +132,7 @@ Las fotos se guardan en `uploads/` en desarrollo. En producción se recomienda `
 | `npm run db:restore` | Restaura una copia en una base vacía |
 | `npm run admin:grant -- correo` | Da acceso al panel central `/admin` |
 
-Los íconos (Lucide) y la fuente (Archivo) se generan en `public/assets` con `npx tsx scripts/build-assets.ts`.
+Los íconos (Lucide) y la fuente (Archivo) se generan en `public/assets` con `npx tsx scripts/build-assets.ts`; las fotos de comida, con `npx tsx scripts/photos.ts`.
 
 ## Producción (Docker)
 

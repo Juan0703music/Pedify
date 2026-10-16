@@ -63,6 +63,11 @@ export const categoryParamsSchema = z.object({
   id: z.uuid("Categoría inválida."),
 });
 
+/** Productos de una categoría: los marcados quedan en ella; los que salen pasan a "Sin categoría". */
+export const categoryProductsSchema = z.object({
+  productIds: z.array(z.uuid("Producto inválido.")).max(500).refine(uniqueIds, "Hay productos repetidos en la lista."),
+});
+
 export const reorderCategoriesSchema = z.object({
   categoryIds: z.array(z.uuid()).min(1).max(100).refine(uniqueIds, "Hay categorías repetidas en la lista."),
 });
@@ -74,4 +79,5 @@ export type ListProductsQuery = z.infer<typeof listProductsQuerySchema>;
 export type ReorderProductsInput = z.infer<typeof reorderProductsSchema>;
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type CategoryParams = z.infer<typeof categoryParamsSchema>;
+export type CategoryProductsInput = z.infer<typeof categoryProductsSchema>;
 export type ReorderCategoriesInput = z.infer<typeof reorderCategoriesSchema>;

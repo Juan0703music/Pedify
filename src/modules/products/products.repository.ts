@@ -85,10 +85,30 @@ export const productsRepository = {
     return rows.map((row) => row.id);
   },
 
+  /** Productos vigentes del negocio entre los ids dados (los ajenos o archivados no aparecen). */
+  findCurrentByIds(businessId: string, ids: string[], db: DbClient = prisma) {
+    return db.product.findMany({ where: { businessId, id: { in: ids }, archivedAt: null }, select: { id: true, categoryId: true } });
+  },
+
   async setPositions(businessId: string, ids: string[], db: DbClient = prisma) {
     for (const [position, id] of ids.entries()) {
       await db.product.update({ where: byTenant(id, businessId), data: { position } });
     }
+  },
+
+  /** Productos más vendidos desde una fecha (pedidos aceptados en adelante), de mayor a menor cantidad. */
+  async topSelling(businessId: string, since: Date, limit: number) {
+    const rows = await prisma.orderItem.groupBy({
+      by: ["productId"],
+      where: {
+        businessId,
+        order: { status: { in: ["CONFIRMED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"] }, createdAt: { gte: since } },
+      },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: limit,
+    });
+    return rows.map((row) => row.productId);
   },
 
   /** Catálogo público: productos visibles y no archivados (incluye agotados para mostrarlos como tales). */

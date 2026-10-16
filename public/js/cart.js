@@ -123,8 +123,8 @@ export function initCart({ store, slug, root, orderable = true }) {
   // ─────────────────────────── Plantillas ───────────────────────────
 
   function stepper(product, quantity, size = "md") {
-    const box = size === "sm" ? "h-9" : "h-10";
-    const square = size === "sm" ? "h-9 w-9" : "h-10 w-10";
+    const box = { sm: "h-9", md: "h-10", lg: "h-12" }[size];
+    const square = { sm: "h-9 w-9", md: "h-10 w-10", lg: "h-12 w-12" }[size];
     return html`<span class="stepper ${box}" role="group" aria-label="Cantidad de ${product.name}">
       <button type="button" class="${square}" data-dec="${product.id}" aria-label="${quantity === 1 ? `Quitar ${product.name}` : `Quitar una unidad de ${product.name}`}">
         ${icon(quantity === 1 ? "trash-2" : "minus", "h-4 w-4")}
@@ -136,8 +136,19 @@ export function initCart({ store, slug, root, orderable = true }) {
     </span>`;
   }
 
-  function control(product) {
+  /** Control de cantidad de un producto. "lg": el de la ficha del producto, con botón grande. */
+  function control(product, size) {
     const quantity = cart.get(product.id) ?? 0;
+    if (size === "lg") {
+      return quantity === 0
+        ? html`<button type="button" class="btn btn-primary min-h-13 w-full text-base" data-inc="${product.id}">
+            ${icon("plus")} Agregar a mi pedido · <span class="num">${formatCOP(product.price)}</span>
+          </button>`
+        : html`<div class="flex items-center gap-3">
+            ${stepper(product, quantity, "lg")}
+            <button type="button" class="btn btn-ink min-h-12 flex-1" data-open-cart>Ver mi pedido · <span class="num">${formatCOP(subtotal())}</span></button>
+          </div>`;
+    }
     return quantity === 0
       ? html`<button type="button" class="qty-add" data-inc="${product.id}" aria-label="Agregar ${product.name} a tu pedido">${icon("plus")}</button>`
       : stepper(product, quantity);
@@ -385,7 +396,7 @@ export function initCart({ store, slug, root, orderable = true }) {
   function refresh() {
     root.querySelectorAll("[data-qty]").forEach((slot) => {
       const product = products.get(slot.dataset.qty);
-      if (product) render(slot, control(product));
+      if (product) render(slot, control(product, slot.dataset.qtySize));
     });
     if (orderable && count() > 0) render(bar, cartBar());
     else if (pending && !pending.opened && !dialog.open) render(bar, pendingBar());
@@ -599,5 +610,5 @@ export function initCart({ store, slug, root, orderable = true }) {
   if (removed.length > 0) {
     announce(`Quitamos de tu pedido lo que se agotó: ${removed.join(", ")}.`);
   }
-  return { removed };
+  return { removed, refresh };
 }

@@ -201,6 +201,54 @@ describe("Categorías", () => {
       { id: suizo.id, categoryId: null, position: 2 },
     ]);
   });
+
+  it("elige los productos de una categoría: marca, desmarca y conserva el orden", async () => {
+    const { agent } = await registerMerchant();
+    const combos = await createCategory(agent, "Combos");
+    const bebidas = await createCategory(agent, "Bebidas");
+    const combo1 = await createProduct(agent, { name: "Combo 1", price: 20000, categoryId: combos.id });
+    const combo2 = await createProduct(agent, { name: "Combo 2", price: 25000, categoryId: combos.id });
+    const gaseosa = await createProduct(agent, { name: "Gaseosa", price: 4000, categoryId: bebidas.id });
+    const suelto = await createProduct(agent, { name: "Papas", price: 6000 });
+
+    // Combo 2 se queda, Combo 1 sale, entran Papas y Gaseosa (en ese orden, al final).
+    const res = await agent
+      .put(`/api/v1/categories/${combos.id}/products`)
+      .send({ productIds: [suelto.id, combo2.id, gaseosa.id] })
+      .expect(200);
+    expect(res.body.data).toEqual({ added: 2, removed: 1, productCount: 3 });
+
+    const list = (await agent.get("/api/v1/products").expect(200)).body.data as { id: string; categoryId: string | null; position: number }[];
+    const byId = new Map(list.map((product) => [product.id, product]));
+    expect(byId.get(combo2.id)).toMatchObject({ categoryId: combos.id, position: 0 });
+    expect(byId.get(suelto.id)).toMatchObject({ categoryId: combos.id, position: 1 });
+    expect(byId.get(gaseosa.id)).toMatchObject({ categoryId: combos.id, position: 2 });
+    expect(byId.get(combo1.id)).toMatchObject({ categoryId: null });
+
+    // Desmarcar todo vacía la categoría sin borrarla.
+    const emptied = await agent.put(`/api/v1/categories/${combos.id}/products`).send({ productIds: [] }).expect(200);
+    expect(emptied.body.data).toEqual({ added: 0, removed: 3, productCount: 0 });
+    const categories = await agent.get("/api/v1/categories").expect(200);
+    expect(categories.body.data.find((category: { id: string }) => category.id === combos.id)).toMatchObject({ productCount: 0 });
+  });
+
+  it("al elegir productos rechaza los de otro negocio, los archivados y a los empleados", async () => {
+    const { agent } = await registerMerchant();
+    const other = await registerMerchant({ businessName: "Otro negocio" });
+    const combos = await createCategory(agent, "Combos");
+    const ajeno = await createProduct(other.agent, { name: "Ajeno", price: 1000 });
+    const propio = await createProduct(agent, { name: "Propio", price: 1000 });
+
+    const foreign = await agent.put(`/api/v1/categories/${combos.id}/products`).send({ productIds: [propio.id, ajeno.id] }).expect(400);
+    expect(foreign.body.error.code).toBe("PRODUCT_NOT_FOUND");
+    expect((await agent.get(`/api/v1/products/${propio.id}`).expect(200)).body.data.categoryId).toBeNull();
+
+    await other.agent.put(`/api/v1/categories/${combos.id}/products`).send({ productIds: [] }).expect(404);
+    await agent.put(`/api/v1/categories/${combos.id}/products`).send({ productIds: [propio.id, propio.id] }).expect(400);
+
+    const employee = await addEmployee(agent);
+    await employee.put(`/api/v1/categories/${combos.id}/products`).send({ productIds: [propio.id] }).expect(403);
+  });
 });
 
 describe("Fotos de productos", () => {

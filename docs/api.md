@@ -148,6 +148,9 @@ Producto:
 | PATCH | `/categories/:id` | OWNER | `name` | categoría |
 | DELETE | `/categories/:id` | OWNER | — | `{ movedProducts }`: sus productos pasan, en orden, a «Sin categoría» |
 | PUT | `/categories/order` | OWNER | `categoryIds[]` (todas) | 204 |
+| PUT | `/categories/:id/products` | OWNER | `productIds[]` (0–500, sin repetidos) | `{ added, removed, productCount }` |
+
+`PUT /categories/:id/products` («Elegir productos» en Mi menú) deja en la categoría exactamente los productos indicados: los que ya estaban conservan su orden, los nuevos llegan al final (en el orden de la lista) y los que salen pasan al final de «Sin categoría». Todo en una transacción. Si algún producto no existe, es de otro negocio o está archivado → 400 `PRODUCT_NOT_FOUND` y no se cambia nada.
 
 Los nombres no se repiten dentro de un negocio sin importar mayúsculas (`Bebidas` = `bebidas` → 409 `CATEGORY_EXISTS`). Límite: 50 categorías.
 
@@ -184,11 +187,13 @@ Sin sesión.
       { "id": "…", "name": "Hamburguesa especial", "description": "…", "price": 18000, "imageUrl": null, "isAvailable": true }
     ] },
     { "id": null, "name": "Otros productos", "products": [ … ] }
-  ]
+  ],
+  "featured": { "kind": "popular", "productIds": ["…", "…", "…"] }
 }
 ```
 
 - Solo incluye productos visibles (`isActive`) y no archivados; los agotados aparecen con `isAvailable: false`. Las categorías sin productos visibles se omiten; los productos sin categoría van al final.
+- `featured` alimenta el carrusel de la tienda: con `kind: "popular"`, los productos más vendidos de los últimos 30 días (pedidos confirmados en adelante; nunca pendientes ni cancelados), de mayor a menor cantidad; solo entran los que tienen foto y están disponibles, hasta 8. Si hay menos de 3, `kind: "photos"` con los productos con foto en el orden del menú.
 - `status` se calcula con el horario en la zona horaria del negocio. `nextOpen.inDays`: 0 = hoy, 1 = mañana… `canOrder` = abierto y sin pausa manual (se usará en la fase 3).
 
 ## Pedidos desde la tienda — `/store/:slug/orders`

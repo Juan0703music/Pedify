@@ -6,6 +6,9 @@ import { subscriptionsService } from "../subscriptions/subscriptions.service.js"
 import { categoriesRepository } from "./categories.repository.js";
 import { productsRepository } from "./products.repository.js";
 
+const FEATURED_LIMIT = 8;
+const FEATURED_DAYS = 30;
+
 const storeNotFound = () => notFound("Esta tienda no existe o ya no está disponible.", "STORE_NOT_FOUND");
 
 /**
@@ -23,10 +26,11 @@ export const storeService = {
     const business = await businessesRepository.findStoreBySlug(slug);
     if (!business || business.status !== "ACTIVE" || !business.settings) throw storeNotFound();
 
-    const [categories, products, subscription] = await Promise.all([
+    const [categories, products, subscription, topSelling] = await Promise.all([
       categoriesRepository.listNames(business.id),
       productsRepository.listForStore(business.id),
       subscriptionsService.current(business.id),
+      productsRepository.topSelling(business.id, new Date(now.getTime() - FEATURED_DAYS * 86_400_000), FEATURED_LIMIT * 2),
     ]);
     // Si la suscripción venció, la tienda se sigue viendo pero no recibe pedidos en línea.
     const onlineOrdering = subscription.state.canReceiveOrders;
@@ -44,6 +48,17 @@ export const storeService = {
     if (uncategorized.length > 0) {
       sections.push({ id: null, name: sections.length > 0 ? "Otros productos" : "Menú", products: uncategorized });
     }
+
+    // Carrusel de la tienda: los más pedidos de los últimos 30 días (con foto y disponibles);
+    // si aún no hay ventas suficientes, los productos con foto en el orden del menú.
+    const withPhoto = new Set(
+      sections.flatMap((section) => section.products).filter((product) => product.imageUrl && product.isAvailable).map((product) => product.id),
+    );
+    const popular = topSelling.filter((id) => withPhoto.has(id)).slice(0, FEATURED_LIMIT);
+    const featured =
+      popular.length >= 3
+        ? { kind: "popular" as const, productIds: popular }
+        : { kind: "photos" as const, productIds: [...withPhoto].slice(0, FEATURED_LIMIT) };
 
     const { settings } = business;
     const openingHours = parseOpeningHours(settings.openingHours);
@@ -79,6 +94,7 @@ export const storeService = {
         canOrder: opening.isOpen && settings.acceptingOrders && onlineOrdering,
       },
       categories: sections,
+      featured,
     };
   },
 };

@@ -7,6 +7,7 @@ import { validate } from "../../middlewares/validate.js";
 import { categoriesController, productsController } from "./products.controller.js";
 import {
   categoryParamsSchema,
+  categoryProductsSchema,
   categorySchema,
   createProductSchema,
   listProductsQuerySchema,
@@ -49,3 +50,4 @@ categoriesRoutes.post("/", ownerOnly, validate({ body: categorySchema }), catego
 categoriesRoutes.put("/order", ownerOnly, validate({ body: reorderCategoriesSchema }), categoriesController.reorder);
 categoriesRoutes.patch("/:id", ownerOnly, validate({ params: categoryParamsSchema, body: categorySchema }), categoriesController.rename);
 categoriesRoutes.delete("/:id", ownerOnly, categoryParams, categoriesController.remove);
+categoriesRoutes.put("/:id/products", ownerOnly, validate({ params: categoryParamsSchema, body: categoryProductsSchema }), categoriesController.setProducts);

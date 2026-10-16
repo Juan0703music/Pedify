@@ -181,11 +181,22 @@ function categoryBlock(group, index, total) {
     ${categoryHeader(group, index, total)}
     ${visible.length > 0
       ? html`<ul class="divide-y divide-line">${visible.map((product, i) => productRow(product, i, visible))}</ul>`
-      : html`<p class="px-5 py-5 text-[0.9375rem] text-muted">Aún no hay productos en esta categoría.</p>`}
+      : html`<p class="px-5 py-5 text-[0.9375rem] text-muted">
+          Aún no hay productos en esta categoría.${category && state.isOwner && state.products.length > 0 && !state.ordering
+            ? html` <button type="button" class="font-[650] text-ink underline underline-offset-2" data-pick-products="${category.id}">Elegir de mi carta</button>`
+            : ""}
+        </p>`}
     ${canAdd
-      ? html`<button type="button" class="flex w-full items-center gap-2 border-t border-line px-4 py-3 text-left text-[0.9375rem] font-[650] text-muted transition-colors hover:bg-ground hover:text-ink sm:px-5" data-new-product="${category?.id ?? ""}">
-          ${icon("plus")}<span class="min-w-0 truncate">Agregar producto${category ? ` a ${category.name}` : ""}</span>
-        </button>`
+      ? html`<div class="flex border-t border-line">
+          <button type="button" class="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 text-left text-[0.9375rem] font-[650] text-muted transition-colors hover:bg-ground hover:text-ink sm:px-5" data-new-product="${category?.id ?? ""}">
+            ${icon("plus")}<span class="min-w-0 truncate">Agregar producto<span class="hidden sm:inline">${category ? ` a ${category.name}` : ""}</span></span>
+          </button>
+          ${category && state.products.length > 0
+            ? html`<button type="button" class="flex flex-none items-center gap-2 border-l border-line px-4 py-3 text-[0.9375rem] font-[650] text-ink transition-colors hover:bg-mustard-soft sm:px-5" data-pick-products="${category.id}" aria-label="Elegir los productos de ${category.name}">
+                ${icon("list-checks")}<span>Elegir productos</span>
+              </button>`
+            : ""}
+        </div>`
       : ""}
   </section>`;
 }
@@ -358,6 +369,56 @@ function editorDialog() {
   </dialog>`;
 }
 
+function pickerDialog() {
+  return html`<dialog id="category-picker" class="sheet" aria-labelledby="picker-title">
+    <div class="flex min-h-0 flex-1 flex-col">
+      <header class="border-b border-line py-3 pr-3 pl-5">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="picker-title" class="min-w-0 text-lg leading-snug font-[760] outline-none" tabindex="-1" data-picker-title></h2>
+          <button type="button" class="btn btn-quiet btn-icon" data-close-picker aria-label="Cerrar">${icon("x")}</button>
+        </div>
+        <p class="pr-2 text-sm text-muted">Marca los productos que van en esta categoría. Los que desmarques pasan a «Sin categoría».</p>
+      </header>
+      <div class="grid gap-2 border-b border-line px-5 py-3">
+        <div class="input-group">
+          <label class="addon border-0 bg-transparent pr-0" for="picker-search">${icon("search")}<span class="sr-only">Buscar en mi carta</span></label>
+          <input class="input" id="picker-search" type="search" placeholder="Buscar en mi carta" autocomplete="off" data-picker-search />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="btn btn-ghost btn-sm" data-pick-all>${icon("check", "h-4 w-4")} Seleccionar todo</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-pick-none>${icon("x", "h-4 w-4")} Quitar selección</button>
+        </div>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto" data-picker-list></div>
+      <footer class="flex flex-wrap items-center gap-x-2 gap-y-2.5 border-t border-line px-5 pt-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))]">
+        <p class="w-full text-sm sm:mr-auto sm:w-auto" aria-live="polite" data-picker-summary></p>
+        <div class="flex w-full gap-2 sm:w-auto">
+          <button type="button" class="btn btn-ghost flex-1 sm:flex-none" data-close-picker>Cancelar</button>
+          <button type="button" class="btn btn-ink flex-1 sm:flex-none" data-save-picker>Guardar</button>
+        </div>
+      </footer>
+    </div>
+  </dialog>`;
+}
+
+/** Invita a completar las fotos: los productos con foto se ven mejor y pueden salir en «Los más pedidos». */
+function photoTip() {
+  const missing = state.products.filter((product) => !product.imageUrl);
+  if (!state.isOwner || state.ordering || missing.length === 0) return "";
+  return html`<div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 rounded-[16px] bg-ink px-4 py-3.5 text-paper sm:flex">
+    <span class="flex flex-none -space-x-3" aria-hidden="true">
+      ${["burger-closeup", "fries-sauce", "juice-orange"].map(
+        (name) => html`<span class="photo h-10 w-10 rounded-full ring-2 ring-ink"><img src="/assets/images/food/${name}-480.webp" alt="" /></span>`,
+      )}
+    </span>
+    <p class="min-w-0 flex-1 text-[0.9375rem] leading-snug">
+      <span class="font-[720] text-mustard">${missing.length} ${missing.length === 1 ? "producto sin foto" : "productos sin foto"}.</span>
+      Con foto se ven más provocativos en tu tienda y pueden salir en «Los más pedidos».
+    </p>
+    <button type="button" class="btn btn-primary btn-sm col-span-2 flex-none sm:col-span-1" data-edit="${missing[0].id}">${icon("camera", "h-4 w-4")} Agregar foto</button>
+  </div>`;
+}
+
 function archivedSection() {
   return html`<details class="panel group" data-archived>
     <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 sm:px-5">
@@ -390,11 +451,12 @@ function page() {
         : html`<p class="flex items-start gap-2.5 rounded-[12px] border border-sky/20 bg-sky-soft px-4 py-3 text-[0.9375rem] font-medium text-sky">
             ${icon("info", "mt-0.5")} Puedes marcar productos como agotados o disponibles. Para editar el menú, pídeselo al propietario.
           </p>`}
+      <div data-photo-tip></div>
       <div class="grid gap-3" data-toolbar-area></div>
       <div class="grid gap-5" data-menu></div>
       ${isOwner ? archivedSection() : ""}
     </div>
-    ${isOwner ? editorDialog() : ""}`;
+    ${isOwner ? html`${editorDialog()} ${pickerDialog()}` : ""}`;
 }
 
 // ───────────────────────────── Dibujo ─────────────────────────────
@@ -423,6 +485,10 @@ function drawMenu() {
     orderButton.querySelector("[data-order-icon]").innerHTML = String(icon(state.ordering ? "check" : "arrow-up-down"));
     orderButton.disabled = Boolean(state.query);
   }
+
+  const tip = main.querySelector("[data-photo-tip]");
+  render(tip, photoTip());
+  tip.hidden = !tip.firstElementChild;
 
   const list = main.querySelector("[data-menu]");
   if (!hasContent) {
@@ -694,6 +760,171 @@ function bindEditor() {
   dialog.addEventListener("close", releasePreview);
 }
 
+// ───────────────────────────── Elegir productos de una categoría ─────────────────────────────
+
+const picker = () => document.getElementById("category-picker");
+
+/** { category, selected: Set<id>, initial: Set<id>, query } mientras el selector está abierto. */
+let picking = null;
+
+function categoryName(categoryId) {
+  return state.categories.find((category) => category.id === categoryId)?.name ?? "Sin categoría";
+}
+
+function pickRow(product) {
+  const { category, selected } = picking;
+  const elsewhere = product.categoryId !== category.id;
+  return html`<li>
+    <label class="pick">
+      <input type="checkbox" data-pick="${product.id}" ${selected.has(product.id) ? "checked" : ""} />
+      <span class="pick-check" aria-hidden="true">${icon("check", "h-4 w-4")}</span>
+      ${thumb(product, "h-11 w-11")}
+      <span class="min-w-0 flex-1">
+        <span class="block truncate font-[650]">${product.name}</span>
+        <span class="flex flex-wrap items-center gap-x-2 text-sm text-muted">
+          <span class="num font-[650] text-ink">${formatCOP(product.price)}</span>
+          ${product.isActive ? "" : html`<span>· Oculto</span>`}
+        </span>
+      </span>
+      ${elsewhere && selected.has(product.id)
+        ? html`<span class="badge flex-none bg-ink text-mustard">Entra</span>`
+        : !elsewhere && !selected.has(product.id)
+          ? html`<span class="badge flex-none bg-tomato-soft text-tomato">Sale</span>`
+          : ""}
+    </label>
+  </li>`;
+}
+
+/** Productos de toda la carta agrupados por su categoría actual (la elegida primero). */
+function drawPicker() {
+  const { category, query } = picking;
+  const visible = state.products.filter((product) => {
+    if (!query) return true;
+    const text = normalize(query);
+    return normalize(product.name).includes(text) || normalize(product.description ?? "").includes(text);
+  });
+  const order = [category.id, ...state.categories.filter((item) => item.id !== category.id).sort(byPosition).map((item) => item.id), null];
+  const sections = order
+    .map((categoryId) => ({ categoryId, products: visible.filter((product) => (product.categoryId ?? null) === categoryId).sort(byPosition) }))
+    .filter((section) => section.products.length > 0);
+
+  render(
+    picker().querySelector("[data-picker-list]"),
+    sections.length === 0
+      ? html`<p class="px-5 py-8 text-center text-muted">No hay productos que coincidan con «${query}».</p>`
+      : html`${sections.map(
+          (section) => html`<section>
+            <h3 class="sticky top-0 z-[1] border-b border-line bg-paper/95 px-5 py-2 text-xs font-[720] tracking-wide text-muted uppercase backdrop-blur">
+              ${section.categoryId === category.id ? `En ${category.name} ahora` : `En ${categoryName(section.categoryId)}`}
+            </h3>
+            <ul class="divide-y divide-line">${section.products.map(pickRow)}</ul>
+          </section>`,
+        )}`,
+  );
+  updatePickerSummary();
+}
+
+function updatePickerSummary() {
+  const { selected, initial } = picking;
+  const added = [...selected].filter((id) => !initial.has(id)).length;
+  const removed = [...initial].filter((id) => !selected.has(id)).length;
+  const changes = [added ? `entran ${added}` : "", removed ? `salen ${removed}` : ""].filter(Boolean).join(" · ");
+  render(
+    picker().querySelector("[data-picker-summary]"),
+    html`<span class="num font-[700]">${selected.size}</span> ${selected.size === 1 ? "seleccionado" : "seleccionados"}${changes ? html`<span class="text-muted"> · ${changes}</span>` : ""}`,
+  );
+  picker().querySelector("[data-save-picker]").disabled = added === 0 && removed === 0;
+}
+
+function openPicker(categoryId) {
+  const category = state.categories.find((item) => item.id === categoryId);
+  if (!category) return;
+  const initial = new Set(productsIn(category.id).map((product) => product.id));
+  picking = { category, initial, selected: new Set(initial), query: "" };
+  const dialog = picker();
+  dialog.querySelector("[data-picker-title]").textContent = `Productos de «${category.name}»`;
+  dialog.querySelector("[data-picker-search]").value = "";
+  drawPicker();
+  dialog.showModal();
+  dialog.querySelector("[data-picker-title]").focus();
+}
+
+function closePicker() {
+  picker().close();
+}
+
+async function savePicker(button) {
+  const { category, selected, initial } = picking;
+  setBusy(button, true);
+  try {
+    // Orden: los que ya estaban (en su orden), luego los nuevos en el orden de la lista.
+    const kept = productsIn(category.id).map((product) => product.id).filter((id) => selected.has(id));
+    const added = state.products.filter((product) => selected.has(product.id) && !initial.has(product.id)).sort(byPosition).map((product) => product.id);
+    const result = await api(`/categories/${category.id}/products`, { method: "PUT", body: { productIds: [...kept, ...added] } });
+    await loadMenu();
+    drawMenu();
+    closePicker();
+    const parts = [
+      result.added ? `${result.added} ${result.added === 1 ? "producto entró" : "productos entraron"}` : "",
+      result.removed ? `${result.removed} ${result.removed === 1 ? "pasó" : "pasaron"} a «Sin categoría»` : "",
+    ].filter(Boolean);
+    toast(`${category.name}: ${parts.join(" y ")}.`);
+    refocus(`[data-pick-products="${category.id}"]`);
+  } catch (error) {
+    toast(error.message, "error");
+    if (error.code === "PRODUCT_NOT_FOUND" || error.status === 404) {
+      await loadMenu();
+      drawMenu();
+      closePicker();
+    }
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+function bindPicker() {
+  const dialog = picker();
+  if (!dialog) return;
+  dialog.addEventListener("change", (event) => {
+    const input = event.target.closest("[data-pick]");
+    if (!input) return;
+    if (input.checked) picking.selected.add(input.dataset.pick);
+    else picking.selected.delete(input.dataset.pick);
+    // Se redibuja solo la etiqueta Entra/Sale de la fila para no perder el foco.
+    const row = input.closest("li");
+    const product = state.products.find((item) => item.id === input.dataset.pick);
+    const fresh = document.createElement("template");
+    fresh.innerHTML = String(pickRow(product));
+    row.querySelector(".badge.flex-none")?.remove();
+    const badge = fresh.content.querySelector(".badge.flex-none");
+    if (badge) row.querySelector("label").append(badge);
+    updatePickerSummary();
+  });
+  dialog.addEventListener("input", (event) => {
+    if (!event.target.matches("[data-picker-search]")) return;
+    picking.query = event.target.value.trim();
+    drawPicker();
+  });
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) return closePicker();
+    const target = event.target.closest("button");
+    if (!target) return;
+    if (target.matches("[data-close-picker]")) closePicker();
+    if (target.matches("[data-pick-all], [data-pick-none]")) {
+      const checked = target.matches("[data-pick-all]");
+      for (const input of dialog.querySelectorAll("[data-pick]")) {
+        if (checked) picking.selected.add(input.dataset.pick);
+        else picking.selected.delete(input.dataset.pick);
+      }
+      drawPicker();
+    }
+    if (target.matches("[data-save-picker]")) savePicker(target);
+  });
+  dialog.addEventListener("close", () => {
+    picking = null;
+  });
+}
+
 // ───────────────────────────── Acciones del menú ─────────────────────────────
 
 async function toggleAvailability(input) {
@@ -817,6 +1048,7 @@ function bindPage() {
     if (!target) return;
 
     if (target.matches("[data-new-product]")) openEditor(null, target.dataset.newProduct || null);
+    if (target.matches("[data-pick-products]")) openPicker(target.dataset.pickProducts);
     if (target.matches("[data-edit]")) {
       const product = state.products.find((item) => item.id === target.dataset.edit);
       if (product) openEditor(product);
@@ -956,6 +1188,7 @@ if (context) {
       drawMenu();
       bindPage();
       bindEditor();
+      bindPicker();
     } catch (error) {
       render(main, html`<p class="text-tomato">${error.message}</p>`);
     }
