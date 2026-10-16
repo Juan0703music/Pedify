@@ -1,13 +1,29 @@
-# PedifyAI con Docker:
-#   docker compose up --build
-# Levanta PostgreSQL, aplica las migraciones y arranca la aplicación en http://localhost:3000
+# PedifyAI en un servidor: producción o entorno de pruebas (cada uno en su propio servidor).
+# Guía paso a paso: docs/deployment.md
+#
+#   cp deploy/env.example .env   # completa el dominio, las contraseñas, el correo…
+#   scripts/deploy.sh            # construye, hace una copia, migra, arranca y verifica
+#
+# Internet → caddy (HTTPS automático) → app (Express + Socket.IO) → db (PostgreSQL)
+# backup: copia diaria con prueba de restauración · offsite (opcional): la sube fuera del servidor.
+# Para probar en tu PC: DOMAIN=localhost (Caddy usa un certificado local).
+
+x-logging: &logging
+  # Sin límite, los registros de Docker terminan llenando el disco.
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-database-url: &database-url postgresql://pedifyai:${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}@db:5432/pedifyai
+
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: pedifyai
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pedifyai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
       POSTGRES_DB: pedifyai
     volumes:
       - pgdata:/var/lib/postgresql
@@ -16,33 +32,44 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    logging: *logging
 
-  migrate:
+  # Aplica las migraciones pendientes antes de arrancar la app. También sirve para tareas de consola:
+  #   docker compose run --rm tools npm run admin:grant -- correo@dominio.com
+  tools:
     build:
       context: .
-      target: migrate
+      target: tools
+    image: pedifyai-tools
     environment:
-      DATABASE_URL: postgresql://pedifyai:${POSTGRES_PASSWORD:-pedifyai}@db:5432/pedifyai
+      NODE_ENV: production
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: *database-url
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy
+    logging: *logging
 
   app:
     build:
       context: .
       target: runtime
+    image: pedifyai-app
     restart: unless-stopped
+    init: true
     environment:
       NODE_ENV: production
+      APP_ENV: ${APP_ENV:-production}
       PORT: 3000
-      DATABASE_URL: postgresql://pedifyai:${POSTGRES_PASSWORD:-pedifyai}@db:5432/pedifyai
-      APP_URL: ${APP_URL:-http://localhost:3000}
-      # En un servidor real con HTTPS: COOKIE_SECURE=true y TRUST_PROXY=1 (detrás de Nginx/Caddy).
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      TRUST_PROXY: ${TRUST_PROXY:-0}
-      SESSION_TTL_DAYS: 7
-      LOG_LEVEL: info
-      # Fotos: en disco (volumen `uploads`) o en un almacenamiento compatible con S3.
+      DATABASE_URL: *database-url
+      APP_URL: https://${DOMAIN:?Define DOMAIN en .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # Caddy termina el HTTPS y es el único proxy delante de la app.
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: 1
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
       UPLOADS_DIR: /app/uploads
       S3_BUCKET: ${S3_BUCKET:-}
@@ -58,20 +85,38 @@ services:
       METRICS_TOKEN: ${METRICS_TOKEN:-}
     volumes:
       - uploads:/app/uploads
-    ports:
-      - "3000:3000"
     depends_on:
-      migrate:
+      tools:
         condition: service_completed_successfully
+    logging: *logging
+
+  caddy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Define DOMAIN en .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificados: si se pierden, Caddy los vuelve a pedir (con límite semanal de Let's Encrypt).
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    logging: *logging
 
   # Copia diaria con pg_dump + prueba de restauración (scripts/docker-backup.sh).
+  # Copia inmediata (la hace scripts/deploy.sh antes de migrar): docker compose run --rm backup once
   backup:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
       PGHOST: db
       PGUSER: pedifyai
-      PGPASSWORD: ${POSTGRES_PASSWORD:-pedifyai}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
       PGDATABASE: pedifyai
       BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
     volumes:
@@ -82,8 +127,42 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    logging: *logging
+
+  # Opcional: sube las copias a un almacenamiento compatible con S3 (Cloudflare R2, AWS S3, Backblaze B2…)
+  # cada 6 horas. Se activa con COMPOSE_PROFILES=offsite en .env.
+  offsite:
+    image: rclone/rclone:1.75
+    profiles: ["offsite"]
+    restart: unless-stopped
+    environment:
+      RCLONE_CONFIG_OFFSITE_TYPE: s3
+      RCLONE_CONFIG_OFFSITE_PROVIDER: ${OFFSITE_PROVIDER:-Cloudflare}
+      RCLONE_CONFIG_OFFSITE_ENDPOINT: ${OFFSITE_ENDPOINT:-}
+      RCLONE_CONFIG_OFFSITE_REGION: ${OFFSITE_REGION:-auto}
+      RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID: ${OFFSITE_ACCESS_KEY_ID:-}
+      RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY: ${OFFSITE_SECRET_ACCESS_KEY:-}
+      RCLONE_CONFIG_OFFSITE_NO_CHECK_BUCKET: "true"
+      OFFSITE_TARGET: offsite:${OFFSITE_BUCKET:-pedifyai-copias}/${APP_ENV:-production}
+    volumes:
+      - backups:/backups:ro
+    entrypoint:
+      - sh
+      - -c
+      - |
+        while true; do
+          if rclone copy /backups "$$OFFSITE_TARGET" --include 'pedifyai-*.dump' --include 'uploads-*.tar.gz'; then
+            echo "[$$(date -u)] Copia externa al día en $$OFFSITE_TARGET"
+          else
+            echo "[$$(date -u)] ERROR: no se pudo subir la copia externa" >&2
+          fi
+          sleep 21600
+        done
+    logging: *logging
 
 volumes:
   pgdata:
   uploads:
   backups:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,76 @@
+# Integración continua: cada push a main y cada Pull Request.
+#  1. pruebas: tipos, pruebas automáticas (PostgreSQL temporal) y compilación de producción.
+#  2. despliegue: levanta el stack de docker-compose.yml completo (Caddy con HTTPS local, app, base,
+#     copias) con scripts/deploy.sh, lo verifica desde afuera, prueba la copia de seguridad y la reversión.
+name: Integración continua
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  despliegue:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: pruebas
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configuración del servidor de prueba (.env)
+        run: |
+          cp deploy/env.example .env
+          sed -i \
+            -e 's/^DOMAIN=.*/DOMAIN=localhost/' \
+            -e "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 24)/" \
+            -e 's/^STORAGE_DRIVER=.*/STORAGE_DRIVER=local/' \
+            -e "s/^METRICS_TOKEN=.*/METRICS_TOKEN=$(openssl rand -hex 24)/" \
+            .env
+
+      - name: Primer despliegue
+        run: scripts/deploy.sh --no-pull
+
+      - name: Verificación por HTTPS a través de Caddy
+        run: |
+          docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt caddy-root.crt
+          docker run --rm --network host -v "$PWD/caddy-root.crt:/ca.crt:ro" -e NODE_EXTRA_CA_CERTS=/ca.crt \
+            pedifyai-tools npx tsx scripts/smoke.ts https://localhost
+
+      - name: Consola de administración (se conecta a la base y responde)
+        run: |
+          docker compose run --rm -T tools npm run --silent admin:grant -- nadie@ejemplo.com 2>&1 | tee admin.log || true
+          grep -q "No existe una cuenta" admin.log
+
+      - name: Copia de seguridad con prueba de restauración
+        run: docker compose run --rm -T backup once | tee copia.log && grep -q "Restauración verificada" copia.log
+
+      - name: Segundo despliegue y reversión
+        run: |
+          scripts/deploy.sh --no-pull
+          scripts/deploy.sh rollback
+          scripts/deploy.sh status
+
+      - name: Registros si algo falló
+        if: failure()
+        run: docker compose logs --tail 200

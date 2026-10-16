@@ -107,6 +107,14 @@ orders.service (pedido creado / estado / pago) → notification.service ─┐
 - **Monitoreo**: `middlewares/requestContext.ts` (identificador, registro y métricas por ruta), `services/metrics.service.ts` (Prometheus sin dependencias), salud con latencia de la base.
 - **Copias**: `scripts/backup.ts` (COPY + manifiesto + verificación) y `scripts/docker-backup.sh` (pg_dump diario con prueba de restauración). Ver [operations.md](operations.md).
 
+## Despliegue (secciones 13 y 15)
+
+- Un servidor por entorno (producción y pruebas) con `docker-compose.yml`: **Caddy** (HTTPS automático, compresión, WebSocket) → **app** (imagen `runtime`: solo `dist/`, `public/` y dependencias de producción, usuario sin privilegios, `HEALTHCHECK`) → **PostgreSQL** sin puertos expuestos. La imagen `tools` (migraciones, consola de administración, seed y verificación) corre las migraciones antes de cada arranque.
+- `scripts/deploy.sh` encadena copia → migraciones → arranque → salud → verificación externa (`scripts/smoke.ts`), y revierte la imagen si la versión nueva no queda sana. Las migraciones no se revierten: deben ser compatibles con la versión anterior.
+- `APP_ENV=staging` marca el entorno de pruebas en el servidor (franja en las páginas, «[Pruebas]» en títulos y correos, `noindex`), sin cambiar el comportamiento de la aplicación. `src/utils/pages.ts` sirve las páginas HTML y aplica la marca.
+- `src/config/readiness.ts` lista la configuración de producción que falta; se registra al arrancar y se muestra en `/admin`.
+- La integración continua levanta el stack completo con `DOMAIN=localhost` y prueba el despliegue, HTTPS, la copia con restauración y la reversión.
+
 ## Imágenes
 
 `services/storage.service.ts` define un `StorageDriver` con dos implementaciones:

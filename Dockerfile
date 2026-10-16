@@ -1,22 +1,26 @@
 # syntax=docker/dockerfile:1
-# PedifyAI — imagen de producción (multi-etapa).
+# PedifyAI — imágenes de producción (multi-etapa). Guía de despliegue: docs/deployment.md
 
-# ─── Dependencias completas (incluye Prisma CLI, TypeScript y Tailwind) ───
+# ─── Dependencias completas (incluye Prisma CLI, TypeScript, tsx y Tailwind) ───
 FROM node:24-alpine AS deps
+# Prisma (migraciones) necesita OpenSSL en Alpine.
+RUN apk add --no-cache openssl
 WORKDIR /app
 COPY package.json package-lock.json prisma.config.ts ./
 COPY prisma ./prisma
 # `postinstall` ejecuta `prisma generate`.
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
-# ─── Compilación: CSS de Tailwind + TypeScript ───
-FROM deps AS build
+# ─── Herramientas: migraciones, administradores, datos de demostración y verificación ───
+#   docker compose run --rm tools npx prisma migrate deploy
+#   docker compose run --rm tools npm run admin:grant -- correo@dominio.com
+FROM deps AS tools
 COPY . .
-RUN npm run build && npm prune --omit=dev
-
-# ─── Migraciones: `docker compose run --rm migrate` o servicio previo al arranque ───
-FROM deps AS migrate
 CMD ["npx", "prisma", "migrate", "deploy"]
+
+# ─── Compilación: CSS de Tailwind (minificado) + TypeScript ───
+FROM tools AS build
+RUN npm run build && npm prune --omit=dev --no-audit --no-fund
 
 # ─── Ejecución ───
 FROM node:24-alpine AS runtime

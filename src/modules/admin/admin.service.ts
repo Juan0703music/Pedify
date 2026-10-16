@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import { prisma } from "../../config/database.js";
+import { environmentName, isProduction } from "../../config/env.js";
+import { productionWarnings } from "../../config/readiness.js";
 import { clock } from "../../utils/clock.js";
 import { notFound } from "../../utils/errors.js";
 import { logger } from "../../utils/logger.js";
@@ -39,6 +41,9 @@ export const adminService = {
         uptimeSeconds: Math.round(process.uptime()),
         memoryMb: Math.round(process.memoryUsage().rss / 1_048_576),
         dbLatencyMs,
+        environment: environmentName,
+        /** Configuración pendiente para operar en producción (vacía en desarrollo). */
+        warnings: isProduction ? productionWarnings() : [],
       },
     };
   },

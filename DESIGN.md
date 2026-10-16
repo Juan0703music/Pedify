@@ -54,7 +54,8 @@ Una sola familia: **Archivo** variable (peso 100–900, ancho 62–125 %), autoa
 - **Gráficas** (`.chart-bar`, `.chart-tooltip`): columnas de máx. 24 px con 4 px redondeados arriba y base recta, cuadrícula de 1 px en `line`, valor solo en el punto más alto, tooltip tinta con el valor primero, y "Ver como tabla".
 - **Aviso de suscripción** (franja bajo el encabezado del panel): mostaza claro si la prueba termina en ≤ 5 días, mostaza si venció y está en gracia, tomate si la tienda ya no recibe pedidos; botón tinta "Ver planes"/"Renovar plan" solo para el propietario.
 - **Mi plan**: tarjeta tinta con el nombre del plan en `.display` y el precio en mostaza; medidores de uso (pista `mustard-soft`, relleno `chart`, tomate al 90 %); planes en tarjetas con el actual resaltado.
-- **Panel central** (`/admin`): encabezado tinta con la insignia "Administración", indicadores en tarjetas y tabla de negocios con insignias de estado.
+- **Panel central** (`/admin`): encabezado tinta con la insignia "Administración", indicadores en tarjetas y tabla de negocios con insignias de estado. Si falta configuración del servidor, recuadro mostaza claro "Pendiente de configurar en el servidor" con la lista.
+- **Entorno de pruebas** (`.staging-flag`, solo con `APP_ENV=staging`): cinta de obra de 4 px (rayas mostaza y tinta a 45°) fija arriba y una etiqueta tinta con "ENTORNO DE PRUEBAS" en mostaza colgando al centro. No ocupa espacio ni recibe clics; el título de la pestaña empieza por "[Pruebas]".
 - **Fichas de categoría** (`.cat-chip`) en la tienda: barra fija desplazable; la activa en tinta.
 - **Íconos**: Lucide (trazo 2 px) desde `public/assets/icons/sprite.svg` con `icon(nombre)`; nunca emojis ni glifos.
 

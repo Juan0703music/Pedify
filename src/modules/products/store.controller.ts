@@ -1,24 +1,10 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { NextFunction, Request, Response } from "express";
-import { env, isProduction } from "../../config/env.js";
+import { env } from "../../config/env.js";
 import { escapeHtml } from "../../utils/html.js";
+import { markEnvironment, readPage } from "../../utils/pages.js";
 import { storeUrl } from "../businesses/businesses.controller.js";
 import type { StoreParams } from "./store.routes.js";
 import { storeService } from "./store.service.js";
-
-const templatePath = fileURLToPath(new URL("../../../public/pages/store/index.html", import.meta.url));
-let cachedTemplate: string | null = null;
-
-/** En producción la plantilla se lee una vez; en desarrollo, en cada visita (para ver cambios). */
-async function storeTemplate(): Promise<string> {
-  if (cachedTemplate) return cachedTemplate;
-  const template = await readFile(templatePath, "utf8");
-  if (isProduction) cachedTemplate = template;
-  return template;
-}
-
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -62,11 +48,11 @@ export const storeController = {
       .filter(Boolean)
       .join("\n    ");
 
-    const html = (await storeTemplate())
+    const html = (await readPage("pages/store/index.html"))
       .replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(`${business.name} · Menú`)}</title>`)
       .replace("<!--store-meta-->", meta);
 
     res.set("Cache-Control", "public, max-age=60");
-    res.type("html").send(html);
+    res.type("html").send(markEnvironment(html));
   },
 };

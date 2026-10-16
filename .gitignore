@@ -22,3 +22,6 @@ uploads/
 
 # Copias de seguridad locales (npm run db:backup)
 backups/
+
+# Historial de despliegues en el servidor (scripts/deploy.sh)
+.deploy/

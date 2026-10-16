@@ -1,13 +1,12 @@
 import { readFileSync } from "node:fs";
 import { timingSafeEqual } from "node:crypto";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import express, { Router, type RequestHandler } from "express";
 import helmet from "helmet";
 import { z } from "zod";
 import { corsMiddleware, originGuard } from "./config/cors.js";
 import { prisma } from "./config/database.js";
-import { env, isProduction } from "./config/env.js";
+import { env, environmentName, isProduction, isStaging } from "./config/env.js";
 import { apiNotFound, errorHandler } from "./middlewares/errorHandler.js";
 import { apiLimiter } from "./middlewares/rateLimiter.js";
 import { requestContext } from "./middlewares/requestContext.js";
@@ -24,11 +23,10 @@ import { storeRoutes } from "./modules/products/store.routes.js";
 import { subscriptionRoutes } from "./modules/subscriptions/subscriptions.routes.js";
 import { metrics } from "./services/metrics.service.js";
 import { imageOrigin } from "./services/storage.service.js";
+import { publicDir, sendPage } from "./utils/pages.js";
 
 // Mensajes de validación de Zod en español por defecto.
 z.config(z.locales.es());
-
-const publicDir = fileURLToPath(new URL("../public", import.meta.url));
 
 /** Páginas del frontend con URLs limpias → archivo dentro de public/. */
 const PUBLIC_PAGES: Record<string, string> = {
@@ -55,6 +53,13 @@ const PANEL_PAGES: Record<string, string> = {
 
 const version = (JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string }).version;
 
+/**
+ * robots.txt: el entorno de pruebas no se indexa; en producción solo las tiendas y las páginas públicas.
+ */
+const ROBOTS = isStaging
+  ? "User-agent: *\nDisallow: /\n"
+  : ["User-agent: *", "Disallow: /panel", "Disallow: /admin", "Disallow: /api/", "Disallow: /restablecer", ""].join("\n");
+
 /** /metrics (Prometheus): solo con `Authorization: Bearer <METRICS_TOKEN>`; sin token configurado, no existe. */
 const metricsEndpoint: RequestHandler = (req, res, next) => {
   if (!env.METRICS_TOKEN) return next();
@@ -78,12 +83,16 @@ function apiRouter(): Router {
         data: {
           status: "ok",
           version,
+          environment: environmentName,
           uptimeSeconds: Math.round(process.uptime()),
           database: { status: "ok", latencyMs: Math.round(performance.now() - started) },
         },
       });
     } catch {
-      res.status(503).set("Cache-Control", "no-store").json({ data: { status: "error", version, database: { status: "error" } } });
+      res
+        .status(503)
+        .set("Cache-Control", "no-store")
+        .json({ data: { status: "error", version, environment: environmentName, database: { status: "error" } } });
     }
   });
 
@@ -122,7 +131,14 @@ export function createApp() {
     }),
   );
   app.use(requestContext);
+  if (isStaging) {
+    app.use((_req, res, next) => {
+      res.set("X-Robots-Tag", "noindex, nofollow");
+      next();
+    });
+  }
   app.get("/metrics", metricsEndpoint);
+  app.get("/robots.txt", (_req, res) => res.type("text").set("Cache-Control", "public, max-age=3600").send(ROBOTS));
 
   // ─── API ───
   app.use(
@@ -137,15 +153,18 @@ export function createApp() {
 
   // ─── Páginas ───
   for (const [route, file] of Object.entries(PUBLIC_PAGES)) {
-    app.get(route, (_req, res) => res.sendFile(path.join(publicDir, file)));
+    app.get(route, async (_req, res) => {
+      res.set("Cache-Control", "no-cache");
+      await sendPage(res, file);
+    });
   }
   for (const [route, file] of Object.entries(PANEL_PAGES)) {
-    app.get(route, (req, res) => {
+    app.get(route, async (req, res) => {
       if (!readSessionToken(req.headers.cookie)) {
         return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
       }
       res.set("Cache-Control", "no-store");
-      res.sendFile(path.join(publicDir, file));
+      await sendPage(res, file);
     });
   }
 
@@ -160,8 +179,8 @@ export function createApp() {
 
   app.use(express.static(publicDir, { index: false, maxAge: isProduction ? "1h" : 0 }));
 
-  app.use((_req, res) => {
-    res.status(404).sendFile(path.join(publicDir, "404.html"));
+  app.use(async (_req, res) => {
+    await sendPage(res, "404.html", 404);
   });
 
   app.use(errorHandler);

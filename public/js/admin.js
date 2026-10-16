@@ -46,7 +46,15 @@ function metricsView(metrics) {
       <span>Versión ${system.version} · Node ${system.nodeVersion}</span>
       <span>Memoria ${system.memoryMb} MB</span>
       <span>Base de datos ${system.dbLatencyMs} ms</span>
-    </p>`;
+      ${system.environment === "staging" ? html`<span class="badge bg-ink text-mustard">Entorno de pruebas</span>` : ""}
+    </p>
+    ${system.warnings?.length
+      ? html`<div class="rounded-[12px] border border-mustard-press bg-mustard-soft px-4 py-3 text-mustard-deep" role="status">
+          <p class="flex items-center gap-2 font-[720]">${icon("circle-alert", "h-4 w-4")} Pendiente de configurar en el servidor</p>
+          <ul class="mt-1.5 grid list-disc gap-1 pl-6 text-sm">${system.warnings.map((warning) => html`<li>${warning}</li>`)}</ul>
+          <p class="mt-2 text-sm">Guía: docs/deployment.md</p>
+        </div>`
+      : ""}`;
 }
 
 function statusBadge(status) {

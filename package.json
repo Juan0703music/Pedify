@@ -15,6 +15,7 @@
     "build:css": "tailwindcss -i src/styles/app.css -o public/css/app.css --minify",
     "build:api": "prisma generate && tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
+    "smoke": "tsx scripts/smoke.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",

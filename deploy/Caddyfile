@@ -1,0 +1,13 @@
+# PedifyAI — proxy con HTTPS automático (certificado de Let's Encrypt que Caddy renueva solo).
+# El dominio sale de DOMAIN en .env. Con DOMAIN=localhost, Caddy usa un certificado local para probar.
+# El panel en vivo usa WebSocket (/socket.io/): Caddy lo reenvía sin configuración adicional.
+
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
+
+# www.tudominio.com → tudominio.com (crea también el registro DNS de www antes de activarlo):
+# www.{$DOMAIN} {
+# 	redir https://{$DOMAIN}{uri} permanent
+# }

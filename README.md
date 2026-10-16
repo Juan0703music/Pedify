@@ -13,6 +13,7 @@ Arquitectura: **monolito modular** con Node.js + Express + TypeScript, PostgreSQ
 | 3. Pedidos | Carrito, direcciones, costos y WhatsApp | ✅ Lista |
 | 4. Operación | Panel en vivo, estados, notificaciones y analíticas | ✅ Lista |
 | 5. Comercialización | Suscripciones, monitoreo, copias y mejoras | ✅ Lista |
+| Puesta en producción | Despliegue con HTTPS, entorno de pruebas, verificación y piloto (secciones 13, 15 y 16) | ✅ Lista para un servidor |
 
 ### Incluido en la fase 1
 
@@ -68,6 +69,17 @@ Arquitectura: **monolito modular** con Node.js + Express + TypeScript, PostgreSQ
 - **Datos personales** (Ley 1581): autorización registrada al crear la cuenta, aviso al cliente antes de enviar su pedido, página `/privacidad` (borrador por completar) y supresión de los datos de un cliente desde el panel.
 - 123 pruebas en total (19 nuevas). Guía de operación: [`docs/operations.md`](docs/operations.md).
 
+### Incluido en la puesta en producción
+
+- **Stack de servidor** (`docker-compose.yml`): Caddy con **HTTPS automático** (Let's Encrypt) y compresión → app → PostgreSQL sin puertos expuestos; contraseñas obligatorias; registros de Docker con rotación; copias diarias con prueba de restauración y copia **fuera del servidor** (rclone a Cloudflare R2/S3, opcional).
+- **Despliegue** (`scripts/deploy.sh`): revisa `.env`, construye, hace una copia antes de migrar, aplica migraciones, arranca, espera la salud, verifica desde afuera y **vuelve sola a la versión anterior** si la nueva no queda sana. `rollback` y `status`. Conserva las últimas 5 versiones.
+- **Verificación** (`npm run smoke -- https://dominio`): salud, cabeceras de seguridad, HTTPS y certificado, CSS de producción, rutas protegidas, `robots.txt` y WebSocket a través del proxy. Solo lee.
+- **Entorno de pruebas** (`APP_ENV=staging`): franja «Entorno de pruebas» en todas las páginas, «[Pruebas]» en títulos y correos, sin indexar; el seed de demostración solo corre ahí (con `DEMO_PASSWORD`), nunca en producción.
+- **Configuración pendiente**: al arrancar en producción se avisa lo que falta (HTTPS, proxy, S3, correo, WhatsApp de soporte, métricas) y el panel central lo muestra.
+- **Integración continua** (`.github/workflows/ci.yml`): tipos, pruebas y compilación; luego un despliegue completo con Docker, verificación por HTTPS, copia con restauración, segundo despliegue y reversión.
+- Cierre ordenado ante `SIGTERM` y reinicio limpio ante errores no controlados; `robots.txt` para producción.
+- 131 pruebas en total (8 nuevas). Guía paso a paso del servidor, el entorno de pruebas y el piloto con un negocio real: [`docs/deployment.md`](docs/deployment.md).
+
 ## Requisitos
 
 - Node.js 22.12 o superior (probado con Node 24).
@@ -97,6 +109,7 @@ Las fotos se guardan en `uploads/` en desarrollo. En producción se recomienda `
 | `npm run dev` | Servidor con recarga (`tsx watch`) + Tailwind en modo observación |
 | `npm run build` | Compila el CSS (minificado) y el TypeScript a `dist/` |
 | `npm start` | Ejecuta la versión compilada |
+| `npm run smoke -- <url>` | Verifica un despliegue (solo lectura) |
 | `npm test` | Pruebas; levanta un PostgreSQL temporal (o usa `TEST_DATABASE_URL`) |
 | `npm run typecheck` | Verificación de tipos de todo el proyecto |
 | `npm run db:start` | PostgreSQL embebido para desarrollo |
@@ -111,18 +124,21 @@ Las fotos se guardan en `uploads/` en desarrollo. En producción se recomienda `
 
 Los íconos (Lucide) y la fuente (Archivo) se generan en `public/assets` con `npx tsx scripts/build-assets.ts`.
 
-## Docker
+## Producción (Docker)
 
 ```bash
-docker compose up --build
+cp deploy/env.example .env   # en el servidor: dominio, contraseñas, R2, correo…
+scripts/deploy.sh            # construye, copia, migra, arranca y verifica
 ```
 
-Levanta PostgreSQL, aplica las migraciones (servicio `migrate`) y arranca la aplicación en `http://localhost:3000`. En un servidor con HTTPS define `APP_URL`, `COOKIE_SECURE=true` y `TRUST_PROXY=1`. Las fotos quedan en el volumen `uploads`; para guardarlas en S3 define `STORAGE_DRIVER=s3` y las variables `S3_*`. Detrás de Nginx u otro proxy, habilita WebSocket en `/socket.io/` (cabeceras `Upgrade` y `Connection`) para los pedidos en vivo.
+Caddy sirve el dominio con HTTPS automático y reenvía el WebSocket del panel en vivo. Paso a paso (servidor, DNS, R2, entorno de pruebas, actualizar, revertir, copias, monitoreo y piloto): [`docs/deployment.md`](docs/deployment.md).
 
 ## Estructura
 
 ```
 prisma/            esquema, migraciones y seed
+deploy/            Caddyfile y plantilla del .env del servidor
+scripts/           base local, copias, administradores, despliegue y verificación
 src/
   config/          entorno, base de datos, CORS, socket (Socket.IO)
   middlewares/     authenticate, authorize, validate, errorHandler, rateLimiter, upload
@@ -136,4 +152,4 @@ tests/             pruebas de la API
 docs/              arquitectura, base de datos y API
 ```
 
-Documentación: [operación](docs/operations.md) · [arquitectura](docs/architecture.md) · [base de datos](docs/database.md) · [API](docs/api.md) · [sistema visual](DESIGN.md).
+Documentación: [puesta en producción](docs/deployment.md) · [operación](docs/operations.md) · [arquitectura](docs/architecture.md) · [base de datos](docs/database.md) · [API](docs/api.md) · [sistema visual](DESIGN.md).

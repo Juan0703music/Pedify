@@ -1,5 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
-import { env, isProduction, isTest } from "../config/env.js";
+import { env, isProduction, isStaging, isTest } from "../config/env.js";
 import { logger } from "../utils/logger.js";
 
 /**
@@ -8,6 +8,7 @@ import { logger } from "../utils/logger.js";
  * - Sin SMTP_URL en desarrollo: el mensaje se muestra en el registro del servidor para poder probar.
  * - Sin SMTP_URL en producción: no se envía y se registra una advertencia (nunca el enlace).
  * - En pruebas: los correos quedan en `mailer.outbox`.
+ * - En el entorno de pruebas (APP_ENV=staging), el asunto empieza por "[Pruebas]".
  */
 export interface Mail {
   to: string;
@@ -22,7 +23,8 @@ const getTransport = () => (transport ??= nodemailer.createTransport(env.SMTP_UR
 export const mailer = {
   outbox: [] as Mail[],
 
-  async send(mail: Mail): Promise<void> {
+  async send(original: Mail): Promise<void> {
+    const mail = isStaging ? { ...original, subject: `[Pruebas] ${original.subject}` } : original;
     if (isTest) {
       mailer.outbox.push(mail);
       return;

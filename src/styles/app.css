@@ -900,6 +900,35 @@
   }
 }
 
+/* Entorno de pruebas (APP_ENV=staging): cinta de obra arriba y una etiqueta. No ocupa espacio ni bloquea clics. */
+.staging-flag {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2147483000;
+  width: fit-content;
+  margin-inline: auto;
+  padding: 6px 10px 3px;
+  border-radius: 0 0 8px 8px;
+  background: var(--color-ink);
+  color: var(--color-mustard);
+  font-size: 0.6875rem;
+  font-weight: 760;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.staging-flag::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: 4px;
+  background: repeating-linear-gradient(-45deg, var(--color-mustard) 0 8px, var(--color-ink) 8px 16px);
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;

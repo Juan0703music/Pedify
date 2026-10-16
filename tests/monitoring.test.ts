@@ -14,7 +14,23 @@ describe("Monitoreo", () => {
 
   it("la salud informa la base de datos, la versión y el tiempo en línea", async () => {
     const res = await request(app).get("/api/v1/health").expect(200);
-    expect(res.body.data).toMatchObject({ status: "ok", version: expect.any(String), database: { status: "ok", latencyMs: expect.any(Number) } });
+    expect(res.body.data).toMatchObject({
+      status: "ok",
+      version: expect.any(String),
+      environment: "test",
+      database: { status: "ok", latencyMs: expect.any(Number) },
+    });
+  });
+
+  it("en producción robots.txt deja indexar las tiendas pero no el panel, y no hay franja de pruebas", async () => {
+    const robots = await request(app).get("/robots.txt").expect(200);
+    expect(robots.text).toContain("Disallow: /panel");
+    expect(robots.text).toContain("Disallow: /api/");
+    expect(robots.text).not.toMatch(/^Disallow: \/$/m);
+    const landing = await request(app).get("/").expect(200);
+    expect(landing.headers["x-robots-tag"]).toBeUndefined();
+    expect(landing.text).not.toContain("staging-flag");
+    expect(landing.text).not.toContain("[Pruebas]");
   });
 
   it("las métricas Prometheus exigen el token", async () => {

@@ -11,3 +11,5 @@ public/css/app.css
 src/generated
 *.log
 backups
+.deploy
+.github

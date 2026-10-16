@@ -13,6 +13,9 @@ const optional = <T extends z.ZodType>(schema: T) =>
 const EnvSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    // Con NODE_ENV=production: el servicio real (production) o el entorno de pruebas (staging).
+    // En staging las páginas muestran "Entorno de pruebas" y los buscadores no las indexan.
+    APP_ENV: z.enum(["production", "staging"]).default("production"),
     PORT: z.coerce.number().int().positive().default(3000),
     APP_URL: z.url().default("http://localhost:3000"),
     CORS_ORIGINS: z
@@ -71,3 +74,6 @@ if (!parsed.success) {
 export const env = parsed.data;
 export const isProduction = env.NODE_ENV === "production";
 export const isTest = env.NODE_ENV === "test";
+export const isStaging = env.APP_ENV === "staging";
+/** Nombre del entorno para la salud y los registros: development, test, production o staging. */
+export const environmentName = env.NODE_ENV === "production" ? env.APP_ENV : env.NODE_ENV;

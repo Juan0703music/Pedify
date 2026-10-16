@@ -3,9 +3,11 @@
  *
  * Crea el comerciante demo, su negocio "Sabores del Caribe" (Sincelejo) y su menú.
  * Es idempotente: no duplica el usuario ni el menú si ya existen.
+ * En el entorno de pruebas (APP_ENV=staging) también se puede usar, con DEMO_PASSWORD definida
+ * (ese servidor es público: la contraseña de ejemplo no sirve allí). En producción no se ejecuta.
  */
 import { prisma } from "../src/config/database.js";
-import { isProduction } from "../src/config/env.js";
+import { isProduction, isStaging } from "../src/config/env.js";
 import { authRepository } from "../src/modules/auth/auth.repository.js";
 import { hashPassword } from "../src/modules/auth/password.js";
 import { businessesService } from "../src/modules/businesses/businesses.service.js";
@@ -13,7 +15,7 @@ import { calculateOrder } from "../src/services/pricing.service.js";
 import { addDays, dateIn, startOfDay } from "../src/utils/dates.js";
 
 const DEMO_EMAIL = "demo@pedifyai.com";
-const DEMO_PASSWORD = "pedifyai123";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "pedifyai123";
 const DEMO_HOURS = Array.from({ length: 7 }, (_, day) => ({ day, closed: day === 1, open: "08:00", close: "23:30" }));
 
 /** Menú de ejemplo; los precios del ejemplo del documento (sección 8): hamburguesa $18.000, bebida $4.000, salchipapa $15.000. */
@@ -221,8 +223,11 @@ async function ensureDemoOrders(businessId: string): Promise<number> {
 }
 
 async function main() {
-  if (isProduction) {
+  if (isProduction && !isStaging) {
     throw new Error("El seed de demostración no se ejecuta en producción.");
+  }
+  if (isProduction && (!process.env.DEMO_PASSWORD || process.env.DEMO_PASSWORD.length < 10)) {
+    throw new Error("En el entorno de pruebas define DEMO_PASSWORD (mínimo 10 caracteres) para la cuenta de demostración.");
   }
 
   const existing = await authRepository.findUserByEmail(DEMO_EMAIL);
@@ -271,7 +276,7 @@ async function main() {
 
   console.log("Datos de demostración creados:");
   console.log(`  Correo:     ${DEMO_EMAIL}`);
-  console.log(`  Contraseña: ${DEMO_PASSWORD}`);
+  console.log(`  Contraseña: ${process.env.DEMO_PASSWORD ? "la de DEMO_PASSWORD" : DEMO_PASSWORD}`);
   console.log(`  Negocio:    Sabores del Caribe (/tienda/${business.slug}), ${products} productos, ${orders} pedidos de ejemplo`);
 }
 

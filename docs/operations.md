@@ -1,13 +1,13 @@
 # Operación en producción
 
-Guía para desplegar, vigilar y respaldar PedifyAI (fase 5 del documento: suscripciones, monitoreo, copias y mejoras; secciones 12, 13 y 15).
+Guía para operar, vigilar y respaldar PedifyAI (fase 5 del documento: suscripciones, monitoreo, copias y mejoras; secciones 12, 13 y 15). La instalación del servidor paso a paso está en [`deployment.md`](deployment.md).
 
 ## 1. Antes de comercializar
 
-La sección 15 pide implementar **y probar** migraciones, validaciones, controles de acceso, gestión de secretos, copias de seguridad y procedimientos de despliegue. Lista de verificación:
+La sección 15 pide implementar **y probar** migraciones, validaciones, controles de acceso, gestión de secretos, copias de seguridad y procedimientos de despliegue. Lista de verificación (el recuadro «Pendiente de configurar» de `/admin` revisa varias automáticamente):
 
-- [ ] Dominio con HTTPS (`APP_URL=https://…`, `COOKIE_SECURE=true`, `TRUST_PROXY=1` detrás del proxy).
-- [ ] Proxy con WebSocket habilitado en `/socket.io/` (cabeceras `Upgrade` y `Connection`).
+- [ ] Dominio con HTTPS: con `docker-compose.yml`, Caddy obtiene y renueva el certificado y ya fija `COOKIE_SECURE=true` y `TRUST_PROXY=1`.
+- [ ] WebSocket a través del proxy (`npm run smoke -- https://tu-dominio` lo verifica).
 - [ ] Secretos solo en variables de entorno (nunca en el repositorio): `DATABASE_URL`, `SMTP_URL`, `S3_*`, `METRICS_TOKEN`.
 - [ ] Imágenes en almacenamiento externo (`STORAGE_DRIVER=s3`) con el bucket **versionado**.
 - [ ] Correo configurado (`SMTP_URL`) y probada la recuperación de contraseña.
@@ -16,14 +16,16 @@ La sección 15 pide implementar **y probar** migraciones, validaciones, controle
 - [ ] Monitoreo de `/api/v1/health` y de `/metrics` (ver 5).
 - [ ] Política de tratamiento de datos (`/privacidad`) completada con razón social, NIT, dirección y correo, y revisada por un abogado (Ley 1581 de 2012).
 - [ ] Un administrador de la plataforma asignado (ver 3).
-- [ ] Entorno de pruebas separado de producción (otra base de datos y otro dominio).
+- [ ] Entorno de pruebas separado de producción: otro servidor, otra base, otros buckets y `APP_ENV=staging` ([`deployment.md`](deployment.md), sección 7).
+- [ ] Piloto con un negocio real ([`deployment.md`](deployment.md), sección 12).
 
 ## 2. Variables de entorno
 
-Todas están documentadas en [`.env.example`](../.env.example). Las nuevas de la fase 5:
+En desarrollo están en [`.env.example`](../.env.example); en el servidor, en [`deploy/env.example`](../deploy/env.example). Las de la fase 5 y la puesta en producción:
 
 | Variable | Para qué |
 |---|---|
+| `APP_ENV` | `production` o `staging` (entorno de pruebas: franja visible, «[Pruebas]» en títulos y correos, sin indexar). |
 | `SMTP_URL`, `MAIL_FROM` | Correos de recuperación de contraseña. Sin `SMTP_URL`, en desarrollo el enlace aparece en el registro; en producción no se envía (y se registra una advertencia). |
 | `SUPPORT_WHATSAPP` | WhatsApp del equipo (57XXXXXXXXXX). Lo usan "Mi plan" y los botones de pago. |
 | `METRICS_TOKEN` | Activa `/metrics` (mínimo 16 caracteres). Sin token, la ruta no existe. |
@@ -46,20 +48,22 @@ Todas están documentadas en [`.env.example`](../.env.example). Las nuevas de la
 
 ### Docker (recomendado en el servidor)
 
-El servicio `backup` de `docker-compose.yml` ejecuta [`scripts/docker-backup.sh`](../scripts/docker-backup.sh) cada 24 horas:
+El servicio `backup` de `docker-compose.yml` ejecuta [`scripts/docker-backup.sh`](../scripts/docker-backup.sh) cada 24 horas (y `scripts/deploy.sh` lo ejecuta una vez antes de cada migración: `docker compose run --rm backup once`):
 
 1. `pg_dump` en formato personalizado al volumen `backups`.
 2. **Prueba de restauración**: restaura la copia en una base temporal, compara los pedidos y la borra. El resultado queda en el registro (`docker compose logs backup`).
 3. Copia de las fotos (volumen `uploads`).
 4. Conserva `BACKUP_KEEP_DAYS` días (14 por defecto).
 
-Sincroniza el volumen `backups` con un almacenamiento externo (por ejemplo `rclone sync` a S3/R2): una copia en el mismo servidor no protege contra la pérdida del servidor.
+El servicio opcional `offsite` (`COMPOSE_PROFILES=offsite` en `.env`) sube las copias a un bucket de R2/S3 cada 6 horas: una copia en el mismo servidor no protege contra la pérdida del servidor.
 
 Restaurar una copia de Docker en una base nueva:
 
 ```bash
 docker compose exec backup sh -c 'createdb pedifyai_restaurada && pg_restore --no-owner -d pedifyai_restaurada /backups/pedifyai-AAAAMMDDHHMMSS.dump'
 ```
+
+Restaurar sobre la base en uso (después de un despliegue fallido) y recuperar un servidor perdido: [`deployment.md`](deployment.md), secciones 9 y 10.
 
 ### Sin Docker (`npm`)
 
@@ -96,11 +100,9 @@ Alertas sugeridas: salud distinta de 200 por más de 2 minutos; tasa de respuest
 ## 7. Desplegar una versión nueva
 
 ```bash
-git pull
-docker compose build
-docker compose run --rm migrate   # aplica migraciones pendientes
-docker compose up -d app
-curl -fsS https://tu-dominio/api/v1/health
+scripts/deploy.sh            # git pull, imágenes, copia, migraciones, arranque, verificación (y reversión si no queda sana)
+scripts/deploy.sh rollback   # vuelve a la versión anterior
+scripts/deploy.sh status     # servicios, salud, último despliegue y última copia
 ```
 
-Antes de migrar en producción: copia de seguridad reciente y verificada. Las migraciones se prueban primero en el entorno de pruebas.
+Primero en el entorno de pruebas y después en producción. Las migraciones deben ser compatibles con la versión anterior del código (detalles en [`deployment.md`](deployment.md), sección 8).
