@@ -1,0 +1,117 @@
+import { readFileSync } from "node:fs";
+import { prisma } from "../../config/database.js";
+import { clock } from "../../utils/clock.js";
+import { notFound } from "../../utils/errors.js";
+import { logger } from "../../utils/logger.js";
+import { buildPage } from "../../utils/pagination.js";
+import { storeUrl } from "../businesses/businesses.controller.js";
+import { planOf, PLANS } from "../subscriptions/plans.js";
+import { addMonths, subscriptionState } from "../subscriptions/subscription-state.js";
+import { subscriptionsRepository } from "../subscriptions/subscriptions.repository.js";
+import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
+import { adminRepository } from "./admin.repository.js";
+import type { ListBusinessesQuery, RecordPaymentInput, UpdateBusinessAdminInput } from "./admin.schemas.js";
+
+const DAY = 86_400_000;
+const version = (JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")) as { version: string }).version;
+
+const latest = (...dates: (Date | null | undefined)[]) =>
+  new Date(Math.max(...dates.filter((date): date is Date => Boolean(date)).map((date) => date.getTime())));
+
+export const adminService = {
+  /** Métricas globales de la plataforma y estado del sistema. */
+  async metrics() {
+    const now = clock.now();
+    const started = performance.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const dbLatencyMs = Math.round(performance.now() - started);
+    const [businesses, orders] = await Promise.all([adminRepository.businessMetrics(now), adminRepository.orderMetrics(now)]);
+    const mrr = (businesses?.activeEmprendedor ?? 0) * PLANS.EMPRENDEDOR.priceMonthly + (businesses?.activeNegocio ?? 0) * PLANS.NEGOCIO.priceMonthly;
+    return {
+      businesses,
+      orders,
+      /** Ingreso mensual recurrente estimado con los precios de lista de las suscripciones activas. */
+      mrr,
+      plans: Object.values(PLANS),
+      system: {
+        version,
+        nodeVersion: process.version,
+        uptimeSeconds: Math.round(process.uptime()),
+        memoryMb: Math.round(process.memoryUsage().rss / 1_048_576),
+        dbLatencyMs,
+      },
+    };
+  },
+
+  async listBusinesses(query: ListBusinessesQuery) {
+    const { items, total } = await adminRepository.listBusinesses({
+      now: clock.now(),
+      search: query.search,
+      status: query.status,
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    });
+    return buildPage(items, total, query);
+  },
+
+  async getBusiness(id: string) {
+    const business = await adminRepository.findBusiness(id);
+    if (!business) throw notFound("No encontramos ese negocio.");
+    const [{ subscription, plan, state }, payments] = await Promise.all([
+      subscriptionsService.current(id),
+      subscriptionsRepository.listPayments(id),
+    ]);
+    return {
+      ...business,
+      storeUrl: storeUrl(business.slug),
+      subscription: { ...subscription, planName: plan.name, priceMonthly: plan.priceMonthly, ...state },
+      payments,
+    };
+  },
+
+  /** Suspender o reactivar, cambiar de plan o ampliar la prueba. */
+  async updateBusiness(adminId: string, id: string, input: UpdateBusinessAdminInput) {
+    const { subscription } = await subscriptionsService.current(id);
+    await prisma.$transaction(async (tx) => {
+      if (input.status) await tx.business.update({ where: { id }, data: { status: input.status } });
+      const changes: { plan?: typeof subscription.plan; trialEndsAt?: Date } = {};
+      if (input.plan) changes.plan = input.plan;
+      if (input.extendTrialDays) changes.trialEndsAt = new Date(latest(clock.now(), subscription.trialEndsAt).getTime() + input.extendTrialDays * DAY);
+      if (Object.keys(changes).length > 0) await subscriptionsRepository.update(id, changes, tx);
+    });
+    logger.info({ adminId, businessId: id, changes: input }, "Cambio administrativo en un negocio");
+    return adminService.getBusiness(id);
+  },
+
+  /**
+   * Registra un pago recibido (Nequi, transferencia…) y extiende la suscripción desde la fecha
+   * más tardía entre hoy, el fin de lo ya pagado y el fin de la prueba (no se pierden días).
+   */
+  async recordPayment(adminId: string, id: string, input: RecordPaymentInput) {
+    const { subscription } = await subscriptionsService.current(id);
+    const plan = planOf(input.plan ?? subscription.plan);
+    const periodStart = latest(clock.now(), subscription.paidUntil, subscription.trialEndsAt);
+    const periodEnd = addMonths(periodStart, input.months);
+    await prisma.$transaction(async (tx) => {
+      await subscriptionsRepository.update(id, { plan: plan.code, paidUntil: periodEnd }, tx);
+      await subscriptionsRepository.createPayment(
+        {
+          businessId: id,
+          plan: plan.code,
+          amount: input.amount ?? plan.priceMonthly * input.months,
+          months: input.months,
+          method: input.method,
+          reference: input.reference || null,
+          note: input.note || null,
+          periodStart,
+          periodEnd,
+          recordedById: adminId,
+        },
+        tx,
+      );
+    });
+    logger.info({ adminId, businessId: id, plan: plan.code, months: input.months }, "Pago de suscripción registrado");
+    const updated = await adminService.getBusiness(id);
+    return { ...updated, subscription: { ...updated.subscription, ...subscriptionState(updated.subscription, clock.now()) } };
+  },
+};

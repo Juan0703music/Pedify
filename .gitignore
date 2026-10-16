@@ -1,0 +1,24 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+
+# Cliente generado por Prisma
+src/generated/
+
+# CSS compilado por Tailwind (se genera con `npm run build:css`)
+public/css/app.css
+
+# PostgreSQL embebido para desarrollo local
+.pgdata/
+
+# Imágenes subidas en desarrollo
+uploads/
+
+*.log
+.DS_Store
+
+# Copias de seguridad locales (npm run db:backup)
+backups/

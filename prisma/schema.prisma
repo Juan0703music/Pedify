@@ -1,0 +1,390 @@
+// PedifyAI — modelo de datos multiempresa (multi-tenant).
+// Cada negocio tiene sus propios productos, categorías, clientes, pedidos y configuración.
+// Los nombres de tabla siguen el documento de arquitectura (sección 5).
+// Dinero: enteros en pesos colombianos (COP), sin decimales.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────── Enumeraciones ───────────────────────────────
+
+enum BusinessStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum MembershipRole {
+  OWNER
+  EMPLOYEE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryType {
+  DELIVERY
+  PICKUP
+}
+
+// Planes de PedifyAI (el detalle de precios y límites está en src/modules/subscriptions/plans.ts).
+enum PlanCode {
+  EMPRENDEDOR
+  NEGOCIO
+}
+
+// Qué pedidos cuentan como venta en las analíticas (sección 11 del documento).
+enum SalesPolicy {
+  ACCEPTED // desde que el negocio acepta el pedido (confirmado en adelante)
+  DELIVERED // solo pedidos entregados
+  PAID // solo pedidos marcados como pagados
+}
+
+enum PaymentMethod {
+  CASH
+  NEQUI
+  DAVIPLATA
+  BANK_TRANSFER
+  CARD
+}
+
+// ───────────────────────────── Cuentas y negocios ────────────────────────────
+
+model User {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  name              String
+  email             String    @unique
+  passwordHash      String    @map("password_hash")
+  // Administra la plataforma (panel central de PedifyAI). Solo se asigna por consola.
+  isPlatformAdmin   Boolean   @default(false) @map("is_platform_admin")
+  // Autorización del tratamiento de datos personales (Ley 1581 de 2012) al registrarse.
+  privacyAcceptedAt DateTime? @map("privacy_accepted_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  memberships          BusinessMembership[]
+  sessions             Session[]
+  statusChanges        OrderStatusHistory[]
+  passwordResetTokens  PasswordResetToken[]
+  recordedPayments     SubscriptionPayment[]
+
+  @@map("users")
+}
+
+// Sesiones del panel: el token viaja en una cookie httpOnly y aquí solo se guarda su hash.
+// Permite revocar sesiones (cerrar sesión, cerrar todas, cambio de contraseña).
+model Session {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  tokenHash        String    @unique @map("token_hash")
+  activeBusinessId String?   @map("active_business_id") @db.Uuid
+  userAgent        String?   @map("user_agent")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt       DateTime  @default(now()) @map("last_used_at") @db.Timestamptz(3)
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// Recuperación de contraseña: enlace de un solo uso; aquí solo se guarda el hash del token.
+model PasswordResetToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model Business {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  name            String
+  // Identificador público para la tienda (pedifyai.com/tienda/<slug>). No reemplaza al id interno.
+  slug            String         @unique
+  phone           String
+  status          BusinessStatus @default(ACTIVE)
+  description     String?
+  city            String?
+  address         String?
+  // Imágenes de la tienda: URL pública y clave en el almacenamiento (para reemplazarlas o borrarlas).
+  logoUrl         String?        @map("logo_url")
+  logoKey         String?        @map("logo_key")
+  bannerUrl       String?        @map("banner_url")
+  bannerKey       String?        @map("banner_key")
+  // Consecutivo de pedidos del negocio (Pedido #1, #2, …). Se incrementa dentro de la transacción del pedido.
+  lastOrderNumber Int            @default(0) @map("last_order_number")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  memberships  BusinessMembership[]
+  settings     BusinessSettings?
+  subscription Subscription?
+  payments     SubscriptionPayment[]
+  categories   Category[]
+  products    Product[]
+  customers   Customer[]
+  orders      Order[]
+
+  @@map("businesses")
+}
+
+model BusinessMembership {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  businessId String         @map("business_id") @db.Uuid
+  role       MembershipRole
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+  @@map("business_memberships")
+}
+
+model BusinessSettings {
+  businessId      String          @id @map("business_id") @db.Uuid
+  // Horario semanal: [{ day: 0-6 (0 = domingo), closed, open: "HH:MM", close: "HH:MM" }]
+  openingHours    Json            @map("opening_hours")
+  timezone        String          @default("America/Bogota")
+  // Interruptor manual para pausar la recepción de pedidos.
+  acceptingOrders Boolean         @default(true) @map("accepting_orders")
+  // Número de WhatsApp que recibe los pedidos (celular). Null hasta que el comerciante lo configure.
+  whatsappPhone   String?         @map("whatsapp_phone")
+  deliveryEnabled Boolean         @default(true) @map("delivery_enabled")
+  deliveryFee     Int             @default(0) @map("delivery_fee")
+  deliveryArea    String?         @map("delivery_area")
+  pickupEnabled   Boolean         @default(true) @map("pickup_enabled")
+  minimumOrder    Int             @default(0) @map("minimum_order")
+  paymentMethods  PaymentMethod[] @default([CASH]) @map("payment_methods")
+  salesPolicy     SalesPolicy     @default(ACCEPTED) @map("sales_policy")
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_settings")
+}
+
+// ─────────────────────────────── Suscripciones ───────────────────────────────
+
+// Suscripción del negocio a PedifyAI. El estado (prueba, activa, vencida) se calcula con las fechas:
+// pagado hasta `paid_until`; si no, prueba hasta `trial_ends_at`; luego unos días de gracia.
+model Subscription {
+  businessId  String    @id @map("business_id") @db.Uuid
+  plan        PlanCode  @default(NEGOCIO)
+  trialEndsAt DateTime  @map("trial_ends_at") @db.Timestamptz(3)
+  paidUntil   DateTime? @map("paid_until") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// Pagos de la suscripción registrados por el equipo de PedifyAI (transferencia, Nequi…).
+model SubscriptionPayment {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  businessId   String   @map("business_id") @db.Uuid
+  plan         PlanCode
+  amount       Int
+  months       Int
+  method       String
+  reference    String?
+  note         String?
+  periodStart  DateTime @map("period_start") @db.Timestamptz(3)
+  periodEnd    DateTime @map("period_end") @db.Timestamptz(3)
+  recordedById String?  @map("recorded_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  recordedBy User?    @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@map("subscription_payments")
+}
+
+// ───────────────────────────────── Catálogo ──────────────────────────────────
+
+model Category {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  name       String
+  position   Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([businessId, name])
+  @@index([businessId, position])
+  @@map("categories")
+}
+
+model Product {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  businessId  String    @map("business_id") @db.Uuid
+  categoryId  String?   @map("category_id") @db.Uuid
+  name        String
+  description String?
+  price       Int
+  // Foto del producto: URL pública y clave en el almacenamiento compatible con S3.
+  imageUrl    String?   @map("image_url")
+  imageKey    String?   @map("image_key")
+  // Visible en la tienda (activar / desactivar).
+  isActive    Boolean   @default(true) @map("is_active")
+  // Disponible para pedir; false = agotado.
+  isAvailable Boolean   @default(true) @map("is_available")
+  position    Int       @default(0)
+  // Los productos que aparecen en pedidos históricos se archivan en lugar de eliminarse.
+  archivedAt  DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category   Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  orderItems OrderItem[]
+
+  @@unique([id, businessId])
+  @@index([businessId, categoryId, position])
+  @@map("products")
+}
+
+// ─────────────────────────────── Clientes ────────────────────────────────────
+
+model Customer {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  name       String
+  phone      String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business  Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  addresses CustomerAddress[]
+  orders    Order[]
+
+  @@unique([businessId, phone])
+  @@unique([id, businessId])
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  address    String
+  references String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+// ──────────────────────────────── Pedidos ────────────────────────────────────
+
+model Order {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  businessId        String         @map("business_id") @db.Uuid
+  customerId        String         @map("customer_id") @db.Uuid
+  number            Int
+  status            OrderStatus    @default(PENDING)
+  deliveryType      DeliveryType   @map("delivery_type")
+  // Copia de los datos del cliente al momento del pedido.
+  customerName      String         @map("customer_name")
+  customerPhone     String         @map("customer_phone")
+  deliveryAddress   String?        @map("delivery_address")
+  addressReferences String?        @map("address_references")
+  notes             String?
+  paymentMethod     PaymentMethod? @map("payment_method")
+  // Valores calculados en el backend, nunca tomados del navegador.
+  subtotal          Int
+  deliveryFee       Int            @default(0) @map("delivery_fee")
+  discount          Int            @default(0)
+  total             Int
+  // Evita pedidos duplicados cuando el navegador reintenta la solicitud.
+  idempotencyKey    String?        @map("idempotency_key")
+  // Momento en que el cliente abrió WhatsApp con el mensaje (no garantiza que lo haya enviado).
+  whatsappOpenedAt  DateTime?      @map("whatsapp_opened_at") @db.Timestamptz(3)
+  // Pago recibido (lo marca el negocio). Se distingue de aceptado y entregado.
+  paidAt            DateTime?      @map("paid_at") @db.Timestamptz(3)
+  cancelReason      String?        @map("cancel_reason")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business      Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // Clave foránea compuesta: el cliente debe pertenecer al mismo negocio que el pedido.
+  customer      Customer             @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+
+  @@unique([businessId, number])
+  @@unique([businessId, idempotencyKey])
+  @@unique([id, businessId])
+  @@index([businessId, status, createdAt])
+  @@index([businessId, createdAt])
+  @@index([customerId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String @id @default(uuid(7)) @db.Uuid
+  businessId  String @map("business_id") @db.Uuid
+  orderId     String @map("order_id") @db.Uuid
+  productId   String @map("product_id") @db.Uuid
+  // Copia del nombre y precio para conservar el valor histórico.
+  productName String @map("product_name")
+  unitPrice   Int    @map("unit_price")
+  quantity    Int
+  subtotal    Int
+
+  // Claves foráneas compuestas: impiden que un pedido incluya productos de otro negocio.
+  order   Order   @relation(fields: [orderId, businessId], references: [id, businessId], onDelete: Cascade)
+  product Product @relation(fields: [productId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([businessId, productId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  orderId     String       @map("order_id") @db.Uuid
+  fromStatus  OrderStatus? @map("from_status")
+  toStatus    OrderStatus  @map("to_status")
+  changedById String?      @map("changed_by_id") @db.Uuid
+  note        String?
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy User? @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+}

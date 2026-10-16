@@ -1,0 +1,951 @@
+/*
+ * PedifyAI — hoja de estilos fuente (Tailwind CSS v4).
+ * Se compila a public/css/app.css con `npm run build:css` (o `npm run dev`).
+ *
+ * Mundo visual: la comanda. Tiquetes de pedido, tinta casi negra y amarillo mostaza
+ * de letrero de comidas rápidas. Archivo variable: ancho condensado para titulares
+ * tipo letrero, ancho normal para la interfaz.
+ */
+@import "tailwindcss";
+@source "../../public";
+
+@font-face {
+  font-family: "Archivo";
+  src: url("/assets/fonts/archivo-latin-wdth.woff2") format("woff2-variations"),
+    url("/assets/fonts/archivo-latin-wdth.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Neutros */
+  --color-ink: #17161c;
+  --color-ink-2: #23222a;
+  --color-ink-3: #35343e;
+  --color-ink-soft: #a9a7b3;
+  --color-ground: #f2f2ef;
+  --color-paper: #ffffff;
+  --color-line: #e3e1db;
+  --color-line-strong: #c9c6bd;
+  --color-muted: #5c5a63;
+
+  /* Marca */
+  --color-mustard: #ffc72c;
+  --color-mustard-hover: #f5b800;
+  --color-mustard-press: #e2a700;
+  --color-mustard-soft: #fff4cf;
+  --color-mustard-deep: #7a5600;
+
+  /* Estados */
+  --color-leaf: #1d7444;
+  --color-leaf-soft: #e2f2e8;
+  --color-tomato: #be2a1f;
+  --color-tomato-soft: #fbe8e5;
+  --color-sky: #1d5bb8;
+  --color-sky-soft: #e5eefb;
+  --color-whatsapp: #25d366;
+
+  /* Gráficas: una serie por gráfica, mostaza oscuro validado (contraste ≥ 3:1, croma y luminosidad). */
+  --color-chart: #b07d00;
+  --color-chart-active: #8a6200;
+
+  --radius-control: 10px;
+  --radius-panel: 14px;
+
+  --shadow-lift: 0 1px 2px rgb(23 22 28 / 0.06), 0 8px 24px -12px rgb(23 22 28 / 0.18);
+  --shadow-pop: 0 2px 6px rgb(23 22 28 / 0.1), 0 18px 40px -16px rgb(23 22 28 / 0.35);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─────────────────────────────── Base ─────────────────────────────── */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-stretch: 100%;
+    background: var(--color-ground);
+    color: var(--color-ink);
+    caret-color: var(--color-ink);
+    accent-color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--color-mustard);
+    color: var(--color-ink);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-stretch: 88%;
+    text-wrap: balance;
+    letter-spacing: -0.012em;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1.5px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* Con una hoja o cajón abierto, la página de fondo no se desplaza. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+}
+
+/* ──────────────────────────── Componentes ─────────────────────────── */
+
+@layer components {
+  .icon {
+    width: 1.25em;
+    height: 1.25em;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Titular de letrero: condensado y muy pesado. */
+  .display {
+    font-stretch: 66%;
+    font-weight: 860;
+    line-height: 0.9;
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+  }
+
+  /* ─── Botones ─── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 1.125rem;
+    border-radius: var(--radius-control);
+    border: 1px solid transparent;
+    font-weight: 650;
+    font-size: 0.9375rem;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+    transition:
+      background-color 150ms var(--ease-out-expo),
+      border-color 150ms var(--ease-out-expo),
+      color 150ms var(--ease-out-expo),
+      transform 150ms var(--ease-out-expo);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn[aria-busy="true"] {
+    cursor: progress;
+    color: transparent !important;
+    position: relative;
+  }
+  .btn[aria-busy="true"]::after {
+    content: "";
+    position: absolute;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 999px;
+    border: 2px solid var(--btn-spinner, var(--color-ink));
+    border-right-color: transparent;
+    animation: spin 700ms linear infinite;
+  }
+
+  .btn-primary {
+    background: var(--color-mustard);
+    color: var(--color-ink);
+    border-color: var(--color-mustard-press);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-mustard-hover);
+  }
+  .btn-primary:active:not(:disabled) {
+    background: var(--color-mustard-press);
+  }
+
+  .btn-ink {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    --btn-spinner: var(--color-paper);
+  }
+  .btn-ink:hover:not(:disabled) {
+    background: var(--color-ink-3);
+  }
+
+  .btn-ghost {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    border-color: var(--color-line-strong);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-ground);
+    border-color: var(--color-ink-soft);
+  }
+
+  .btn-quiet {
+    background: transparent;
+    color: var(--color-ink);
+  }
+  .btn-quiet:hover:not(:disabled) {
+    background: rgb(23 22 28 / 0.06);
+  }
+
+  .btn-danger {
+    background: var(--color-paper);
+    color: var(--color-tomato);
+    border-color: color-mix(in srgb, var(--color-tomato) 35%, transparent);
+    --btn-spinner: var(--color-tomato);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--color-tomato-soft);
+  }
+
+  .btn-sm {
+    min-height: 2.25rem;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-icon {
+    padding: 0;
+    width: 2.75rem;
+  }
+
+  /* ─── Formularios ─── */
+  .field {
+    display: grid;
+    gap: 0.375rem;
+    align-content: start;
+  }
+
+  .label {
+    font-size: 0.875rem;
+    font-weight: 620;
+    color: var(--color-ink);
+  }
+
+  .hint {
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+    line-height: 1.4;
+  }
+
+  .input {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-size: 1rem;
+    line-height: 1.3;
+    transition:
+      border-color 150ms var(--ease-out-expo),
+      box-shadow 150ms var(--ease-out-expo);
+  }
+  .input::placeholder {
+    color: #8b8994;
+  }
+  .input:hover:not(:disabled) {
+    border-color: var(--color-ink-soft);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-ink);
+    box-shadow: 0 0 0 3px rgb(255 199 44 / 0.55);
+  }
+  .input:disabled {
+    background: var(--color-ground);
+    color: var(--color-muted);
+    cursor: not-allowed;
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--color-tomato);
+  }
+  .input[aria-invalid="true"]:focus {
+    box-shadow: 0 0 0 3px rgb(190 42 31 / 0.2);
+  }
+  textarea.input {
+    min-height: 5.5rem;
+    resize: vertical;
+  }
+
+  /* Campo con prefijo ($, pedifyai.com/tienda/) */
+  .input-group {
+    display: flex;
+    align-items: stretch;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-paper);
+    transition:
+      border-color 150ms var(--ease-out-expo),
+      box-shadow 150ms var(--ease-out-expo);
+  }
+  .input-group:focus-within {
+    border-color: var(--color-ink);
+    box-shadow: 0 0 0 3px rgb(255 199 44 / 0.55);
+  }
+  .input-group:has([aria-invalid="true"]) {
+    border-color: var(--color-tomato);
+  }
+  .input-group > .addon {
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    color: var(--color-muted);
+    font-size: 0.9375rem;
+    background: var(--color-ground);
+    border-radius: var(--radius-control) 0 0 var(--radius-control);
+    border-right: 1px solid var(--color-line);
+    white-space: nowrap;
+  }
+  .input-group > .input {
+    border: 0;
+    box-shadow: none;
+    min-width: 0;
+  }
+
+  .field-error {
+    display: flex;
+    gap: 0.375rem;
+    align-items: flex-start;
+    font-size: 0.8125rem;
+    font-weight: 560;
+    color: var(--color-tomato);
+  }
+
+  /* Interruptor accesible: <input type="checkbox" role="switch" class="switch"> */
+  .switch {
+    appearance: none;
+    flex: none;
+    position: relative;
+    width: 2.75rem;
+    height: 1.625rem;
+    border-radius: 999px;
+    background: var(--color-line-strong);
+    cursor: pointer;
+    transition: background-color 180ms var(--ease-out-expo);
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 999px;
+    background: var(--color-paper);
+    box-shadow: 0 1px 3px rgb(23 22 28 / 0.3);
+    transition: transform 220ms var(--ease-out-expo);
+  }
+  .switch:checked {
+    background: var(--color-ink);
+  }
+  .switch:checked::after {
+    transform: translateX(1.125rem);
+    background: var(--color-mustard);
+  }
+  .switch:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Opciones tipo ficha (métodos de pago) */
+  .choice {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 0.875rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-paper);
+    font-weight: 560;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition:
+      background-color 150ms var(--ease-out-expo),
+      border-color 150ms var(--ease-out-expo);
+  }
+  .choice:hover {
+    border-color: var(--color-ink-soft);
+  }
+  .choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .choice .choice-check {
+    display: grid;
+    place-items: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 5px;
+    border: 1.5px solid var(--color-line-strong);
+    background: var(--color-paper);
+    color: transparent;
+  }
+  .choice:has(input:checked) {
+    background: var(--color-mustard-soft);
+    border-color: var(--color-ink);
+  }
+  .choice:has(input:checked) .choice-check {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-mustard);
+  }
+  .choice:has(input:focus-visible) {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+  .choice:has(input:disabled) {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* ─── Superficies ─── */
+  .panel {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 650;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .badge-dot::before {
+    content: "";
+    width: 0.4375rem;
+    height: 0.4375rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  /* Tiquete de comanda: borde inferior dentado recortado con máscara. */
+  .ticket {
+    --tooth: 12px;
+    background: var(--color-paper);
+    padding-bottom: calc(var(--tooth) * 0.9 + 0.75rem);
+    -webkit-mask:
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / var(--tooth) 100%;
+    mask:
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / var(--tooth) 100%;
+  }
+  .ticket-shadow {
+    filter: drop-shadow(0 1px 1px rgb(23 22 28 / 0.08)) drop-shadow(0 14px 22px rgb(23 22 28 / 0.16));
+  }
+  .ticket-rule {
+    border: 0;
+    border-top: 1.5px dashed var(--color-line-strong);
+  }
+
+  /* El tiquete "se imprime": se revela de arriba hacia abajo. */
+  .print-in {
+    animation: print-in 900ms var(--ease-out-expo) both;
+  }
+
+  /* Portada: el mensaje de WhatsApp aparece y luego la comanda se imprime en el panel. */
+  .hero-bubble {
+    animation: fade-up 600ms var(--ease-out-expo) 300ms both;
+  }
+  .hero-ticket {
+    animation: print-in 1000ms var(--ease-out-expo) 950ms both;
+  }
+
+  .skeleton {
+    border-radius: 8px;
+    background: linear-gradient(90deg, #e9e8e3 0%, #f4f3f0 50%, #e9e8e3 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  /* ─── Avisos (toasts) ─── */
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    max-width: min(92vw, 28rem);
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-weight: 560;
+    font-size: 0.9375rem;
+    box-shadow: var(--shadow-pop);
+    animation: toast-in 260ms var(--ease-out-expo) both;
+  }
+  .toast[data-tone="error"] .icon {
+    color: #ff9a8f;
+  }
+  .toast[data-tone="success"] .icon {
+    color: var(--color-mustard);
+  }
+  .toast.is-leaving {
+    animation: toast-out 200ms ease-in both;
+  }
+
+  /* ─── Navegación del panel ─── */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border-radius: var(--radius-control);
+    color: #d9d7e0;
+    font-weight: 560;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition:
+      background-color 150ms var(--ease-out-expo),
+      color 150ms var(--ease-out-expo);
+  }
+  .nav-item:hover {
+    background: var(--color-ink-2);
+    color: var(--color-paper);
+  }
+  .nav-item[aria-current="page"] {
+    background: var(--color-mustard);
+    color: var(--color-ink);
+    font-weight: 680;
+  }
+  .nav-item[aria-disabled="true"] {
+    color: #8d8b97;
+    cursor: default;
+  }
+  .nav-item[aria-disabled="true"]:hover {
+    background: transparent;
+  }
+  .on-ink :focus-visible {
+    outline-color: var(--color-mustard);
+  }
+
+  .tab-item {
+    display: grid;
+    justify-items: center;
+    gap: 0.1875rem;
+    padding: 0.5rem 0 0.375rem;
+    min-height: 3.5rem;
+    color: var(--color-muted);
+    font-size: 0.6875rem;
+    font-weight: 620;
+    text-decoration: none;
+  }
+  .tab-item .icon {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+  .tab-item[aria-current="page"] {
+    color: var(--color-ink);
+  }
+  .tab-item[aria-current="page"] .tab-pill {
+    background: var(--color-mustard);
+  }
+  .tab-pill {
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 1.875rem;
+    border-radius: 999px;
+    transition: background-color 180ms var(--ease-out-expo);
+  }
+
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-3) transparent;
+  }
+
+  /* ─── Hoja de edición (<dialog class="sheet">): desde abajo en celular, centrada en escritorio ─── */
+  .sheet {
+    margin: auto auto 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 94dvh;
+    border-radius: 18px 18px 0 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-pop);
+  }
+  .sheet[open] {
+    display: flex;
+    flex-direction: column;
+    animation: sheet-in 320ms var(--ease-out-expo);
+  }
+  .sheet::backdrop {
+    background: rgb(23 22 28 / 0.55);
+  }
+  @media (min-width: 40rem) {
+    .sheet {
+      margin: auto;
+      width: min(40rem, calc(100vw - 3rem));
+      max-height: min(54rem, calc(100dvh - 3rem));
+      border-radius: var(--radius-panel);
+    }
+    .sheet[open] {
+      animation-name: pop-in;
+      animation-duration: 220ms;
+    }
+  }
+
+  /* Miniatura de producto (con o sin foto). */
+  .thumb {
+    flex: none;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 10px;
+    background: var(--color-ground);
+    color: #8b8994;
+  }
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Zona para elegir o soltar una foto. */
+  .dropzone {
+    position: relative;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1.5px dashed var(--color-line-strong);
+    border-radius: 12px;
+    background: var(--color-ground);
+    color: var(--color-muted);
+    cursor: pointer;
+    transition:
+      border-color 150ms var(--ease-out-expo),
+      background-color 150ms var(--ease-out-expo);
+  }
+  .dropzone:hover,
+  .dropzone.is-over {
+    border-color: var(--color-ink);
+    background: var(--color-mustard-soft);
+  }
+  .dropzone:has(img) {
+    border-style: solid;
+    border-color: var(--color-line);
+  }
+  .dropzone img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .dropzone:focus-within {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  /* Fichas de categorías de la tienda (navegación fija). */
+  .cat-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-weight: 620;
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    text-decoration: none;
+    transition:
+      background-color 150ms var(--ease-out-expo),
+      color 150ms var(--ease-out-expo),
+      border-color 150ms var(--ease-out-expo);
+  }
+  .cat-chip:hover {
+    border-color: var(--color-ink-soft);
+  }
+  .cat-chip[aria-current="true"] {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  /* ─── Carrito de la tienda ─── */
+  .qty-add {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: none;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-mustard);
+    cursor: pointer;
+    transition:
+      background-color 150ms var(--ease-out-expo),
+      transform 150ms var(--ease-out-expo);
+  }
+  .qty-add:hover {
+    background: var(--color-ink-3);
+  }
+  .qty-add:active {
+    transform: scale(0.94);
+  }
+
+  .stepper {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .stepper button {
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 150ms var(--ease-out-expo);
+  }
+  .stepper button:hover:not(:disabled) {
+    background: var(--color-ink-3);
+  }
+  .stepper button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .stepper :focus-visible {
+    outline-color: var(--color-mustard);
+  }
+
+  /* Barra flotante del carrito. */
+  .cart-bar {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 30rem;
+    min-height: 3.5rem;
+    margin: 0 auto;
+    padding: 0 1.125rem 0 0.75rem;
+    border-radius: 16px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-size: 1rem;
+    box-shadow: var(--shadow-pop);
+    cursor: pointer;
+    animation: fade-up 260ms var(--ease-out-expo) both;
+  }
+  .cart-bar:hover {
+    background: var(--color-ink-2);
+  }
+  .cart-bar:focus-visible {
+    outline: 3px solid var(--color-mustard);
+    outline-offset: 2px;
+  }
+
+  /* Acción de WhatsApp: verde de WhatsApp con texto tinta (contraste ≥ 7:1). */
+  .btn-whatsapp {
+    background: var(--color-whatsapp);
+    color: var(--color-ink);
+    border-color: #1fb457;
+    min-height: 3.25rem;
+    font-weight: 720;
+  }
+  .btn-whatsapp:hover:not(:disabled) {
+    background: #1fc25c;
+  }
+  .btn-whatsapp:disabled {
+    background: var(--color-line);
+    border-color: var(--color-line);
+    color: var(--color-muted);
+    opacity: 1;
+  }
+
+  /* ─── Gráficas de analíticas ─── */
+  .chart-bar {
+    fill: var(--color-chart);
+    transition: fill 120ms var(--ease-out-expo);
+  }
+  .chart-col {
+    outline: none;
+    cursor: default;
+  }
+  .chart-col.is-active .chart-bar,
+  .chart-col:focus-visible .chart-bar {
+    fill: var(--color-chart-active);
+  }
+  .chart-col:focus-visible rect {
+    fill: rgb(255 199 44 / 0.18);
+  }
+  .chart-tooltip {
+    position: absolute;
+    top: -0.25rem;
+    transform: translate(-50%, -100%);
+    display: grid;
+    gap: 0.125rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: var(--shadow-pop);
+  }
+  .chart-tooltip strong {
+    font-size: 0.9375rem;
+    font-weight: 760;
+  }
+  .chart-tooltip span {
+    color: var(--color-ink-soft);
+  }
+
+  /* Producto agotado en la tienda. */
+  .is-sold-out .thumb img {
+    filter: grayscale(1);
+    opacity: 0.55;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Cajón lateral del panel en celulares (<dialog>). */
+  .drawer::backdrop {
+    background: rgb(23 22 28 / 0.55);
+  }
+  .drawer[open] {
+    animation: drawer-in 280ms var(--ease-out-expo);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes print-in {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-14px);
+  }
+  to {
+    clip-path: inset(0 0 -40px 0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

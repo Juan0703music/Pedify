@@ -1,0 +1,372 @@
+# API v1
+
+Base: `/api/v1`. JSON en ambos sentidos. La sesión viaja en una cookie `httpOnly` que el servidor fija al registrarse o iniciar sesión.
+
+## Formato de respuestas
+
+```json
+{ "data": { … } }
+```
+
+Errores:
+
+```json
+{ "error": { "code": "VALIDATION_ERROR", "message": "Revisa los datos ingresados.", "fields": { "email": "Escribe un correo válido." } } }
+```
+
+| Estado | Códigos frecuentes |
+|---|---|
+| 400 | `INVALID_TRANSITION`, `ORDER_CANCELLED`, `VALIDATION_ERROR`, `INVALID_JSON`, `NO_DELIVERY_MODE`, `PASSWORD_REQUIRED`, `CATEGORY_NOT_FOUND`, `IMAGE_REQUIRED`, `DELIVERY_UNAVAILABLE`, `PICKUP_UNAVAILABLE`, `PAYMENT_METHOD_NOT_ACCEPTED`, `MINIMUM_ORDER`, `QUANTITY_LIMIT` |
+| 401 | `UNAUTHORIZED`, `SESSION_EXPIRED`, `INVALID_CREDENTIALS` |
+| 403 | `FORBIDDEN` (otro origen), `NOT_A_MEMBER`, `ROLE_REQUIRED`, `NO_ACTIVE_BUSINESS`, `BUSINESS_SUSPENDED`, `INVALID_PASSWORD` |
+| 404 | `NOT_FOUND`, `PRODUCT_NOT_FOUND`, `CATEGORY_NOT_FOUND`, `STORE_NOT_FOUND`, `ORDER_NOT_FOUND`, `CUSTOMER_NOT_FOUND` |
+| 409 | `EMAIL_TAKEN`, `SLUG_TAKEN`, `ALREADY_MEMBER`, `LAST_OWNER`, `DUPLICATE`, `CATEGORY_EXISTS`, `ORDER_OUTDATED`, `PRODUCT_ARCHIVED`, `PRODUCT_LIMIT`, `CATEGORY_LIMIT`, `STORE_CLOSED`, `ORDERS_PAUSED`, `WHATSAPP_NOT_CONFIGURED`, `PRODUCTS_UNAVAILABLE`, `STATUS_CHANGED` |
+| 413 | `IMAGE_TOO_LARGE` (más de 8 MB), `PAYLOAD_TOO_LARGE` |
+| 415 | `UNSUPPORTED_IMAGE` |
+| 429 | `TOO_MANY_REQUESTS` |
+
+Las peticiones que modifican datos (`POST`, `PATCH`, `DELETE`) desde otro sitio se rechazan con 403.
+
+Teléfonos: se aceptan en cualquier formato colombiano (`300 123 4567`, `+57 300-123-4567`) y se devuelven normalizados (`573001234567`). Dinero: enteros en COP.
+
+## Salud
+
+`GET /health` → `{ "data": { "status": "ok" } }` (verifica la base de datos).
+
+## Autenticación — `/auth`
+
+| Método | Ruta | Sesión | Cuerpo | Respuesta |
+|---|---|---|---|---|
+| POST | `/auth/register` | — | `name, email, password, businessName, businessPhone` | 201 perfil + cookie |
+| POST | `/auth/login` | — | `email, password` | 200 perfil + cookie |
+| GET | `/auth/me` | ✔ | — | perfil |
+| PATCH | `/auth/me` | ✔ | `name` | `{ user }` |
+| POST | `/auth/switch-business` | ✔ | `businessId` | perfil con el nuevo negocio activo |
+| PATCH | `/auth/password` | ✔ | `currentPassword, newPassword` | `{ ok }`; cierra las demás sesiones |
+| POST | `/auth/logout` | ✔ | — | 204 |
+| POST | `/auth/logout-all` | ✔ | — | 204; cierra todas las sesiones |
+| POST | `/auth/forgot-password` | — | `email` | `{ ok }` siempre (no revela si existe la cuenta); envía un enlace de 30 min |
+| POST | `/auth/reset-password` | — | `token, newPassword` | `{ ok }`; cierra todas las sesiones · 400 `RESET_LINK_INVALID` |
+
+`POST /auth/register` exige `acceptPrivacy: true` (autorización de tratamiento de datos, Ley 1581) y crea el negocio con 14 días de prueba. El perfil incluye `user.isPlatformAdmin`.
+
+Perfil:
+
+```json
+{
+  "user": { "id": "…", "name": "Ana Pérez", "email": "ana@ejemplo.com", "createdAt": "…" },
+  "businesses": [{ "id": "…", "name": "Sabores del Caribe", "slug": "sabores-del-caribe", "status": "ACTIVE", "role": "OWNER" }],
+  "activeBusinessId": "…"
+}
+```
+
+## Negocios — `/businesses`
+
+Todas requieren sesión. Las rutas `/current…` actúan sobre el **negocio activo** y verifican la membresía en cada petición.
+
+| Método | Ruta | Rol | Cuerpo |
+|---|---|---|---|
+| GET | `/businesses` | — | Negocios del usuario |
+| POST | `/businesses` | — | `name, phone` → crea otro negocio (queda activo) |
+| GET | `/businesses/current` | miembro | — |
+| PATCH | `/businesses/current` | OWNER | `name, phone, slug, description, city, address` (parcial) |
+| GET | `/businesses/current/settings` | miembro | — |
+| PATCH | `/businesses/current/settings` | OWNER | `openingHours, acceptingOrders, whatsappPhone, deliveryEnabled, deliveryFee, deliveryArea, pickupEnabled, minimumOrder, paymentMethods, salesPolicy` (parcial) |
+| GET | `/businesses/current/members` | OWNER | — |
+| POST | `/businesses/current/members` | OWNER | `name, email, password?, role` |
+| PATCH | `/businesses/current/members/:membershipId` | OWNER | `role` |
+| DELETE | `/businesses/current/members/:membershipId` | OWNER | — |
+
+| POST | `/businesses/current/logo` | OWNER | imagen (cuerpo binario, ver [Imágenes](#imágenes)) |
+| DELETE | `/businesses/current/logo` | OWNER | — |
+| POST | `/businesses/current/banner` | OWNER | imagen (portada) |
+| DELETE | `/businesses/current/banner` | OWNER | — |
+| GET | `/businesses/current/qr?format=svg\|png&download=1` | miembro | Código QR del enlace de la tienda (imagen) |
+
+`GET /businesses/current` incluye `storeUrl` (`<APP_URL>/tienda/<slug>`), `logoUrl`, `bannerUrl`, el `role` del usuario y `subscription` (`plan, planName, status, endsAt, daysLeft, graceEndsAt, canReceiveOrders`).
+
+Métodos de pago: `CASH`, `NEQUI`, `DAVIPLATA`, `BANK_TRANSFER`, `CARD`.
+
+Ejemplo de configuración:
+
+```http
+PATCH /api/v1/businesses/current/settings
+Content-Type: application/json
+
+{
+  "openingHours": [
+    { "day": 0, "closed": false, "open": "17:00", "close": "23:30" },
+    { "day": 1, "closed": true,  "open": "17:00", "close": "23:30" },
+    …
+  ],
+  "whatsappPhone": "315 555 0101",
+  "deliveryFee": 4000,
+  "paymentMethods": ["CASH", "NEQUI"]
+}
+```
+
+## Productos — `/products`
+
+Menú del negocio activo (sección 4 del documento). Todas requieren sesión.
+
+| Método | Ruta | Rol | Cuerpo / consulta | Respuesta |
+|---|---|---|---|---|
+| GET | `/products?status=current\|archived` | miembro | — | Lista ordenada por `position` |
+| GET | `/products/summary` | miembro | — | `{ total, visible, soldOut, withImage }` |
+| POST | `/products` | OWNER | `name, price, description?, categoryId?, isActive?, isAvailable?` | 201 producto (al final de su categoría) |
+| GET | `/products/:id` | miembro | — | producto |
+| PATCH | `/products/:id` | OWNER · EMPLOYEE solo `isAvailable` | campos parciales | producto |
+| DELETE | `/products/:id` | OWNER | — | `{ result: "deleted" }` o `{ result: "archived" }` si aparece en pedidos |
+| POST | `/products/:id/restore` | OWNER | — | producto archivado de vuelta al menú |
+| PUT | `/products/order` | OWNER | `categoryId (null = sin categoría), productIds[]` | 204 |
+| POST | `/products/:id/image` | OWNER | imagen (cuerpo binario) | producto con `imageUrl` |
+| DELETE | `/products/:id/image` | OWNER | — | producto sin foto |
+
+Producto:
+
+```json
+{
+  "id": "…", "categoryId": "…", "name": "Hamburguesa especial", "description": "…",
+  "price": 18000, "imageUrl": "/uploads/businesses/…/products/…/k3J….webp",
+  "isActive": true, "isAvailable": true, "position": 0, "archivedAt": null,
+  "createdAt": "…", "updatedAt": "…"
+}
+```
+
+- `isActive`: visible en la tienda. `isAvailable`: `false` = agotado (se muestra como tal en la tienda).
+- `price`: entero en COP, mayor que 0.
+- Al cambiar `categoryId`, el producto pasa al final de la nueva categoría.
+- `PUT /products/order` recibe el orden **completo** de una categoría; si la lista no coincide con los productos actuales (otra persona cambió el menú) responde 409 `ORDER_OUTDATED`.
+- Límite: 500 productos vigentes por negocio.
+
+## Categorías — `/categories`
+
+| Método | Ruta | Rol | Cuerpo | Respuesta |
+|---|---|---|---|---|
+| GET | `/categories` | miembro | — | `[{ id, name, position, productCount }]` |
+| POST | `/categories` | OWNER | `name` | 201 categoría (al final) |
+| PATCH | `/categories/:id` | OWNER | `name` | categoría |
+| DELETE | `/categories/:id` | OWNER | — | `{ movedProducts }`: sus productos pasan, en orden, a «Sin categoría» |
+| PUT | `/categories/order` | OWNER | `categoryIds[]` (todas) | 204 |
+
+Los nombres no se repiten dentro de un negocio sin importar mayúsculas (`Bebidas` = `bebidas` → 409 `CATEGORY_EXISTS`). Límite: 50 categorías.
+
+## Imágenes
+
+Las fotos se envían como **cuerpo binario** de la petición (sin `multipart`):
+
+```js
+await fetch("/api/v1/products/<id>/image", { method: "POST", headers: { "Content-Type": file.type }, body: file });
+```
+
+- Máximo 8 MB (413 `IMAGE_TOO_LARGE`). Formatos: JPG, PNG, WebP, AVIF, GIF (primer cuadro). Se valida decodificando la imagen, no por el `Content-Type` (415 `UNSUPPORTED_IMAGE`).
+- El servidor corrige la orientación, reduce el tamaño (producto ≤ 800 px, logo 512 × 512 recortado al centro, portada ≤ 1600 px), convierte a WebP y elimina los metadatos.
+- Cada versión recibe un nombre aleatorio nuevo y se sirve con caché de un año (`immutable`); la versión anterior se borra.
+- Límite: 60 subidas cada 15 minutos por IP.
+
+## Tienda pública — `/store`
+
+Sin sesión.
+
+`GET /store/:slug` → 200 (caché pública de 15 s) o 404 `STORE_NOT_FOUND` (no existe o el negocio está suspendido).
+
+```json
+{
+  "business": { "name": "Sabores del Caribe", "slug": "sabores-del-caribe", "description": "…", "city": "Sincelejo",
+                "address": "Calle 20 #15-30", "phone": "573001234567", "logoUrl": null, "bannerUrl": null },
+  "settings": { "openingHours": [ … ], "timezone": "America/Bogota", "whatsappPhone": "573001234567",
+                "deliveryEnabled": true, "deliveryFee": 4000, "deliveryArea": "Todo Sincelejo",
+                "pickupEnabled": true, "minimumOrder": 15000, "paymentMethods": ["CASH", "NEQUI"] },
+  "status": { "isOpen": false, "closesAt": null, "nextOpen": { "inDays": 1, "day": 2, "time": "17:00" },
+              "acceptingOrders": true, "canOrder": false },
+  "categories": [
+    { "id": "…", "name": "Hamburguesas", "products": [
+      { "id": "…", "name": "Hamburguesa especial", "description": "…", "price": 18000, "imageUrl": null, "isAvailable": true }
+    ] },
+    { "id": null, "name": "Otros productos", "products": [ … ] }
+  ]
+}
+```
+
+- Solo incluye productos visibles (`isActive`) y no archivados; los agotados aparecen con `isAvailable: false`. Las categorías sin productos visibles se omiten; los productos sin categoría van al final.
+- `status` se calcula con el horario en la zona horaria del negocio. `nextOpen.inDays`: 0 = hoy, 1 = mañana… `canOrder` = abierto y sin pausa manual (se usará en la fase 3).
+
+## Pedidos desde la tienda — `/store/:slug/orders`
+
+Sin sesión (secciones 4, 8 y 9 del documento). Límite: 15 pedidos cada 10 minutos por IP. Las peticiones desde otro sitio web se rechazan (403).
+
+### `POST /store/:slug/orders`
+
+```json
+{
+  "idempotencyKey": "9f2c4e0b7a1d4c3e8b5a6f7d8e9c0b1a",
+  "items": [{ "productId": "…", "quantity": 1 }, { "productId": "…", "quantity": 2 }],
+  "name": "Luis Gómez",
+  "phone": "311 222 3344",
+  "deliveryType": "DELIVERY",
+  "address": "Calle 20 #15-30",
+  "references": "Casa azul",
+  "paymentMethod": "CASH",
+  "notes": "Sin cebolla"
+}
+```
+
+- Solo se reciben productos y cantidades. Precios, subtotal, domicilio, descuento y total los calcula el servidor; cualquier valor monetario enviado se descarta.
+- `idempotencyKey`: la genera el navegador por intento de compra (16–80 caracteres `A-Z a-z 0-9 -`). Si llega de nuevo, se responde **200** con el pedido ya creado, sin duplicarlo.
+- `phone`: celular colombiano (se normaliza a `57XXXXXXXXXX`). `address` es obligatoria para `DELIVERY` y se ignora en `PICKUP`.
+- Reglas: el negocio debe estar abierto según su horario (`STORE_CLOSED`), sin pausa (`ORDERS_PAUSED`) y con WhatsApp (`WHATSAPP_NOT_CONFIGURED`); la modalidad y el método de pago deben estar habilitados; el subtotal debe cubrir el pedido mínimo (`MINIMUM_ORDER`); cada producto debe ser del negocio, visible, no archivado y disponible (`PRODUCTS_UNAVAILABLE`, con `details.products: [{ productId, name, reason: "sold_out" | "not_found" }]`).
+
+Respuesta **201**:
+
+```json
+{
+  "order": {
+    "id": "…", "number": 12, "status": "PENDING", "deliveryType": "DELIVERY",
+    "customerName": "Luis Gómez", "customerPhone": "573112223344",
+    "deliveryAddress": "Calle 20 #15-30", "addressReferences": "Casa azul",
+    "paymentMethod": "CASH", "notes": "Sin cebolla",
+    "subtotal": 41000, "deliveryFee": 4000, "discount": 0, "total": 45000,
+    "whatsappOpenedAt": null, "createdAt": "…",
+    "items": [{ "productId": "…", "productName": "Hamburguesa especial", "unitPrice": 18000, "quantity": 1, "subtotal": 18000 }]
+  },
+  "whatsapp": { "url": "https://wa.me/573001234567?text=…", "message": "¡Hola! Quiero realizar el siguiente pedido:…" }
+}
+```
+
+Mensaje (formato de la sección 9, con el número de pedido, el nombre y los datos opcionales que existan):
+
+```
+¡Hola! Quiero realizar el siguiente pedido:
+
+Negocio: Sabores del Caribe
+Pedido: #12
+Nombre: Luis Gómez
+
+PRODUCTOS
+1. Hamburguesa especial x1 - $18.000
+2. Bebida x2 - $8.000
+3. Salchipapa x1 - $15.000
+
+Entrega: Domicilio
+Dirección: Calle 20 #15-30
+Referencias: Casa azul
+Pago: Efectivo
+Notas: Sin cebolla
+
+Subtotal: $41.000
+Domicilio: $4.000
+TOTAL: $45.000
+
+¡Quedo atento a la confirmación!
+```
+
+### `POST /store/:slug/orders/:id/whatsapp`
+
+Cuerpo `{ "idempotencyKey": "…" }` (la misma del pedido). Registra `whatsappOpenedAt` la primera vez → 204; con otra clave → 404. **No** prueba que el mensaje se haya enviado ni cambia el estado: el pedido sigue `PENDING` hasta que el negocio lo acepte (fase 4).
+
+## Pedidos en el panel — `/orders`
+
+Sesión + miembro del negocio activo (propietario y empleados atienden pedidos).
+
+| Método | Ruta | Cuerpo / consulta | Respuesta |
+|---|---|---|---|
+| GET | `/orders?view=active` | — | Pedidos en curso (PENDING a OUT_FOR_DELIVERY), del más antiguo al más reciente |
+| GET | `/orders?view=history&page&pageSize&search&from&to` | `search`: nombre, celular o `#número`; fechas `AAAA-MM-DD` en hora de Colombia | Entregados y cancelados, paginado |
+| GET | `/orders/:id` | — | Pedido + `statusHistory` (con quién lo cambió), `cancelReason`, `paidAt`, `nextStatuses` |
+| PATCH | `/orders/:id/status` | `status`, `from?` (estado que se tenía en pantalla), `reason?` (al cancelar) | Pedido actualizado |
+| PATCH | `/orders/:id/payment` | `paid: boolean` | Pedido actualizado (`paidAt`) |
+
+Cambios de estado permitidos (sección 7):
+
+```
+PENDING → CONFIRMED → PREPARING → READY → OUT_FOR_DELIVERY → DELIVERED
+            └────────────────────→ READY (saltar "en preparación")
+READY → DELIVERED (recoger)    ·    OUT_FOR_DELIVERY solo para domicilios
+Cualquier estado no final → CANCELLED (con motivo opcional)
+```
+
+- Un cambio no permitido → 400 `INVALID_TRANSITION`. Si `from` no coincide con el estado actual (otra persona lo cambió) → 409 `STATUS_CHANGED`.
+- Un pedido cancelado no se puede marcar como pagado (`ORDER_CANCELLED`).
+
+## Clientes — `/customers`
+
+Solo el propietario (datos personales y compras).
+
+| Método | Ruta | Respuesta |
+|---|---|---|
+| GET | `/customers?search&page&pageSize` | `{ items: [{ id, name, phone, orders, spent, lastOrderAt }], total, … }` ordenado por último pedido |
+| GET | `/customers/:id` | Cliente, `addresses`, últimos 50 `orders` y `stats` (`orders`, `cancelled`, `spent`, `lastOrderAt`) |
+
+`spent` suma los pedidos aceptados (confirmados en adelante, sin cancelados).
+
+## Analíticas — `/analytics`
+
+| Método | Ruta | Rol | Respuesta |
+|---|---|---|---|
+| GET | `/analytics/today` | miembro | Resumen del día: `sales`, `salesOrders`, `averageTicket`, `created`, `pending`, `cancelled`, `topProducts` (3) |
+| GET | `/analytics/summary?from&to` | OWNER | Periodo (máx. 1 año; sin fechas = hoy) |
+
+Definiciones (sección 11): **ventas** = suma del total de los pedidos que cumplen la política del negocio (`business_settings.sales_policy`: `ACCEPTED` confirmados en adelante · `DELIVERED` entregados · `PAID` marcados como pagados); un cancelado nunca cuenta. **Pedidos** = registrados en el periodo. **Ticket promedio** = ventas ÷ pedidos incluidos en las ventas (redondeado al peso). **Producto más vendido** = más unidades en los pedidos que cuentan como venta. Los días se cuentan en la zona horaria del negocio.
+
+`summary` devuelve `range`, `salesPolicy`, `sales`, `salesOrders`, `averageTicket`, `orders { created, pending, accepted, delivered, cancelled, paid }`, `delivery { delivery, pickup }`, `topProduct`, `topProducts` (10), `byDay` (todos los días del periodo), `byHour` (24 horas) y `previous` (periodo anterior de igual duración).
+
+## Tiempo real — Socket.IO (`/socket.io/`)
+
+Mismo servidor y misma cookie de sesión. Al conectar, el servidor verifica la sesión y la membresía en el negocio activo y une el socket a la sala `business:<id>`; rechaza otros orígenes y vuelve a validar cada minuto.
+
+| Evento (servidor → panel) | Datos |
+|---|---|
+| `ready` | `{ businessId }` |
+| `order:created` | `{ orderId, number, total, customerName, deliveryType, createdAt }` |
+| `order:updated` | `{ orderId, number, status, paidAt, changedBy }` |
+
+Los eventos solo avisan: el panel vuelve a consultar la API (también al reconectarse).
+
+## Suscripción — `/subscription`
+
+`GET /subscription` (OWNER) → plan, estado (`TRIAL`, `ACTIVE`, `PAST_DUE`, `EXPIRED`), `endsAt`, `daysLeft`, `graceEndsAt`, `usage { products, members }`, `limits`, catálogo `plans`, `payments` y `support { whatsapp, url }` (si `SUPPORT_WHATSAPP` está configurado).
+
+Límites del plan: crear o restaurar productos y agregar personas al equipo responde 409 `PLAN_LIMIT` al llegar al tope. Con la suscripción vencida (después de 5 días de gracia), `POST /store/:slug/orders` responde 409 `STORE_UNAVAILABLE` y la tienda informa `status.onlineOrdering: false`.
+
+## Panel central — `/admin`
+
+Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
+
+| Método | Ruta | Cuerpo / consulta | Respuesta |
+|---|---|---|---|
+| GET | `/admin/metrics` | — | `businesses` (total, trial, active, pastDue, expired, suspended, new7, new30…), `orders` (orders1, orders30, gmv30, storesWithOrders7), `mrr`, `plans`, `system` (version, uptime, memoria, latencia de la base) |
+| GET | `/admin/businesses?search&status&page&pageSize` | `status`: TRIAL, ACTIVE, PAST_DUE, EXPIRED, SUSPENDED | Negocios con propietario, plan, estado, productos, pedidos de 30 días |
+| GET | `/admin/businesses/:id` | — | Detalle, equipo, conteos, suscripción y pagos |
+| PATCH | `/admin/businesses/:id` | `status?` (ACTIVE/SUSPENDED), `plan?`, `extendTrialDays?` (1–90) | Detalle |
+| POST | `/admin/businesses/:id/payments` | `months` (1–12), `method` (NEQUI, DAVIPLATA, TRANSFERENCIA, EFECTIVO, OTRO), `plan?`, `amount?` (por defecto precio × meses), `reference?`, `note?` | 201 detalle con el periodo extendido |
+
+## Clientes: supresión de datos
+
+`DELETE /customers/:id` (OWNER) → 204. Anonimiza al cliente y la copia de sus datos en los pedidos (nombre, celular, direcciones, referencias y notas); los valores de los pedidos se conservan.
+
+## Monitoreo
+
+- `GET /health` → `{ status: "ok", version, uptimeSeconds, database: { status, latencyMs } }`; 503 con `status: "error"` si la base no responde.
+- Toda respuesta lleva `X-Request-Id`. Los errores 500 incluyen `error.requestId`.
+- `GET /metrics` (fuera de `/api`) con `Authorization: Bearer <METRICS_TOKEN>`: formato Prometheus. Sin `METRICS_TOKEN`, la ruta no existe.
+
+## Páginas
+
+| Ruta | Archivo |
+|---|---|
+| `/` | `public/index.html` |
+| `/login` | `public/pages/auth/login.html` |
+| `/registro` | `public/pages/auth/register.html` |
+| `/panel` | `public/pages/dashboard/index.html` (sin cookie → `/login?next=…`) |
+| `/panel/pedidos` | `public/pages/dashboard/orders.html` (`?pedido=<id>` abre el detalle) |
+| `/panel/menu` | `public/pages/dashboard/products.html` |
+| `/panel/clientes` | `public/pages/dashboard/customers.html` |
+| `/panel/analiticas` | `public/pages/dashboard/analytics.html` |
+| `/panel/tienda` | `public/pages/dashboard/store.html` |
+| `/panel/configuracion` | `public/pages/dashboard/settings.html` |
+| `/panel/plan` | `public/pages/dashboard/plan.html` |
+| `/admin` | `public/pages/admin/index.html` (panel central de PedifyAI) |
+| `/recuperar` · `/restablecer` | `public/pages/auth/forgot.html` · `reset.html` |
+| `/privacidad` | `public/pages/legal/privacy.html` |
+| `/tienda/:slug` | `public/pages/store/index.html` con las etiquetas Open Graph del negocio (404 si no existe; mayúsculas → redirección 301) |
+| `/uploads/…` | Imágenes con `STORAGE_DRIVER=local` |

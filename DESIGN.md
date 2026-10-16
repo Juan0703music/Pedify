@@ -1,0 +1,74 @@
+# Sistema visual de PedifyAI
+
+**Mundo:** la comanda de un negocio de comidas rápidas. Tiquetes de pedido con borde dentado, tinta casi negra y el amarillo mostaza de los letreros de barrio. La portada usa el color a página completa; el panel es sobrio (neutros + un acento) porque es una herramienta de trabajo diario en un mostrador con mucha luz.
+
+Fuente única de verdad: `src/styles/app.css` (tokens en `@theme`, componentes en `@layer components`).
+
+## Color
+
+| Token | Valor | Uso |
+|---|---|---|
+| `ink` | `#17161c` | Texto principal, barra lateral, botones secundarios fuertes |
+| `ink-2` / `ink-3` | `#23222a` / `#35343e` | Capas sobre la barra lateral (hover, bloques) |
+| `ink-soft` | `#a9a7b3` | Texto secundario sobre tinta |
+| `ground` | `#f2f2ef` | Fondo de la app |
+| `paper` | `#ffffff` | Superficies, formularios |
+| `line` / `line-strong` | `#e3e1db` / `#c9c6bd` | Bordes y separadores / bordes de campos |
+| `muted` | `#5c5a63` | Texto secundario (≥ 4.5:1 sobre blanco) |
+| `mustard` | `#ffc72c` | Marca, acción principal, ítem activo, selección de texto |
+| `mustard-soft` / `mustard-deep` | `#fff4cf` / `#7a5600` | Fondos de realce / texto sobre ellos |
+| `leaf` | `#1d7444` | Éxito, "recibiendo pedidos", entregado |
+| `tomato` | `#be2a1f` | Errores, acciones destructivas, cancelado |
+| `sky` | `#1d5bb8` | Información, confirmado |
+| `whatsapp` | `#25d366` | Solo para acciones de WhatsApp |
+| `chart` / `chart-active` | `#b07d00` / `#8a6200` | Marcas de las gráficas (una serie por gráfica; validado: contraste ≥ 3:1, croma y luminosidad) |
+
+El amarillo nunca lleva texto blanco: siempre `ink` encima.
+
+## Tipografía
+
+Una sola familia: **Archivo** variable (peso 100–900, ancho 62–125 %), autoalojada en `public/assets/fonts`.
+
+- `.display`: titulares de letrero — ancho 66 %, peso 860, mayúsculas, interlineado 0.9. Solo en portada, autenticación y páginas especiales (404).
+- Títulos del panel: ancho 88 %, pesos 720–780. `h1` 30–38 px, `h2` de sección 18 px.
+- Interfaz y cuerpo: ancho 100 %, 15–16 px. Cifras y dinero con `.num` (números tabulares).
+
+## Componentes
+
+- **Botones** (`.btn` + `.btn-primary` mostaza / `.btn-ink` / `.btn-ghost` / `.btn-quiet` / `.btn-danger`, `.btn-sm`, `.btn-icon`): 44 px de alto, radio 10 px, estados hover, activo, deshabilitado y `aria-busy` con spinner.
+- **Campos** (`.field`, `.label`, `.input`, `.input-group` con `.addon`, `.hint`, `.field-error`): foco con borde tinta + halo mostaza; error con `aria-invalid`.
+- **Interruptor** (`.switch` sobre `<input type="checkbox" role="switch">`): encendido = pista tinta con perilla mostaza.
+- **Fichas de opción** (`.choice`): selección múltiple (métodos de pago).
+- **Paneles** (`.panel`): blanco, borde `line`, radio 14 px. Nunca paneles dentro de paneles.
+- **Tiquete** (`.ticket` + `.ticket-shadow`, `.ticket-rule`): comanda con borde inferior dentado (máscara CSS). Es el objeto característico: pedidos en vivo (fase 4), demostraciones, 404.
+- **Avisos** (`toast()` en `public/js/ui.js`): pastilla tinta abajo al centro, `aria-live`.
+- **Navegación del panel**: barra lateral tinta (escritorio, ítem activo mostaza) y barra inferior + cajón `<dialog>` (celular).
+- **Hoja de edición** (`<dialog class="sheet">`): sube desde abajo en el celular y se centra en escritorio; encabezado, cuerpo desplazable y acciones fijas abajo. Al editar, el foco va al título (no abre el teclado).
+- **Miniatura** (`.thumb`) y **zona de foto** (`.dropzone`): fondo `ground` con ícono cuando no hay imagen; se puede soltar un archivo encima.
+- **Filas del menú** (panel): miniatura, nombre (hasta 2 líneas), precio, insignias `Oculto`/`Agotado` e interruptor de disponible. El modo «Ordenar» cambia los interruptores por flechas.
+- **Carrito de la tienda**: botón redondo tinta con `+` mostaza (`.qty-add`) que se convierte en contador (`.stepper`: − cantidad +; con 1 unidad el − es una papelera). Barra flotante tinta (`.cart-bar`) con la cantidad en un círculo mostaza y el subtotal; la misma barra avisa de un pedido creado y aún sin enviar.
+- **Botón de WhatsApp** (`.btn-whatsapp`): único uso del verde `whatsapp`, con texto tinta (contraste ≥ 7:1).
+- **Confirmación del pedido**: el tiquete (`.ticket`) se imprime (`.print-in`) con el número de pedido, el detalle y el total, bajo un aviso mostaza "Falta un paso: envíalo por WhatsApp".
+- **Tarjeta de pedido** (panel): tiquete con número grande (`.display`), hora y tiempo transcurrido (en tomate si un pendiente lleva más de 10 min), cliente, entrega, productos, nota mostaza, total y la acción siguiente como botón principal (mostaza para "Confirmar pedido", tinta para el resto). Columnas: Nuevos · En cocina · Listos y en camino; en celular, fichas para cambiar de columna.
+- **Alerta de pedido nuevo**: tiquete que se imprime arriba de la pantalla con campana mostaza, número y total; se va solo a los 9 s. Sonido "ding-dong" generado con Web Audio, activado por el usuario desde la barra lateral (o la campana del encabezado en celular), junto al indicador "En vivo".
+- **Gráficas** (`.chart-bar`, `.chart-tooltip`): columnas de máx. 24 px con 4 px redondeados arriba y base recta, cuadrícula de 1 px en `line`, valor solo en el punto más alto, tooltip tinta con el valor primero, y "Ver como tabla".
+- **Aviso de suscripción** (franja bajo el encabezado del panel): mostaza claro si la prueba termina en ≤ 5 días, mostaza si venció y está en gracia, tomate si la tienda ya no recibe pedidos; botón tinta "Ver planes"/"Renovar plan" solo para el propietario.
+- **Mi plan**: tarjeta tinta con el nombre del plan en `.display` y el precio en mostaza; medidores de uso (pista `mustard-soft`, relleno `chart`, tomate al 90 %); planes en tarjetas con el actual resaltado.
+- **Panel central** (`/admin`): encabezado tinta con la insignia "Administración", indicadores en tarjetas y tabla de negocios con insignias de estado.
+- **Fichas de categoría** (`.cat-chip`) en la tienda: barra fija desplazable; la activa en tinta.
+- **Íconos**: Lucide (trazo 2 px) desde `public/assets/icons/sprite.svg` con `icon(nombre)`; nunca emojis ni glifos.
+
+## Tienda pública
+
+Es la vitrina del comerciante, no de PedifyAI: manda la portada, el logo y el nombre del negocio. Sin portada se usa una franja mostaza con el nombre en grande como letrero. Nombres de categoría en `.display`; productos en filas con la foto a la derecha (patrón conocido de las apps de domicilios). Agotado: foto en gris, precio tachado e insignia tomate. El estado (Abierto / Cerrado · abre… / Pedidos en pausa) va en una pastilla de color bajo el nombre. En escritorio el detalle (domicilio, horario, pagos) pasa a una columna a la derecha y los productos a dos columnas.
+
+## Movimiento
+
+Un solo gesto propio: el **tiquete que se imprime** (`.print-in`, revelado de arriba hacia abajo con `clip-path`, 0.9–1 s, curva exponencial). Transiciones de interfaz de 150–250 ms. Todo se anula con `prefers-reduced-motion`.
+
+## Reglas
+
+- Mobile first; la barra inferior respeta `env(safe-area-inset-bottom)`.
+- Sin texto en gradiente, sin vidrio/desenfoque decorativo, sin rótulos pequeños sobre los títulos.
+- Los datos de demostración se marcan como "Ejemplo ilustrativo".
+- Textos en español de Colombia; los errores dicen qué pasó y cómo resolverlo.

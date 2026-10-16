@@ -1,0 +1,89 @@
+# PedifyAI con Docker:
+#   docker compose up --build
+# Levanta PostgreSQL, aplica las migraciones y arranca la aplicación en http://localhost:3000
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pedifyai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pedifyai}
+      POSTGRES_DB: pedifyai
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pedifyai -d pedifyai"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: postgresql://pedifyai:${POSTGRES_PASSWORD:-pedifyai}@db:5432/pedifyai
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://pedifyai:${POSTGRES_PASSWORD:-pedifyai}@db:5432/pedifyai
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      # En un servidor real con HTTPS: COOKIE_SECURE=true y TRUST_PROXY=1 (detrás de Nginx/Caddy).
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      SESSION_TTL_DAYS: 7
+      LOG_LEVEL: info
+      # Fotos: en disco (volumen `uploads`) o en un almacenamiento compatible con S3.
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      UPLOADS_DIR: /app/uploads
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-PedifyAI <no-responder@pedifyai.com>}
+      SUPPORT_WHATSAPP: ${SUPPORT_WHATSAPP:-}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Copia diaria con pg_dump + prueba de restauración (scripts/docker-backup.sh).
+  backup:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: pedifyai
+      PGPASSWORD: ${POSTGRES_PASSWORD:-pedifyai}
+      PGDATABASE: pedifyai
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - backups:/backups
+      - uploads:/uploads:ro
+      - ./scripts/docker-backup.sh:/usr/local/bin/docker-backup.sh:ro
+    entrypoint: ["sh", "/usr/local/bin/docker-backup.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:
+  backups:

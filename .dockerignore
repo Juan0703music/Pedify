@@ -1,0 +1,13 @@
+node_modules
+dist
+.pgdata
+uploads
+coverage
+.git
+.env
+.env.*
+!.env.example
+public/css/app.css
+src/generated
+*.log
+backups

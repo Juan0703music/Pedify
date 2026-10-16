@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Recuperar contraseña · PedifyAI</title>
+    <meta name="description" content="Recupera el acceso a tu panel de PedifyAI." />
+    <meta name="theme-color" content="#ffc72c" />
+    <link rel="icon" href="/assets/icons/logo.svg" type="image/svg+xml" />
+    <link rel="preload" href="/assets/fonts/archivo-latin-wdth.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/app.css" />
+    <script type="module" src="/js/auth.js"></script>
+  </head>
+  <body data-page="forgot" class="bg-paper">
+    <div class="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <aside class="relative hidden flex-col justify-between overflow-hidden bg-mustard p-10 lg:flex xl:p-14">
+        <a href="/" class="inline-flex w-fit items-center gap-2 rounded-md no-underline" aria-label="PedifyAI, ir al inicio">
+          <img src="/assets/icons/logo.svg" alt="" class="h-9 w-9" width="32" height="32" />
+          <span class="text-[1.6rem] leading-none font-[850] tracking-tight [font-stretch:72%]">PedifyAI</span>
+        </a>
+
+        <div class="grid gap-10">
+          <h2 class="display max-w-[11ch] text-[clamp(3.25rem,6vw,5.5rem)]">Tus pedidos, en orden.</h2>
+
+          <figure class="ticket-shadow w-[min(100%,22rem)] -rotate-2" aria-label="Ejemplo de comanda en el panel">
+            <div class="ticket print-in rounded-t-[10px] px-6 pt-5 text-[0.9375rem]">
+              <div class="flex items-baseline justify-between">
+                <span class="text-[1.375rem] font-[820] [font-stretch:75%]">PEDIDO #01</span>
+                <span class="badge badge-dot bg-mustard-soft text-mustard-deep">Pendiente</span>
+              </div>
+              <p class="mt-1 text-sm text-muted">Sabores del Caribe · Domicilio</p>
+              <hr class="ticket-rule my-4" />
+              <ul class="num grid gap-1.5">
+                <li class="flex justify-between gap-4"><span>1× Hamburguesa especial</span><span>$18.000</span></li>
+                <li class="flex justify-between gap-4"><span>2× Bebida</span><span>$8.000</span></li>
+                <li class="flex justify-between gap-4"><span>1× Salchipapa</span><span>$15.000</span></li>
+              </ul>
+              <hr class="ticket-rule my-4" />
+              <dl class="num grid gap-1 text-sm text-muted">
+                <div class="flex justify-between"><dt>Subtotal</dt><dd>$41.000</dd></div>
+                <div class="flex justify-between"><dt>Domicilio</dt><dd>$4.000</dd></div>
+              </dl>
+              <div class="num mt-2 flex justify-between text-lg font-[780]"><span>TOTAL</span><span>$45.000</span></div>
+            </div>
+            <figcaption class="mt-3 text-sm font-medium text-ink/70">Ejemplo ilustrativo</figcaption>
+          </figure>
+        </div>
+
+        <p class="text-sm font-medium text-ink/75">Hecho para negocios de comida en Colombia.</p>
+      </aside>
+
+      <main class="flex min-h-dvh flex-col px-5 py-6 sm:px-10 lg:px-16 lg:py-12">
+        <a href="/" class="inline-flex w-fit items-center gap-2 rounded-md no-underline lg:hidden" aria-label="PedifyAI, ir al inicio">
+          <img src="/assets/icons/logo.svg" alt="" class="h-8 w-8" width="32" height="32" />
+          <span class="text-[1.45rem] leading-none font-[850] tracking-tight [font-stretch:72%]">PedifyAI</span>
+        </a>
+
+        <div class="my-auto w-full max-w-[25rem] self-center py-10">
+          <h1 class="text-[2rem] leading-tight font-[780]">Recupera tu contraseña</h1>
+          <p class="mt-2 text-muted">Escribe el correo de tu cuenta y te enviaremos un enlace para crear una contraseña nueva.</p>
+
+          <form id="forgot-form" class="mt-8 grid gap-5" novalidate>
+            <div data-slot="alert"></div>
+            <div class="field">
+              <label class="label" for="email">Correo</label>
+              <input class="input" id="email" name="email" type="email" autocomplete="email" inputmode="email" required autofocus />
+            </div>
+            <button class="btn btn-ink mt-1 w-full" type="submit">Enviar enlace</button>
+          </form>
+
+          <div id="forgot-sent" class="mt-8 hidden gap-3 rounded-[14px] border border-line bg-ground p-5" role="status">
+            <p class="font-[720]">Revisa tu correo</p>
+            <p class="text-[0.9375rem] text-muted">
+              Si <span class="font-semibold text-ink" data-sent-email></span> tiene una cuenta en PedifyAI, te llegará un enlace válido por 30
+              minutos. Revisa también la carpeta de spam.
+            </p>
+          </div>
+
+          <p class="mt-6 text-sm text-muted"><a href="/login" class="font-semibold text-ink underline">Volver a iniciar sesión</a></p>
+        </div>
+
+        <p class="text-center text-sm text-muted lg:text-left">© <span data-year></span> PedifyAI</p>
+      </main>
+    </div>
+  </body>
+</html>
