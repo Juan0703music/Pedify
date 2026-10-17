@@ -8,214 +8,317 @@
       name="description"
       content="Tienda digital para salchipaperías, pizzerías, reposterías y negocios de comida rápida. Tus clientes arman el pedido, lo envían por WhatsApp y tú lo ves llegar a tu panel."
     />
-    <meta name="theme-color" content="#ffc72c" />
+    <meta name="theme-color" content="#17161c" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="PedifyAI · Tu tienda en un enlace, tus pedidos en orden" />
     <meta property="og:description" content="Menú digital con fotos, pedidos por WhatsApp con el total calculado y un panel en vivo para tu negocio de comida." />
     <meta property="og:image" content="/assets/images/food/burger-closeup-960.webp" />
     <link rel="icon" href="/assets/icons/logo.svg" type="image/svg+xml" />
     <link rel="preload" href="/assets/fonts/archivo-latin-wdth.woff2" as="font" type="font/woff2" crossorigin />
-    <link
-      rel="preload"
-      as="image"
-      href="/assets/images/food/burger-closeup-960.webp"
-      imagesrcset="/assets/images/food/burger-closeup-480.webp 480w, /assets/images/food/burger-closeup-960.webp 960w"
-      imagesizes="(min-width: 1024px) 420px, 70vw"
-    />
     <link rel="stylesheet" href="/css/app.css" />
     <script type="module" src="/js/landing.js"></script>
   </head>
   <body class="bg-paper">
-    <!-- ─────────────── Portada ─────────────── -->
-    <div class="dots overflow-hidden bg-mustard">
-      <header class="mx-auto flex max-w-[78rem] items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-6">
+    <!-- ═══════════════════════════ PORTADA (tinta, de noche) ═══════════════════════════ -->
+    <div class="glow-mustard relative isolate overflow-hidden text-paper" data-hero>
+      <div class="dots-mustard pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" aria-hidden="true"></div>
+
+      <header class="mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-6">
         <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="PedifyAI, inicio">
           <img src="/assets/icons/logo.svg" alt="" class="h-9 w-9" width="32" height="32" />
-          <span class="text-[1.6rem] leading-none font-[850] tracking-tight [font-stretch:72%]">PedifyAI</span>
+          <span class="text-[1.6rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify<span class="text-mustard">AI</span></span>
         </a>
         <nav class="flex items-center gap-1 sm:gap-2" aria-label="Cuenta">
-          <a href="#planes" class="btn btn-quiet hidden px-3 sm:inline-flex sm:px-4">Planes</a>
-          <a href="/login" class="btn btn-quiet px-3 sm:px-4">Iniciar sesión</a>
-          <a href="/registro" class="btn btn-ink hidden sm:inline-flex">Registrar mi negocio</a>
+          <a href="#planes" class="btn btn-quiet hidden px-3 text-paper hover:bg-ink-3 sm:inline-flex sm:px-4">Planes</a>
+          <a href="/login" class="btn btn-quiet px-3 text-paper hover:bg-ink-3 sm:px-4">Iniciar sesión</a>
+          <a href="/registro" class="btn btn-primary hidden sm:inline-flex">Crear mi tienda</a>
         </nav>
       </header>
 
-      <section class="mx-auto grid max-w-[78rem] items-center gap-12 px-4 pt-4 pb-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:pt-8 lg:pb-24" aria-labelledby="hero-title">
-        <div class="grid gap-7">
-          <h1 id="hero-title" class="display text-[clamp(3.1rem,7.4vw,6rem)]">
-            Tu tienda en un enlace. <span class="block">Tus pedidos, en orden.</span>
+      <section class="mx-auto grid max-w-[80rem] items-center gap-14 px-4 pt-6 pb-10 sm:px-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-6 lg:pt-10 lg:pb-16" aria-labelledby="hero-title">
+        <div class="grid gap-8">
+          <h1 id="hero-title" class="display text-[clamp(3.6rem,9vw,8rem)] leading-[0.86]">
+            <span class="block">Tu tienda en</span>
+            <span class="block">un <span class="text-mustard">enlace.</span></span>
+            <span class="text-outline block">Tus pedidos,</span>
+            <span class="block">en orden.</span>
           </h1>
-          <p class="max-w-[34rem] text-[1.125rem] leading-relaxed text-ink/85 sm:text-[1.25rem]">
-            PedifyAI le da a tu salchipapería, pizzería o repostería una tienda digital con fotos, hecha para el celular. Tu cliente arma el
-            pedido, lo envía por WhatsApp y tú lo ves llegar a tu panel con el total ya calculado.
+          <p class="max-w-[33rem] text-[1.125rem] leading-relaxed text-paper/75 sm:text-[1.25rem]">
+            Tu salchipapería, pizzería o repostería con un menú digital lleno de fotos. Tu cliente arma el pedido, lo envía por WhatsApp
+            y tú lo ves llegar a tu panel con el total ya calculado.
           </p>
           <div class="flex flex-wrap items-center gap-3">
-            <a href="/registro" class="btn btn-ink min-h-13 px-6 text-base">Registrar mi negocio</a>
-            <a href="#como-funciona" class="btn btn-quiet min-h-13 px-4 text-base underline decoration-2">Ver cómo funciona</a>
+            <a href="/registro" class="btn btn-primary min-h-14 px-7 text-[1.0625rem]">
+              Crear mi tienda gratis
+              <svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-right"></use></svg>
+            </a>
+            <a href="#demo" class="btn min-h-14 border-paper/25 px-6 text-[1.0625rem] text-paper hover:border-paper/60 hover:bg-ink-3 lg:hidden">Probar la demostración</a>
           </div>
-          <ul class="flex flex-wrap gap-x-5 gap-y-2 text-[0.9375rem] font-[620]">
-            <li class="flex items-center gap-1.5"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>14 días gratis</li>
-            <li class="flex items-center gap-1.5"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Sin tarjeta de crédito</li>
-            <li class="flex items-center gap-1.5"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Los pedidos llegan a tu WhatsApp</li>
+          <ul class="flex flex-wrap gap-x-6 gap-y-2 text-[0.9375rem] font-[620] text-paper/85">
+            <li class="flex items-center gap-2"><svg class="icon h-4 w-4 text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>14 días gratis</li>
+            <li class="flex items-center gap-2"><svg class="icon h-4 w-4 text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Sin tarjeta de crédito</li>
+            <li class="flex items-center gap-2"><svg class="icon h-4 w-4 text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Sin descargar nada</li>
           </ul>
         </div>
 
-        <!-- Collage de comida con el pedido encima (ilustrativo) -->
-        <figure class="relative mx-auto h-[27rem] w-full max-w-[34rem] sm:h-[36rem] lg:h-[39rem]">
-          <div class="photo absolute top-0 right-0 h-[74%] w-[70%] rounded-[30px] shadow-[var(--shadow-pop)]">
-            <img
-              src="/assets/images/food/burger-closeup-960.webp"
-              srcset="/assets/images/food/burger-closeup-480.webp 480w, /assets/images/food/burger-closeup-960.webp 960w"
-              sizes="(min-width: 1024px) 420px, 70vw"
-              alt="Hamburguesa con tocineta, queso y lechuga"
-              width="960"
-              height="639"
-              fetchpriority="high"
-              class="object-[88%_50%]"
-            />
-          </div>
-          <div class="photo absolute top-[7%] left-0 h-[34%] w-[34%] rounded-[24px] ring-[6px] ring-mustard sm:ring-8">
-            <img
-              src="/assets/images/food/drink-jar-480.webp"
-              srcset="/assets/images/food/drink-jar-480.webp 480w, /assets/images/food/drink-jar-960.webp 960w"
-              sizes="(min-width: 1024px) 200px, 34vw"
-              alt="Bebida fría en frasco con pitillo"
-              width="480"
-              height="315"
-              class="object-[55%_50%]"
-            />
-          </div>
-          <div class="photo absolute bottom-0 left-[3%] h-[44%] w-[50%] rounded-[26px] ring-[6px] ring-mustard sm:ring-8">
-            <img
-              src="/assets/images/food/fries-sauce-480.webp"
-              srcset="/assets/images/food/fries-sauce-480.webp 480w, /assets/images/food/fries-sauce-960.webp 960w"
-              sizes="(min-width: 1024px) 280px, 50vw"
-              alt="Papas a la francesa con salsas"
-              width="480"
-              height="374"
-            />
-          </div>
-
-          <!-- Sello que gira -->
-          <div class="absolute top-[-1.25rem] right-[-0.5rem] grid h-[6rem] w-[6rem] place-items-center rounded-full bg-ink shadow-[var(--shadow-pop)] sm:top-[-1.75rem] sm:right-[-1.5rem] sm:h-32 sm:w-32" aria-hidden="true">
-            <svg viewBox="0 0 120 120" class="sticker-spin absolute inset-0 h-full w-full">
-              <defs><path id="sticker-ring" d="M60,60 m-45,0 a45,45 0 1,1 90,0 a45,45 0 1,1 -90,0" /></defs>
-              <text fill="#ffc72c" font-size="11" font-weight="800" letter-spacing="1.5">
-                <textPath href="#sticker-ring" textLength="280" lengthAdjust="spacing">14 DÍAS GRATIS · SIN TARJETA · </textPath>
-              </text>
-            </svg>
-            <img src="/assets/icons/logo.svg" alt="" class="h-9 w-9 sm:h-11 sm:w-11" width="44" height="44" />
-          </div>
-
-          <div class="hero-bubble absolute top-[20%] right-[-0.25rem] sm:top-[34%] w-[11.5rem] rounded-[14px] rounded-tr-[4px] bg-[#d9fdd3] p-3 text-[0.6875rem] leading-snug text-ink shadow-[var(--shadow-pop)] sm:right-[-1rem] sm:w-[14rem] sm:text-[0.75rem]" aria-hidden="true">
-            <p class="mb-1 flex items-center gap-1.5 text-[0.65rem] font-bold text-[#11804a]">
-              <svg class="icon h-3.5 w-3.5"><use href="/assets/icons/sprite.svg#i-message-circle"></use></svg>WhatsApp
-            </p>
-            <p class="font-semibold">¡Hola! Quiero realizar el siguiente pedido:</p>
-            <p class="num mt-1">1. Hamburguesa especial x1 - $18.000<br />2. Salchipapa x1 - $15.000<br />3. Jugo natural x2 - $12.000</p>
-            <p class="num mt-1 font-bold">TOTAL: $49.000</p>
-          </div>
-
-          <div class="ticket-shadow absolute right-[4%] bottom-[-0.5rem] w-[11.75rem] rotate-[2.5deg] sm:w-[14rem]" aria-hidden="true">
-            <div class="ticket hero-ticket rounded-t-[10px] px-4 pt-3.5 text-[0.75rem] sm:px-5 sm:pt-4 sm:text-[0.8125rem]">
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-[1.05rem] font-[820] [font-stretch:75%] sm:text-[1.2rem]">PEDIDO #01</span>
-                <span class="badge badge-dot bg-mustard-soft text-[0.625rem] text-mustard-deep">Nuevo</span>
-              </div>
-              <p class="mt-0.5 text-muted">Llegó hace 1 min · Domicilio</p>
-              <hr class="ticket-rule my-2" />
-              <div class="num flex justify-between font-[750]"><span>TOTAL</span><span>$49.000</span></div>
-              <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-[0.6875rem] font-bold sm:text-[0.75rem]">Confirmar pedido</div>
+        <!-- Demostración interactiva: el visitante toca + y ve llegar el pedido -->
+        <div id="demo" class="relative mx-auto h-[46rem] w-full max-w-[34rem] scroll-mt-6 sm:h-[44rem]">
+          <!-- Fotos que flotan alrededor del teléfono -->
+          <div class="float-a absolute top-2 right-0 z-0 sm:right-2" data-depth="18" aria-hidden="true">
+            <div class="photo h-40 w-32 rotate-[7deg] rounded-[24px] shadow-[0_30px_60px_-20px_rgb(0_0_0/0.7)] ring-4 ring-ink-2 sm:h-56 sm:w-44">
+              <img src="/assets/images/food/burger-closeup-480.webp" alt="" width="480" height="320" class="object-[88%_50%]" />
             </div>
           </div>
-          <figcaption class="sr-only">Ejemplo ilustrativo: fotos del menú, mensaje de WhatsApp del cliente y la comanda en el panel.</figcaption>
-        </figure>
+          <div class="float-b absolute bottom-24 left-0 z-0 sm:-left-4" data-depth="30" aria-hidden="true">
+            <div class="photo h-28 w-36 -rotate-[8deg] rounded-[22px] shadow-[0_30px_60px_-20px_rgb(0_0_0/0.7)] ring-4 ring-ink-2 sm:h-36 sm:w-48">
+              <img src="/assets/images/food/fries-bowl-480.webp" alt="" width="480" height="320" />
+            </div>
+          </div>
+          <div class="float-c absolute top-40 left-2 z-0 hidden sm:block" data-depth="12" aria-hidden="true">
+            <div class="photo h-32 w-28 -rotate-[4deg] rounded-[22px] shadow-[0_30px_60px_-20px_rgb(0_0_0/0.7)] ring-4 ring-ink-2">
+              <img src="/assets/images/food/drink-jar-480.webp" alt="" width="480" height="315" />
+            </div>
+          </div>
+
+          <!-- El teléfono -->
+          <div class="absolute top-0 left-1/2 z-10 w-[17.5rem] -translate-x-1/2 sm:w-[18.75rem]" data-demo role="group" aria-label="Demostración: arma un pedido de ejemplo">
+            <div class="overflow-hidden rounded-[2.6rem] border-[10px] border-ink-3 bg-paper text-ink shadow-[0_50px_100px_-25px_rgb(0_0_0/0.75)] ring-1 ring-paper/15">
+              <div class="photo relative h-24">
+                <img src="/assets/images/food/burger-board-480.webp" alt="" width="480" height="320" />
+                <span class="absolute top-2 left-1/2 h-5 w-20 -translate-x-1/2 rounded-full bg-ink" aria-hidden="true"></span>
+                <span class="absolute -bottom-5 left-4 grid h-12 w-12 place-items-center rounded-full border-4 border-paper bg-ink text-[0.8125rem] font-[820] text-mustard" aria-hidden="true">SC</span>
+              </div>
+              <div class="px-4 pt-7 pb-2.5">
+                <p class="text-[1.1rem] leading-tight font-[820] [font-stretch:74%]">Sabores del Caribe</p>
+                <p class="mt-1 inline-flex items-center gap-1.5 rounded-full bg-leaf-soft px-2.5 py-0.5 text-[0.6875rem] font-bold text-leaf">
+                  <span class="h-1.5 w-1.5 rounded-full bg-leaf"></span>Abierto · hasta 11:30 p. m.
+                </p>
+              </div>
+              <div class="flex gap-1.5 overflow-hidden px-3 pb-2 text-[0.6875rem] font-[650] whitespace-nowrap" aria-hidden="true">
+                <span class="rounded-full bg-ink px-2.5 py-1 text-paper">Los más pedidos</span>
+                <span class="rounded-full border border-line px-2.5 py-1">Hamburguesas</span>
+                <span class="rounded-full border border-line px-2.5 py-1">Bebidas</span>
+              </div>
+              <ul class="grid grid-cols-1 px-3 text-[0.8125rem]">
+                <li class="flex items-center gap-2.5 border-t border-line py-2">
+                  <span class="photo h-12 w-12 flex-none rounded-[12px]"><img src="/assets/images/food/burger-closeup-480.webp" alt="" width="480" height="320" class="object-[85%_50%]" /></span>
+                  <span class="min-w-0 flex-1"><span class="block truncate font-[700]">Hamburguesa especial</span><span class="num block font-[760]">$18.000</span></span>
+                  <span class="demo-qty num" data-demo-qty="burger">1</span>
+                  <button type="button" class="demo-add" data-demo-add="burger" aria-label="Agregar Hamburguesa especial"><svg class="icon h-4 w-4"><use href="/assets/icons/sprite.svg#i-plus"></use></svg></button>
+                </li>
+                <li class="flex items-center gap-2.5 border-t border-line py-2">
+                  <span class="photo h-12 w-12 flex-none rounded-[12px]"><img src="/assets/images/food/fries-sauce-480.webp" alt="" width="480" height="374" /></span>
+                  <span class="min-w-0 flex-1"><span class="block truncate font-[700]">Salchipapa especial</span><span class="num block font-[760]">$22.000</span></span>
+                  <span class="demo-qty num" data-demo-qty="salchi">1</span>
+                  <button type="button" class="demo-add" data-demo-add="salchi" aria-label="Agregar Salchipapa especial"><svg class="icon h-4 w-4"><use href="/assets/icons/sprite.svg#i-plus"></use></svg></button>
+                </li>
+                <li class="flex items-center gap-2.5 border-t border-line py-2">
+                  <span class="photo h-12 w-12 flex-none rounded-[12px]"><img src="/assets/images/food/juice-orange-480.webp" alt="" width="480" height="320" /></span>
+                  <span class="min-w-0 flex-1"><span class="block truncate font-[700]">Jugo natural</span><span class="num block font-[760]">$6.000</span></span>
+                  <span class="demo-qty num" data-demo-qty="jugo">2</span>
+                  <button type="button" class="demo-add" data-demo-add="jugo" aria-label="Agregar Jugo natural"><svg class="icon h-4 w-4"><use href="/assets/icons/sprite.svg#i-plus"></use></svg></button>
+                </li>
+                <li class="flex items-center gap-2.5 border-t border-line py-2">
+                  <span class="photo h-12 w-12 flex-none rounded-[12px]"><img src="/assets/images/food/hotdog-loaded-480.webp" alt="" width="480" height="342" /></span>
+                  <span class="min-w-0 flex-1"><span class="block truncate font-[700]">Perro especial</span><span class="num block font-[760]">$14.000</span></span>
+                  <span class="demo-qty num" data-demo-qty="perro" hidden>0</span>
+                  <button type="button" class="demo-add" data-demo-add="perro" aria-label="Agregar Perro especial"><svg class="icon h-4 w-4"><use href="/assets/icons/sprite.svg#i-plus"></use></svg></button>
+                </li>
+              </ul>
+              <div class="px-3 pt-1.5 pb-3">
+                <button type="button" class="demo-cart is-sent" data-demo-send disabled>
+                  <span class="num grid h-7 min-w-7 place-items-center rounded-full bg-mustard px-1.5 text-[0.75rem] font-[800] text-ink" data-demo-count>4</span>
+                  <span class="flex-1" data-demo-label>Pedido enviado</span>
+                  <span class="num font-[800]" data-demo-total>$52.000</span>
+                </button>
+              </div>
+            </div>
+            <p class="mt-3 flex items-center justify-center gap-3 text-[0.8125rem] text-paper/70">
+              <span data-demo-hint>Toca <span class="font-[800] text-mustard">+</span> para armar un pedido</span>
+              <button type="button" class="font-[700] text-mustard underline underline-offset-2" data-demo-reset>Repetir</button>
+            </p>
+          </div>
+
+          <!-- Lo que pasa al enviar: WhatsApp del cliente y comanda en el panel -->
+          <div class="demo-reveal is-shown absolute top-[13rem] right-0 z-20 w-[13rem] sm:top-[14rem] sm:-right-6 sm:w-[15rem]" data-demo-bubble aria-hidden="true">
+            <div class="rounded-[16px] rounded-tr-[4px] bg-[#d9fdd3] p-3 text-[0.6875rem] leading-snug text-ink shadow-[0_30px_60px_-20px_rgb(0_0_0/0.7)] sm:text-[0.75rem]">
+              <p class="mb-1 flex items-center gap-1.5 text-[0.65rem] font-bold text-[#11804a]">
+                <svg class="icon h-3.5 w-3.5"><use href="/assets/icons/sprite.svg#i-message-circle"></use></svg>WhatsApp · al negocio
+              </p>
+              <p class="font-semibold">¡Hola! Quiero realizar el siguiente pedido:</p>
+              <p class="num mt-1" data-demo-lines>1. Hamburguesa especial x1 - $18.000<br />2. Salchipapa especial x1 - $22.000<br />3. Jugo natural x2 - $12.000</p>
+              <p class="num mt-1 font-bold" data-demo-bubble-total>TOTAL: $52.000</p>
+            </div>
+          </div>
+          <div class="demo-reveal is-shown absolute right-2 bottom-0 z-20 w-[12.5rem] rotate-[2.5deg] sm:-right-2 sm:bottom-6 sm:w-[14.5rem]" data-demo-ticket aria-hidden="true">
+            <div class="ticket-shadow">
+              <div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.75rem] text-ink sm:px-5 sm:text-[0.8125rem]">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="flex items-center gap-2">
+                    <span class="bell-ring grid h-6 w-6 place-items-center rounded-full bg-mustard"><svg class="icon h-3.5 w-3.5"><use href="/assets/icons/sprite.svg#i-bell-ring"></use></svg></span>
+                    <span class="text-[1.05rem] font-[820] whitespace-nowrap [font-stretch:75%] sm:text-[1.2rem]">PEDIDO #128</span>
+                  </span>
+                  <span class="badge badge-dot hidden bg-mustard-soft text-[0.625rem] text-mustard-deep sm:inline-flex">Nuevo</span>
+                </div>
+                <p class="mt-0.5 text-muted">Llegó ahora · Domicilio</p>
+                <hr class="ticket-rule my-2" />
+                <div class="num flex justify-between font-[750]"><span>TOTAL</span><span data-demo-ticket-total>$52.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-[0.6875rem] font-bold sm:text-[0.75rem]">Confirmar pedido</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
+
+      <!-- Palabra gigante al pie de la portada -->
+      <p class="display pointer-events-none mx-auto -mb-[3.2vw] max-w-none overflow-hidden text-center text-[21vw] leading-[0.8] whitespace-nowrap text-paper/[0.06] select-none" aria-hidden="true">PEDIDOS</p>
     </div>
 
-    <!-- ─────────────── Cinta de comidas ─────────────── -->
-    <div class="marquee bg-ink py-4 text-paper sm:py-5" aria-hidden="true">
-      <div class="marquee-track">
-        <ul class="flex flex-none items-center">
-          <li class="display px-6 text-[1.75rem] sm:text-[2.25rem]">Salchipapas</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] text-mustard sm:text-[2.25rem]">Hamburguesas</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] sm:text-[2.25rem]">Pizzas</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] text-mustard sm:text-[2.25rem]">Perros calientes</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] sm:text-[2.25rem]">Jugos naturales</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] text-mustard sm:text-[2.25rem]">Postres</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] sm:text-[2.25rem]">Asados</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-        </ul>
-        <ul class="flex flex-none items-center">
-          <li class="display px-6 text-[1.75rem] sm:text-[2.25rem]">Salchipapas</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] text-mustard sm:text-[2.25rem]">Hamburguesas</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] sm:text-[2.25rem]">Pizzas</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] text-mustard sm:text-[2.25rem]">Perros calientes</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] sm:text-[2.25rem]">Jugos naturales</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] text-mustard sm:text-[2.25rem]">Postres</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-          <li class="display px-6 text-[1.75rem] sm:text-[2.25rem]">Asados</li><li class="h-2.5 w-2.5 flex-none rounded-full bg-mustard"></li>
-        </ul>
+    <!-- ═══════════════════════════ CINTAS CRUZADAS ═══════════════════════════ -->
+    <div class="relative z-10 -mt-6 overflow-hidden py-6 sm:-mt-8" data-marquees>
+      <div class="marquee tape relative z-10 -mx-4 bg-mustard py-3.5 text-ink shadow-[0_18px_40px_-18px_rgb(23_22_28/0.5)] sm:py-4" aria-hidden="true">
+        <div class="marquee-track">
+          <ul class="flex flex-none items-center">
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Salchipapas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Hamburguesas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Pizzas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Perros calientes</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Jugos naturales</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Postres</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Asados</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+          </ul>
+          <ul class="flex flex-none items-center">
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Salchipapas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Hamburguesas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Pizzas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Perros calientes</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Jugos naturales</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Postres</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Asados</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
+          </ul>
+        </div>
       </div>
+      <div class="marquee tape-reverse absolute inset-x-0 top-1/2 -mx-4 -translate-y-1/2 bg-ink py-2.5 text-paper sm:py-3" aria-hidden="true">
+        <div class="marquee-track is-reverse">
+          <ul class="flex flex-none items-center text-[0.9375rem] font-[700] tracking-[0.14em] uppercase sm:text-[1.0625rem]">
+            <li class="px-5">Pedidos por WhatsApp</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Total calculado</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
+            <li class="px-5">Panel en vivo</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Tu enlace y tu QR</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
+            <li class="px-5">Fotos que venden</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Precios en pesos</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
+          </ul>
+          <ul class="flex flex-none items-center text-[0.9375rem] font-[700] tracking-[0.14em] uppercase sm:text-[1.0625rem]">
+            <li class="px-5">Pedidos por WhatsApp</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Total calculado</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
+            <li class="px-5">Panel en vivo</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Tu enlace y tu QR</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
+            <li class="px-5">Fotos que venden</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Precios en pesos</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
+          </ul>
+        </div>
+      </div>
+      <button type="button" class="absolute right-3 bottom-0 z-20 rounded-full bg-paper px-2.5 py-1 text-[0.6875rem] font-[700] text-muted shadow-[var(--shadow-lift)] hover:text-ink" data-pause-marquee aria-pressed="false">
+        Pausar animación
+      </button>
     </div>
 
-    <!-- ─────────────── Tipos de negocio ─────────────── -->
-    <section class="px-4 py-20 sm:px-8 lg:py-28" aria-labelledby="kinds-title">
-      <div class="mx-auto grid max-w-[78rem] gap-12">
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end" data-reveal>
-          <h2 id="kinds-title" class="display text-[clamp(2.5rem,5vw,4.25rem)]">Para todo lo que se pide por WhatsApp</h2>
-          <p class="max-w-[36rem] text-[1.0625rem] leading-relaxed text-muted lg:justify-self-end">
-            Desde el puesto de perros del barrio hasta la pizzería con tres domiciliarios: tu menú con fotos, tus precios en pesos y tu propio
-            enlace para compartir.
+    <!-- ═══════════════════════════ DEL ANTOJO… ═══════════════════════════ -->
+    <section class="overflow-hidden px-4 pt-16 pb-6 text-center sm:px-8 lg:pt-24" aria-labelledby="antojo-title">
+      <h2 id="antojo-title" class="mx-auto grid max-w-[80rem] justify-items-center" data-reveal>
+        <span class="text-[clamp(1.25rem,2.4vw,2rem)] font-[760]">Del</span>
+        <span class="display image-text block bg-[url(/assets/images/food/burger-dark-960.webp)] text-[clamp(6rem,25vw,22rem)] leading-[0.8] tracking-tight">antojo</span>
+        <span class="mt-2 text-[clamp(1.25rem,2.4vw,2rem)] font-[760]">al pedido confirmado, sin enredos.</span>
+      </h2>
+    </section>
+
+    <!-- ═══════════════════════════ PASOS ═══════════════════════════ -->
+    <section id="como-funciona" class="scroll-mt-4 px-4 pt-10 pb-24 sm:px-8 lg:pb-32" aria-label="Cómo funciona">
+      <ol class="mx-auto grid max-w-[80rem] gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <li class="group relative overflow-hidden rounded-[24px] bg-ground p-6 transition-colors hover:bg-mustard" data-reveal>
+          <span class="display text-outline-ink block text-[4.5rem] leading-none">01</span>
+          <h3 class="mt-4 text-[1.25rem] font-[780]">Tu menú con fotos</h3>
+          <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Precios en pesos y agotados marcados. Lo cambias cuando quieras.</p>
+        </li>
+        <li class="group relative overflow-hidden rounded-[24px] bg-ground p-6 transition-colors hover:bg-mustard" data-reveal>
+          <span class="display text-outline-ink block text-[4.5rem] leading-none">02</span>
+          <h3 class="mt-4 text-[1.25rem] font-[780]">El cliente arma su pedido</h3>
+          <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Desde el celular, sin descargar nada. Domicilio o para recoger.</p>
+        </li>
+        <li class="group relative overflow-hidden rounded-[24px] bg-ground p-6 transition-colors hover:bg-mustard" data-reveal>
+          <span class="display text-outline-ink block text-[4.5rem] leading-none">03</span>
+          <h3 class="mt-4 text-[1.25rem] font-[780]">Deja sus datos</h3>
+          <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Nombre, celular, dirección y referencias para que nadie llame a preguntar.</p>
+        </li>
+        <li class="group relative overflow-hidden rounded-[24px] bg-ground p-6 transition-colors hover:bg-mustard" data-reveal>
+          <span class="display text-outline-ink block text-[4.5rem] leading-none">04</span>
+          <h3 class="mt-4 text-[1.25rem] font-[780]">Lo envía por WhatsApp</h3>
+          <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Con el resumen listo y el total que calculó PedifyAI, no el cliente.</p>
+        </li>
+        <li class="group relative overflow-hidden rounded-[24px] bg-ink p-6 text-paper sm:col-span-2 lg:col-span-1" data-reveal>
+          <span class="display text-outline block text-[4.5rem] leading-none">05</span>
+          <h3 class="mt-4 text-[1.25rem] font-[780]">Suena en tu panel</h3>
+          <p class="mt-2 pr-10 text-[0.9375rem] leading-relaxed text-paper/70">Lo confirmas, lo preparas y lo despachas. Cada estado queda registrado.</p>
+          <svg class="icon absolute right-5 bottom-5 h-9 w-9 text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-bell-ring"></use></svg>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ═══════════════════════════ TIPOS DE NEGOCIO ═══════════════════════════ -->
+    <section class="px-4 pb-24 sm:px-8 lg:pb-32" aria-labelledby="kinds-title">
+      <div class="mx-auto grid max-w-[80rem] gap-10">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-end" data-reveal>
+          <h2 id="kinds-title" class="display text-[clamp(2.75rem,6vw,5.25rem)] leading-[0.88]">Para todo lo que se pide <span class="text-outline-ink">por WhatsApp</span></h2>
+          <p class="max-w-[30rem] text-[1.0625rem] leading-relaxed text-muted lg:justify-self-end">
+            Del puesto de perros del barrio a la pizzería con tres domiciliarios: tu menú con fotos, tus precios y tu propio enlace.
           </p>
         </div>
 
-        <ul class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:grid-rows-[repeat(3,minmax(13rem,auto))]">
+        <ul class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:grid-rows-[repeat(3,minmax(14rem,auto))]">
           <li class="col-span-2 lg:row-span-2" data-reveal>
-            <a href="/registro" class="food-card aspect-[16/11] h-full p-5 no-underline sm:p-7 lg:aspect-auto">
-              <img src="/assets/images/food/burger-dark-960.webp" srcset="/assets/images/food/burger-dark-480.webp 480w, /assets/images/food/burger-dark-960.webp 960w" sizes="(min-width: 1024px) 600px, 100vw" alt="" width="960" height="721" loading="lazy" decoding="async" />
-              <span class="grid gap-1">
-                <span class="display text-[2.25rem] sm:text-[3.25rem]">Hamburgueserías</span>
-                <span class="text-[0.9375rem] text-paper/80">Combos, adicionales y salsas de la casa</span>
+            <a href="/registro" class="food-card group aspect-[16/11] h-full p-5 no-underline sm:p-8 lg:aspect-auto">
+              <img src="/assets/images/food/burger-dark-960.webp" srcset="/assets/images/food/burger-dark-480.webp 480w, /assets/images/food/burger-dark-960.webp 960w" sizes="(min-width: 1024px) 620px, 100vw" alt="" width="960" height="721" loading="lazy" decoding="async" />
+              <span class="flex w-full items-end justify-between gap-4">
+                <span class="grid gap-1">
+                  <span class="display text-[2.5rem] sm:text-[3.75rem]">Hamburgueserías</span>
+                  <span class="text-[0.9375rem] text-paper/80">Combos, adicionales y salsas de la casa</span>
+                </span>
+                <span class="grid h-12 w-12 flex-none place-items-center rounded-full bg-mustard text-ink transition-transform group-hover:-rotate-45"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-right"></use></svg></span>
               </span>
             </a>
           </li>
           <li data-reveal>
             <a href="/registro" class="food-card aspect-square h-full p-3.5 no-underline sm:p-5 lg:aspect-auto">
               <img src="/assets/images/food/fries-bowl-480.webp" srcset="/assets/images/food/fries-bowl-480.webp 480w, /assets/images/food/fries-bowl-960.webp 960w" sizes="(min-width: 1024px) 300px, 50vw" alt="" width="480" height="320" loading="lazy" decoding="async" />
-              <span class="display text-[1.3rem] leading-[0.95] sm:text-[1.875rem]">Salchipaperías</span>
+              <span class="display text-[1.3rem] leading-[0.95] sm:text-[2rem]">Salchipaperías</span>
             </a>
           </li>
           <li data-reveal>
             <a href="/registro" class="food-card aspect-square h-full p-3.5 no-underline sm:p-5 lg:aspect-auto">
               <img src="/assets/images/food/pizza-slices-480.webp" srcset="/assets/images/food/pizza-slices-480.webp 480w, /assets/images/food/pizza-slices-960.webp 960w" sizes="(min-width: 1024px) 300px, 50vw" alt="" width="480" height="320" loading="lazy" decoding="async" />
-              <span class="display text-[1.3rem] leading-[0.95] sm:text-[1.875rem]">Pizzerías</span>
+              <span class="display text-[1.3rem] leading-[0.95] sm:text-[2rem]">Pizzerías</span>
             </a>
           </li>
           <li data-reveal>
             <a href="/registro" class="food-card aspect-square h-full p-3.5 no-underline sm:p-5 lg:aspect-auto">
               <img src="/assets/images/food/hotdog-loaded-480.webp" srcset="/assets/images/food/hotdog-loaded-480.webp 480w, /assets/images/food/hotdog-loaded-960.webp 960w" sizes="(min-width: 1024px) 300px, 50vw" alt="" width="480" height="342" loading="lazy" decoding="async" class="object-[50%_80%]" />
-              <span class="display text-[1.3rem] leading-[0.95] sm:text-[1.875rem]">Perros calientes</span>
+              <span class="display text-[1.3rem] leading-[0.95] sm:text-[2rem]">Perros calientes</span>
             </a>
           </li>
           <li data-reveal>
             <a href="/registro" class="food-card aspect-square h-full p-3.5 no-underline sm:p-5 lg:aspect-auto">
               <img src="/assets/images/food/juice-orange-480.webp" srcset="/assets/images/food/juice-orange-480.webp 480w, /assets/images/food/juice-orange-960.webp 960w" sizes="(min-width: 1024px) 300px, 50vw" alt="" width="480" height="320" loading="lazy" decoding="async" />
-              <span class="display text-[1.3rem] leading-[0.95] sm:text-[1.875rem]">Jugos y bebidas</span>
+              <span class="display text-[1.3rem] leading-[0.95] sm:text-[2rem]">Jugos y bebidas</span>
             </a>
           </li>
-          <li class="col-span-2 lg:col-span-2" data-reveal>
-            <a href="/registro" class="food-card aspect-[16/9] h-full p-5 no-underline sm:p-6 lg:aspect-auto">
-              <img src="/assets/images/food/cake-birthday-960.webp" srcset="/assets/images/food/cake-birthday-480.webp 480w, /assets/images/food/cake-birthday-960.webp 960w" sizes="(min-width: 1024px) 600px, 100vw" alt="" width="960" height="640" loading="lazy" decoding="async" class="object-[50%_60%]" />
+          <li class="col-span-2" data-reveal>
+            <a href="/registro" class="food-card aspect-[16/9] h-full p-5 no-underline sm:p-7 lg:aspect-auto">
+              <img src="/assets/images/food/cake-birthday-960.webp" srcset="/assets/images/food/cake-birthday-480.webp 480w, /assets/images/food/cake-birthday-960.webp 960w" sizes="(min-width: 1024px) 620px, 100vw" alt="" width="960" height="640" loading="lazy" decoding="async" class="object-[50%_60%]" />
               <span class="grid gap-1">
-                <span class="display text-[1.875rem] sm:text-[2.5rem]">Reposterías</span>
+                <span class="display text-[2rem] sm:text-[2.75rem]">Reposterías</span>
                 <span class="text-[0.9375rem] text-paper/80">Tortas por encargo, postres y antojos</span>
               </span>
             </a>
           </li>
-          <li class="col-span-2 lg:col-span-2" data-reveal>
-            <a href="/registro" class="food-card aspect-[16/9] h-full p-5 no-underline sm:p-6 lg:aspect-auto">
-              <img src="/assets/images/food/chicken-grill-960.webp" srcset="/assets/images/food/chicken-grill-480.webp 480w, /assets/images/food/chicken-grill-960.webp 960w" sizes="(min-width: 1024px) 600px, 100vw" alt="" width="960" height="731" loading="lazy" decoding="async" />
+          <li class="col-span-2" data-reveal>
+            <a href="/registro" class="food-card aspect-[16/9] h-full p-5 no-underline sm:p-7 lg:aspect-auto">
+              <img src="/assets/images/food/chicken-grill-960.webp" srcset="/assets/images/food/chicken-grill-480.webp 480w, /assets/images/food/chicken-grill-960.webp 960w" sizes="(min-width: 1024px) 620px, 100vw" alt="" width="960" height="731" loading="lazy" decoding="async" />
               <span class="grid gap-1">
-                <span class="display text-[1.875rem] sm:text-[2.5rem]">Asaderos</span>
+                <span class="display text-[2rem] sm:text-[2.75rem]">Asaderos</span>
                 <span class="text-[0.9375rem] text-paper/80">Pollo, carnes y picadas para la familia</span>
               </span>
             </a>
@@ -224,235 +327,164 @@
       </div>
     </section>
 
-    <!-- ─────────────── Cómo funciona ─────────────── -->
-    <section id="como-funciona" class="scroll-mt-4 bg-ground px-4 py-20 sm:px-8 lg:py-28" aria-labelledby="flow-title">
-      <div class="mx-auto max-w-[78rem]">
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end" data-reveal>
-          <h2 id="flow-title" class="display text-[clamp(2.5rem,5vw,4.25rem)]">Del antojo al pedido confirmado</h2>
-          <p class="max-w-[36rem] text-[1.0625rem] leading-relaxed text-muted lg:justify-self-end">
-            Sin chats enredados ni cuentas a mano: el pedido llega con productos, cantidades, dirección y total. Los precios los
-            calcula PedifyAI con tu menú, no el navegador del cliente.
-          </p>
+    <!-- ═══════════════════════════ FOTOS QUE VENDEN ═══════════════════════════ -->
+    <section class="dots overflow-hidden bg-mustard px-4 py-24 sm:px-8 lg:py-32" aria-labelledby="photos-title">
+      <div class="mx-auto grid max-w-[80rem] items-center gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <!-- Abanico de fotos -->
+        <div class="relative mx-auto h-[24rem] w-full max-w-[30rem] sm:h-[30rem]" data-reveal aria-hidden="true">
+          <div class="photo absolute top-8 left-0 h-[70%] w-[58%] -rotate-[9deg] rounded-[28px] shadow-[var(--shadow-pop)] ring-8 ring-paper">
+            <img src="/assets/images/food/pizza-slices-480.webp" alt="" width="480" height="320" loading="lazy" decoding="async" />
+          </div>
+          <div class="photo absolute top-14 right-0 h-[70%] w-[58%] rotate-[8deg] rounded-[28px] shadow-[var(--shadow-pop)] ring-8 ring-paper">
+            <img src="/assets/images/food/hotdog-classic-480.webp" alt="" width="480" height="319" loading="lazy" decoding="async" />
+          </div>
+          <div class="photo absolute top-0 left-[18%] z-10 h-[82%] w-[64%] rounded-[30px] shadow-[var(--shadow-pop)] ring-8 ring-paper">
+            <img src="/assets/images/food/burger-classic-960.webp" srcset="/assets/images/food/burger-classic-480.webp 480w, /assets/images/food/burger-classic-960.webp 960w" sizes="320px" alt="" width="960" height="628" loading="lazy" decoding="async" />
+            <span class="absolute right-3 bottom-3 left-3 flex items-center justify-between rounded-[14px] bg-paper/95 px-3.5 py-2.5 text-ink">
+              <span><span class="block text-[0.875rem] font-[760]">Hamburguesa sencilla</span><span class="num block text-[0.875rem] font-[800]">$13.000</span></span>
+              <span class="grid h-9 w-9 place-items-center rounded-full bg-ink text-mustard"><svg class="icon h-4 w-4"><use href="/assets/icons/sprite.svg#i-plus"></use></svg></span>
+            </span>
+          </div>
+          <span class="display absolute -top-4 right-2 z-20 grid h-24 w-24 rotate-12 place-items-center rounded-full bg-ink text-center text-[1.2rem] leading-[0.9] text-mustard shadow-[var(--shadow-pop)]">Los más<br />pedidos</span>
         </div>
 
-        <ol class="relative mt-14 grid gap-10 md:grid-cols-5 md:gap-6" data-reveal>
-          <li class="relative grid grid-cols-[3.5rem_minmax(0,1fr)] content-start gap-x-4 gap-y-1 md:grid-cols-1 md:gap-3">
-            <span class="relative z-10 row-span-2 grid h-14 w-14 place-items-center rounded-full bg-mustard ring-8 ring-ground md:row-span-1">
-              <svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-utensils"></use></svg>
-            </span>
-            <h3 class="self-end text-lg font-[760] md:self-auto">Tu menú digital</h3>
-            <p class="text-[0.9375rem] leading-relaxed text-muted">Fotos, precios en pesos y productos agotados marcados. Lo cambias cuando quieras desde el panel.</p>
-          </li>
-          <li class="relative grid grid-cols-[3.5rem_minmax(0,1fr)] content-start gap-x-4 gap-y-1 md:grid-cols-1 md:gap-3">
-            <span class="relative z-10 row-span-2 grid h-14 w-14 place-items-center rounded-full bg-mustard ring-8 ring-ground md:row-span-1">
-              <svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-shopping-bag"></use></svg>
-            </span>
-            <h3 class="self-end text-lg font-[760] md:self-auto">El cliente arma su carrito</h3>
-            <p class="text-[0.9375rem] leading-relaxed text-muted">Suma y quita unidades desde el celular y elige si lo quiere a domicilio o pasa a recogerlo.</p>
-          </li>
-          <li class="relative grid grid-cols-[3.5rem_minmax(0,1fr)] content-start gap-x-4 gap-y-1 md:grid-cols-1 md:gap-3">
-            <span class="relative z-10 row-span-2 grid h-14 w-14 place-items-center rounded-full bg-mustard ring-8 ring-ground md:row-span-1">
-              <svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-map-pin"></use></svg>
-            </span>
-            <h3 class="self-end text-lg font-[760] md:self-auto">Deja sus datos</h3>
-            <p class="text-[0.9375rem] leading-relaxed text-muted">Nombre, teléfono, dirección y referencias, para que el domiciliario no tenga que llamar a preguntar.</p>
-          </li>
-          <li class="relative grid grid-cols-[3.5rem_minmax(0,1fr)] content-start gap-x-4 gap-y-1 md:grid-cols-1 md:gap-3">
-            <span class="relative z-10 row-span-2 grid h-14 w-14 place-items-center rounded-full bg-mustard ring-8 ring-ground md:row-span-1">
-              <svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-message-circle"></use></svg>
-            </span>
-            <h3 class="self-end text-lg font-[760] md:self-auto">Lo envía por WhatsApp</h3>
-            <p class="text-[0.9375rem] leading-relaxed text-muted">Se abre WhatsApp con el resumen listo. Tu cliente lo revisa y lo envía a tu número.</p>
-          </li>
-          <li class="relative grid grid-cols-[3.5rem_minmax(0,1fr)] content-start gap-x-4 gap-y-1 md:grid-cols-1 md:gap-3">
-            <span class="relative z-10 row-span-2 grid h-14 w-14 place-items-center rounded-full bg-ink text-mustard ring-8 ring-ground md:row-span-1">
-              <svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-bell-ring"></use></svg>
-            </span>
-            <h3 class="self-end text-lg font-[760] md:self-auto">Suena en tu panel</h3>
-            <p class="text-[0.9375rem] leading-relaxed text-muted">Lo confirmas, lo preparas y lo despachas. Cada cambio de estado queda registrado.</p>
-          </li>
-          <!-- riel de la comanda que une los pasos -->
-          <span aria-hidden="true" class="absolute top-7 bottom-7 left-7 border-l-2 border-dashed border-line-strong md:top-7 md:right-[10%] md:bottom-auto md:left-7 md:border-t-2 md:border-l-0"></span>
-        </ol>
-
-        <div class="mt-16 grid overflow-hidden rounded-[22px] bg-paper shadow-[var(--shadow-lift)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" data-reveal>
-          <div class="photo relative aspect-[16/10] lg:aspect-auto lg:min-h-[24rem]">
-            <img src="/assets/images/food/takeaway-combo-960.webp" srcset="/assets/images/food/takeaway-combo-480.webp 480w, /assets/images/food/takeaway-combo-960.webp 960w" sizes="(min-width: 1024px) 640px, 100vw" alt="Hamburguesa, papas y gaseosa listas para el domicilio" width="960" height="593" loading="lazy" decoding="async" />
-            <ul class="absolute bottom-4 left-4 flex flex-wrap gap-2 pr-4 text-[0.8125rem] font-[680]" aria-hidden="true">
-              <li class="badge badge-dot bg-paper px-3 py-1.5 text-ink shadow-[var(--shadow-lift)]">En preparación</li>
-              <li class="badge badge-dot bg-ink px-3 py-1.5 text-mustard shadow-[var(--shadow-lift)]">Listo</li>
-              <li class="badge badge-dot bg-leaf-soft px-3 py-1.5 text-leaf shadow-[var(--shadow-lift)]">En camino</li>
-            </ul>
-          </div>
-          <div class="grid content-center gap-4 p-6 sm:p-10">
-            <h3 class="display text-[2.25rem] sm:text-[2.75rem]">Cada pedido con su estado</h3>
-            <p class="max-w-[46ch] text-[1rem] leading-relaxed text-muted">
-              Así distingues un pedido recién llegado de uno que ya va en camino. PedifyAI no envía mensajes por tu cliente: el pedido te
-              llega cuando él lo envía desde su WhatsApp.
-            </p>
-            <ul class="flex flex-wrap gap-2 text-sm font-[650]" aria-label="Estados de un pedido">
-              <li class="badge badge-dot bg-mustard-soft px-3 py-1.5 text-mustard-deep">Pendiente</li>
-              <li class="badge badge-dot bg-sky-soft px-3 py-1.5 text-sky">Confirmado</li>
-              <li class="badge badge-dot bg-ground px-3 py-1.5 text-ink">En preparación</li>
-              <li class="badge badge-dot bg-ink px-3 py-1.5 text-mustard">Listo</li>
-              <li class="badge badge-dot bg-ground px-3 py-1.5 text-ink">En camino</li>
-              <li class="badge badge-dot bg-leaf-soft px-3 py-1.5 text-leaf">Entregado</li>
-              <li class="badge badge-dot bg-tomato-soft px-3 py-1.5 text-tomato">Cancelado</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─────────────── La tienda en el celular ─────────────── -->
-    <section class="dots overflow-hidden bg-mustard px-4 py-20 sm:px-8 lg:py-28" aria-labelledby="store-title">
-      <div class="mx-auto grid max-w-[78rem] items-center gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
-        <!-- Teléfono con la tienda (ilustrativo) -->
-        <div class="relative mx-auto w-full max-w-[20rem] lg:order-none" data-reveal aria-hidden="true">
-          <div class="overflow-hidden rounded-[2.4rem] border-[10px] border-ink bg-paper shadow-[var(--shadow-pop)]">
-            <div class="photo relative h-36">
-              <img src="/assets/images/food/burger-board-480.webp" alt="" width="480" height="320" loading="lazy" decoding="async" />
-              <span class="absolute -bottom-6 left-4 grid h-14 w-14 place-items-center rounded-full border-4 border-paper bg-ink text-base font-[820] text-mustard">SC</span>
-            </div>
-            <div class="px-4 pt-8 pb-3">
-              <p class="text-[1.15rem] leading-tight font-[820] [font-stretch:74%]">Sabores del Caribe</p>
-              <p class="mt-1 inline-flex items-center gap-1.5 rounded-full bg-leaf-soft px-2.5 py-1 text-[0.6875rem] font-bold text-leaf">
-                <span class="h-1.5 w-1.5 rounded-full bg-leaf"></span>Abierto · hasta 11:30 p. m.
-              </p>
-            </div>
-            <p class="px-4 pt-1 text-[0.6875rem] font-[760] tracking-wide text-muted uppercase">Los más pedidos</p>
-            <div class="flex gap-2.5 overflow-hidden px-4 pt-2 pb-3">
-              <div class="w-[7.5rem] flex-none">
-                <div class="photo h-24 rounded-[14px]"><img src="/assets/images/food/burger-closeup-480.webp" alt="" width="480" height="320" loading="lazy" decoding="async" /></div>
-                <p class="mt-1.5 truncate text-[0.75rem] font-[700]">Hamburguesa especial</p>
-                <p class="num text-[0.75rem] font-[760]">$18.000</p>
-              </div>
-              <div class="w-[7.5rem] flex-none">
-                <div class="photo h-24 rounded-[14px]"><img src="/assets/images/food/fries-sauce-480.webp" alt="" width="480" height="374" loading="lazy" decoding="async" /></div>
-                <p class="mt-1.5 truncate text-[0.75rem] font-[700]">Salchipapa especial</p>
-                <p class="num text-[0.75rem] font-[760]">$22.000</p>
-              </div>
-              <div class="w-[7.5rem] flex-none">
-                <div class="photo h-24 rounded-[14px]"><img src="/assets/images/food/juice-orange-480.webp" alt="" width="480" height="320" loading="lazy" decoding="async" /></div>
-                <p class="mt-1.5 truncate text-[0.75rem] font-[700]">Jugo natural</p>
-              </div>
-            </div>
-            <ul class="grid px-4 pb-20 text-[0.8125rem]">
-              <li class="flex items-center gap-3 border-t border-line py-2.5">
-                <span class="min-w-0 flex-1">
-                  <span class="block font-[700]">Perro especial</span>
-                  <span class="num block font-[760]">$14.000</span>
-                </span>
-                <span class="photo h-14 w-14 flex-none rounded-[12px]"><img src="/assets/images/food/hotdog-loaded-480.webp" alt="" width="480" height="342" loading="lazy" decoding="async" /></span>
-              </li>
-              <li class="flex items-center gap-3 border-t border-line py-2.5 text-muted">
-                <span class="min-w-0 flex-1">
-                  <span class="block font-[700]">Pizza familiar</span>
-                  <span class="flex items-center gap-2"><span class="num font-[760] line-through">$38.000</span><span class="rounded-full bg-tomato-soft px-2 py-0.5 text-[0.625rem] font-bold text-tomato">Agotado</span></span>
-                </span>
-                <span class="photo h-14 w-14 flex-none rounded-[12px] opacity-60 grayscale"><img src="/assets/images/food/pizza-box-480.webp" alt="" width="480" height="322" loading="lazy" decoding="async" /></span>
-              </li>
-            </ul>
-          </div>
-          <div class="absolute inset-x-5 bottom-5 flex items-center gap-2.5 rounded-[16px] bg-ink px-3.5 py-3 text-[0.8125rem] font-semibold text-paper shadow-[var(--shadow-pop)]">
-            <span class="num grid h-7 min-w-7 place-items-center rounded-full bg-mustard text-[0.75rem] font-[800] text-ink">3</span>
-            <span class="flex-1">Ver mi pedido</span><span class="num text-mustard">$49.000</span>
-          </div>
-        </div>
-
-        <div class="grid content-start gap-6" data-reveal>
-          <h2 id="store-title" class="display text-[clamp(2.5rem,5vw,4.25rem)]">Un menú que abre el apetito</h2>
-          <p class="max-w-[34rem] text-[1.125rem] leading-relaxed text-ink/85">
-            Tu cliente ve tus productos con foto, precio y lo que se agotó, desde el celular y sin descargar nada. Lo que más se vende sale
+        <div class="grid content-start gap-7" data-reveal>
+          <h2 id="photos-title" class="display text-[clamp(2.75rem,6vw,5.25rem)] leading-[0.88]">Un menú que <span class="text-outline-ink">abre el apetito</span></h2>
+          <p class="max-w-[32rem] text-[1.125rem] leading-relaxed text-ink/80">
+            Tu cliente ve cada producto con foto, precio y lo que se agotó. Al tocarlo, la foto se abre en grande. Lo que más se vende sale
             primero.
           </p>
-          <ul class="grid max-w-[34rem] gap-4 text-[1rem]">
-            <li class="flex gap-3">
-              <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-ink text-mustard"><svg class="icon h-5 w-5" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-camera"></use></svg></span>
-              <span><span class="block font-[760]">Fotos livianas, sin que tengas que editarlas</span><span class="text-ink/75">Las tomas con el celular; PedifyAI las reduce para que carguen rápido hasta con datos.</span></span>
+          <ul class="grid max-w-[32rem] gap-5 text-[1rem]">
+            <li class="flex gap-4">
+              <span class="grid h-12 w-12 flex-none place-items-center rounded-[16px] bg-ink text-mustard"><svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-camera"></use></svg></span>
+              <span><span class="block text-[1.0625rem] font-[780]">Fotos del celular, listas para vender</span><span class="text-ink/75">PedifyAI las endereza, las reduce y les quita la ubicación. Cargan rápido hasta con datos.</span></span>
             </li>
-            <li class="flex gap-3">
-              <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-ink text-mustard"><svg class="icon h-5 w-5" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-flame"></use></svg></span>
-              <span><span class="block font-[760]">Los más pedidos, arriba</span><span class="text-ink/75">Un carrusel con lo que más venden tus clientes en el último mes.</span></span>
+            <li class="flex gap-4">
+              <span class="grid h-12 w-12 flex-none place-items-center rounded-[16px] bg-ink text-mustard"><svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-flame"></use></svg></span>
+              <span><span class="block text-[1.0625rem] font-[780]">Los más pedidos, arriba</span><span class="text-ink/75">Un carrusel con lo que más venden tus clientes en el último mes.</span></span>
             </li>
-            <li class="flex gap-3">
-              <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-ink text-mustard"><svg class="icon h-5 w-5" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-qr-code"></use></svg></span>
-              <span><span class="block font-[760]">Tu enlace y tu código QR</span><span class="text-ink/75">Para los estados de WhatsApp, Instagram, el mostrador y las mesas.</span></span>
+            <li class="flex gap-4">
+              <span class="grid h-12 w-12 flex-none place-items-center rounded-[16px] bg-ink text-mustard"><svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-qr-code"></use></svg></span>
+              <span><span class="block text-[1.0625rem] font-[780]">Tu enlace y tu código QR</span><span class="text-ink/75">Para los estados de WhatsApp, Instagram, el mostrador y las mesas.</span></span>
             </li>
           </ul>
-          <a href="/registro" class="btn btn-ink w-fit">Crear mi tienda gratis</a>
         </div>
       </div>
     </section>
 
-    <!-- ─────────────── El tablero (panel del comerciante) ─────────────── -->
-    <section class="bg-ink px-4 py-20 text-paper sm:px-8 lg:py-28" aria-labelledby="board-title">
-      <div class="mx-auto grid max-w-[78rem] gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
-        <div class="grid content-start gap-5" data-reveal>
-          <h2 id="board-title" class="display text-[clamp(2.5rem,5vw,4.25rem)]">Todo tu negocio en <span class="text-mustard">un tablero</span></h2>
-          <p class="max-w-[30rem] text-[1.0625rem] leading-relaxed text-ink-soft">
-            Desde el celular o el computador de la caja. Tú y tus empleados entran con su propia cuenta; solo el propietario cambia precios
-            y configuración.
-          </p>
-          <a href="/registro" class="btn btn-primary mt-2 w-fit">Registrar mi negocio</a>
-          <div class="photo relative mt-6 aspect-[4/3] rounded-[22px]">
-            <img src="/assets/images/food/chef-kitchen-960.webp" srcset="/assets/images/food/chef-kitchen-480.webp 480w, /assets/images/food/chef-kitchen-960.webp 960w" sizes="(min-width: 1024px) 460px, 100vw" alt="Cocina de restaurante en pleno servicio" width="960" height="640" loading="lazy" decoding="async" />
-            <div class="absolute right-4 bottom-4 left-4 flex items-center gap-3 rounded-[14px] bg-paper px-4 py-3 text-ink shadow-[var(--shadow-pop)]" aria-hidden="true">
-              <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-mustard"><svg class="icon h-5 w-5"><use href="/assets/icons/sprite.svg#i-bell-ring"></use></svg></span>
-              <span class="min-w-0 flex-1"><span class="block font-[760]">Pedido #27 · Domicilio</span><span class="block text-sm text-muted">Hace 30 s · 3 productos</span></span>
-              <span class="num font-[800]">$41.000</span>
-            </div>
+    <!-- ═══════════════════════════ EL TABLERO ═══════════════════════════ -->
+    <section class="glow-mustard relative overflow-hidden px-4 py-24 text-paper sm:px-8 lg:py-32" aria-labelledby="board-title">
+      <div class="mx-auto grid max-w-[80rem] gap-14">
+        <div class="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-end" data-reveal>
+          <h2 id="board-title" class="display text-[clamp(2.75rem,6.5vw,5.75rem)] leading-[0.88]">Todo tu negocio en <span class="text-mustard">un tablero</span></h2>
+          <div class="grid gap-5 lg:justify-self-end">
+            <p class="max-w-[30rem] text-[1.0625rem] leading-relaxed text-paper/70">
+              Desde el celular o el computador de la caja. Cada pedido llega con sonido y lo avanzas con un toque. Tú y tus empleados, cada
+              uno con su cuenta.
+            </p>
+            <a href="/registro" class="btn btn-primary w-fit">Crear mi tienda gratis</a>
           </div>
         </div>
 
-        <dl class="grid content-start gap-x-10 sm:grid-cols-2" data-reveal>
+        <!-- Tablero de pedidos (ilustrativo) -->
+        <figure class="overflow-hidden rounded-[22px] bg-ink-2 shadow-[0_50px_100px_-30px_rgb(0_0_0/0.8)] ring-1 ring-paper/10" data-reveal>
+          <div class="flex items-center gap-2 border-b border-paper/10 px-4 py-3" aria-hidden="true">
+            <span class="h-3 w-3 rounded-full bg-tomato"></span><span class="h-3 w-3 rounded-full bg-mustard"></span><span class="h-3 w-3 rounded-full bg-leaf"></span>
+            <span class="ml-3 truncate rounded-full bg-ink px-3 py-1 text-[0.75rem] text-paper/60">pedifyai.com/panel/pedidos</span>
+            <span class="ml-auto hidden items-center gap-1.5 text-[0.75rem] font-[650] text-leaf sm:flex"><span class="h-2 w-2 rounded-full bg-leaf"></span>En vivo</span>
+          </div>
+          <div class="no-scrollbar grid auto-cols-[16rem] grid-flow-col gap-4 overflow-x-auto p-4 sm:auto-cols-[minmax(0,1fr)] sm:p-6" aria-hidden="true">
+            <div class="grid content-start gap-3">
+              <p class="flex items-center gap-2 text-sm font-[750]"><span class="h-2.5 w-2.5 rounded-full bg-mustard"></span>Nuevos <span class="text-paper/50">2</span></p>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                <div class="flex items-center justify-between"><span class="text-[1.15rem] font-[820] [font-stretch:75%]">#128</span><span class="text-xs font-[700] text-tomato">hace 1 min</span></div>
+                <p class="text-muted">Laura V. · Domicilio</p><hr class="ticket-rule my-2" />
+                <p>1× Hamburguesa especial<br />1× Salchipapa especial<br />2× Jugo natural</p>
+                <div class="num mt-2 flex justify-between font-[780]"><span>Total</span><span>$56.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-xs font-bold">Confirmar pedido</div>
+              </div></div>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                <div class="flex items-center justify-between"><span class="text-[1.15rem] font-[820] [font-stretch:75%]">#127</span><span class="text-xs text-muted">hace 3 min</span></div>
+                <p class="text-muted">Andrés M. · Recoger</p><hr class="ticket-rule my-2" />
+                <p>2× Perro especial</p>
+                <div class="num mt-2 flex justify-between font-[780]"><span>Total</span><span>$28.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-xs font-bold">Confirmar pedido</div>
+              </div></div>
+            </div>
+            <div class="grid content-start gap-3">
+              <p class="flex items-center gap-2 text-sm font-[750]"><span class="h-2.5 w-2.5 rounded-full bg-sky"></span>En cocina <span class="text-paper/50">1</span></p>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                <div class="flex items-center justify-between"><span class="text-[1.15rem] font-[820] [font-stretch:75%]">#126</span><span class="text-xs text-muted">hace 9 min</span></div>
+                <p class="text-muted">Camila O. · Domicilio</p><hr class="ticket-rule my-2" />
+                <p>1× Pizza familiar<br />1× Gaseosa 1,5 L</p>
+                <div class="num mt-2 flex justify-between font-[780]"><span>Total</span><span>$46.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-ink py-2 text-center text-xs font-bold text-paper">Marcar como listo</div>
+              </div></div>
+            </div>
+            <div class="grid content-start gap-3">
+              <p class="flex items-center gap-2 text-sm font-[750]"><span class="h-2.5 w-2.5 rounded-full bg-leaf"></span>Listos y en camino <span class="text-paper/50">1</span></p>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                <div class="flex items-center justify-between"><span class="text-[1.15rem] font-[820] [font-stretch:75%]">#125</span><span class="badge bg-leaf-soft text-[0.625rem] text-leaf">En camino</span></div>
+                <p class="text-muted">Jorge S. · Domicilio</p><hr class="ticket-rule my-2" />
+                <p>3× Hamburguesa sencilla<br />1× Porción de papas</p>
+                <div class="num mt-2 flex justify-between font-[780]"><span>Total</span><span>$49.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-ink py-2 text-center text-xs font-bold text-paper">Marcar como entregado</div>
+              </div></div>
+            </div>
+            <div class="grid content-start gap-3">
+              <p class="flex items-center gap-2 text-sm font-[750]"><svg class="icon h-4 w-4 text-mustard"><use href="/assets/icons/sprite.svg#i-chart-column"></use></svg>Hoy</p>
+              <div class="grid gap-3 rounded-[14px] bg-ink p-4">
+                <p class="text-xs text-paper/60">Ventas del día</p>
+                <p class="num text-[2rem] leading-none font-[840] [font-stretch:80%] text-mustard">$1.284.000</p>
+                <div class="flex h-20 items-end gap-1.5 pt-2">
+                  <span class="h-[30%] flex-1 rounded-t-[4px] bg-paper/15"></span><span class="h-[45%] flex-1 rounded-t-[4px] bg-paper/15"></span>
+                  <span class="h-[38%] flex-1 rounded-t-[4px] bg-paper/15"></span><span class="h-[62%] flex-1 rounded-t-[4px] bg-paper/15"></span>
+                  <span class="h-[100%] flex-1 rounded-t-[4px] bg-mustard"></span><span class="h-[78%] flex-1 rounded-t-[4px] bg-paper/15"></span>
+                  <span class="h-[55%] flex-1 rounded-t-[4px] bg-paper/15"></span>
+                </div>
+                <p class="text-xs text-paper/60">Hora pico: 7:00 p. m.</p>
+              </div>
+            </div>
+          </div>
+          <figcaption class="border-t border-paper/10 px-4 py-2.5 text-[0.75rem] text-paper/50">Ejemplo ilustrativo del panel de pedidos.</figcaption>
+        </figure>
+
+        <dl class="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-4" data-reveal>
           <div class="border-t border-ink-3 py-5">
-            <dt class="text-[1.6rem] leading-none font-[840] uppercase [font-stretch:68%] text-mustard">Pedidos en vivo</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">Llegan con sonido de alerta y los avanzas de estado con un toque.</dd>
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%] text-mustard">Menú y categorías</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Crea, ordena y marca agotados. Eliges qué productos van en cada categoría con un toque.</dd>
           </div>
           <div class="border-t border-ink-3 py-5">
-            <dt class="text-[1.6rem] leading-none font-[840] uppercase [font-stretch:68%]">Menú digital</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">Crea, edita, desactiva y ordena productos. Marca lo que se agotó.</dd>
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Clientes</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Sus datos de entrega y su historial de pedidos, para atenderlos mejor.</dd>
           </div>
           <div class="border-t border-ink-3 py-5">
-            <dt class="text-[1.6rem] leading-none font-[840] uppercase [font-stretch:68%]">Categorías</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">Salchipapas, hamburguesas, pizzas y bebidas. Eliges qué productos van en cada una con un toque.</dd>
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Analíticas</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Ventas, ticket promedio, horas pico y lo que más se vende, en hora de Colombia.</dd>
           </div>
           <div class="border-t border-ink-3 py-5">
-            <dt class="text-[1.6rem] leading-none font-[840] uppercase [font-stretch:68%]">Clientes</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">Sus datos de entrega y su historial de pedidos.</dd>
-          </div>
-          <div class="border-t border-ink-3 py-5">
-            <dt class="text-[1.6rem] leading-none font-[840] uppercase [font-stretch:68%]">Analíticas</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">Ventas del día, ticket promedio y lo que más se vende, con la hora de Colombia.</dd>
-          </div>
-          <div class="border-t border-ink-3 py-5">
-            <dt class="text-[1.6rem] leading-none font-[840] uppercase [font-stretch:68%]">Mi tienda</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">Tu logo, tu portada, tu horario y el enlace para compartir en estados y redes.</dd>
-          </div>
-          <div class="border-t border-ink-3 py-5 sm:col-span-2">
-            <dt class="text-[1.6rem] leading-none font-[840] uppercase [font-stretch:68%]">Configuración</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">Horarios (aunque cierres después de medianoche), domicilio, pedido mínimo y métodos de pago: efectivo, Nequi, Daviplata, transferencia o datáfono.</dd>
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Tu configuración</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Horario, domicilio, pedido mínimo y pagos: efectivo, Nequi, Daviplata, transferencia o datáfono.</dd>
           </div>
         </dl>
       </div>
     </section>
 
-    <!-- ─────────────── Planes (precios en src/modules/subscriptions/plans.ts; una prueba verifica que coincidan) ─────────────── -->
-    <section id="planes" class="scroll-mt-4 bg-ground px-4 py-20 sm:px-8 lg:py-28" aria-labelledby="plans-title">
-      <div class="mx-auto grid max-w-[78rem] gap-12">
-        <div class="grid max-w-[46rem] gap-4" data-reveal>
-          <h2 id="plans-title" class="display text-[clamp(2.5rem,5vw,4.25rem)]">Planes claros, en pesos</h2>
-          <p class="text-[1.125rem] leading-relaxed text-ink/80">
+    <!-- ═══════════════════════════ PLANES (precios en src/modules/subscriptions/plans.ts; una prueba verifica que coincidan) ═══════════════════════════ -->
+    <section id="planes" class="scroll-mt-4 bg-ground px-4 py-24 sm:px-8 lg:py-32" aria-labelledby="plans-title">
+      <div class="mx-auto grid max-w-[80rem] gap-12">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end" data-reveal>
+          <h2 id="plans-title" class="display text-[clamp(2.75rem,6vw,5.25rem)] leading-[0.88]">Planes claros, <span class="text-outline-ink">en pesos</span></h2>
+          <p class="max-w-[30rem] text-[1.125rem] leading-relaxed text-ink/80 lg:justify-self-end">
             Empieza con 14 días gratis, con todo incluido y sin tarjeta. Después pagas mes a mes por Nequi, Daviplata o transferencia.
           </p>
         </div>
-        <div class="grid max-w-[60rem] gap-8 md:grid-cols-2" data-reveal>
+        <div class="grid max-w-[64rem] gap-8 md:grid-cols-2" data-reveal>
           <article class="ticket ticket-shadow grid content-start gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
             <div class="flex items-center justify-between gap-3">
               <h3 class="display text-[2.25rem]">Emprendedor</h3>
             </div>
-            <p class="text-[2.5rem] leading-none font-[840] [font-stretch:78%]">$39.900 <span class="text-base font-[560] text-muted">/ mes</span></p>
+            <p class="text-[2.75rem] leading-none font-[840] [font-stretch:78%]">$39.900 <span class="text-base font-[560] text-muted">/ mes</span></p>
             <p class="text-[1.0625rem] leading-relaxed text-muted">Para empezar a vender por tu enlace: menú corto y una persona que te ayude.</p>
             <hr class="ticket-rule" />
             <ul class="grid gap-2 text-[1rem]">
@@ -464,12 +496,12 @@
             </ul>
             <a href="/registro" class="btn btn-ghost mt-2 w-full">Empieza 14 días gratis</a>
           </article>
-          <article class="ticket ticket-shadow grid content-start gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
+          <article class="ticket ticket-shadow relative grid content-start gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
             <div class="flex items-center justify-between gap-3">
               <h3 class="display text-[2.25rem]">Negocio</h3>
               <span class="badge bg-ink text-mustard">El más elegido</span>
             </div>
-            <p class="text-[2.5rem] leading-none font-[840] [font-stretch:78%]">$69.900 <span class="text-base font-[560] text-muted">/ mes</span></p>
+            <p class="text-[2.75rem] leading-none font-[840] [font-stretch:78%]">$69.900 <span class="text-base font-[560] text-muted">/ mes</span></p>
             <p class="text-[1.0625rem] leading-relaxed text-muted">Para el negocio con carta completa y equipo en el mostrador.</p>
             <hr class="ticket-rule" />
             <ul class="grid gap-2 text-[1rem]">
@@ -486,27 +518,28 @@
       </div>
     </section>
 
-    <!-- ─────────────── Cierre ─────────────── -->
-    <section class="dots overflow-hidden bg-mustard px-4 py-20 sm:px-8 lg:py-24" aria-labelledby="cta-title">
-      <div class="mx-auto grid max-w-[78rem] items-center gap-10 lg:grid-cols-[minmax(0,1fr)_auto]" data-reveal>
-        <div class="grid gap-5">
-          <h2 id="cta-title" class="display text-[clamp(2.75rem,6.5vw,5.5rem)]">Abre tu tienda hoy</h2>
-          <p class="max-w-[38rem] text-[1.125rem] leading-relaxed text-ink/85">
-            Registra tu negocio y deja listos tu WhatsApp, tu horario y el valor del domicilio. Tu enlace queda reservado desde el primer
-            momento.
-          </p>
-          <a href="/registro" class="btn btn-ink min-h-14 w-fit px-7 text-[1.0625rem]">Registrar mi negocio</a>
+    <!-- ═══════════════════════════ CIERRE ═══════════════════════════ -->
+    <section class="dots relative overflow-hidden bg-mustard px-4 pt-20 pb-16 sm:px-8 lg:pt-28" aria-labelledby="cta-title">
+      <div class="mx-auto grid max-w-[80rem] justify-items-center gap-8 text-center" data-reveal>
+        <div class="flex justify-center -space-x-6 sm:-space-x-10" aria-hidden="true">
+          <span class="photo float-a h-24 w-24 -rotate-6 rounded-full ring-8 ring-mustard sm:h-36 sm:w-36"><img src="/assets/images/food/pizza-slices-480.webp" alt="" width="480" height="320" loading="lazy" decoding="async" /></span>
+          <span class="photo float-b z-10 h-28 w-28 rounded-full ring-8 ring-mustard sm:h-44 sm:w-44"><img src="/assets/images/food/burger-classic-480.webp" alt="" width="480" height="314" loading="lazy" decoding="async" /></span>
+          <span class="photo float-c h-24 w-24 rotate-6 rounded-full ring-8 ring-mustard sm:h-36 sm:w-36"><img src="/assets/images/food/juice-orange-480.webp" alt="" width="480" height="320" loading="lazy" decoding="async" /></span>
         </div>
-        <div class="flex justify-center -space-x-8 sm:-space-x-10" aria-hidden="true">
-          <span class="photo h-32 w-32 -rotate-6 rounded-full ring-8 ring-mustard sm:h-44 sm:w-44"><img src="/assets/images/food/pizza-slices-480.webp" alt="" width="480" height="320" loading="lazy" decoding="async" /></span>
-          <span class="photo z-10 h-36 w-36 rounded-full ring-8 ring-mustard sm:h-52 sm:w-52"><img src="/assets/images/food/burger-classic-480.webp" alt="" width="480" height="314" loading="lazy" decoding="async" /></span>
-          <span class="photo h-32 w-32 rotate-6 rounded-full ring-8 ring-mustard sm:h-44 sm:w-44"><img src="/assets/images/food/hotdog-classic-480.webp" alt="" width="480" height="319" loading="lazy" decoding="async" /></span>
-        </div>
+        <h2 id="cta-title" class="display text-[clamp(3.5rem,12vw,11rem)] leading-[0.82]">Abre tu tienda <span class="text-outline-ink">hoy</span></h2>
+        <p class="max-w-[38rem] text-[1.125rem] leading-relaxed text-ink/85">
+          Registra tu negocio y deja listos tu WhatsApp, tu horario y el valor del domicilio. Tu enlace queda reservado desde el primer
+          momento.
+        </p>
+        <a href="/registro" class="btn btn-ink min-h-15 px-8 text-[1.125rem]">
+          Crear mi tienda gratis
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-arrow-right"></use></svg>
+        </a>
       </div>
     </section>
 
     <footer class="bg-ink px-4 py-10 text-ink-soft sm:px-8">
-      <div class="mx-auto flex max-w-[78rem] flex-wrap items-center justify-between gap-6">
+      <div class="mx-auto flex max-w-[80rem] flex-wrap items-center justify-between gap-6">
         <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="PedifyAI, inicio">
           <img src="/assets/icons/logo.svg" alt="" class="h-8 w-8" width="32" height="32" />
           <span class="text-[1.4rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify<span class="text-mustard">AI</span></span>

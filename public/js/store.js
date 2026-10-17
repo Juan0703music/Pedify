@@ -123,6 +123,32 @@ function infoRow(iconName, content) {
   </li>`;
 }
 
+/** Portada a pantalla completa con el nombre del negocio encima (cuando el negocio subió su portada). */
+function bannerHero(store) {
+  const { business, settings, status } = store;
+  const state = statusInfo(status);
+  return html`<header class="relative isolate overflow-hidden bg-ink text-paper lg:rounded-b-[28px]">
+    <img src="${business.bannerUrl}" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover" fetchpriority="high" />
+    <div class="absolute inset-0 -z-10 bg-linear-to-t from-ink via-ink/55 to-ink/0"></div>
+    <div class="flex min-h-[26rem] flex-col justify-end px-4 pt-28 pb-6 sm:min-h-[30rem] sm:px-8 sm:pb-9">
+      ${logo(business)}
+      <h1 class="mt-4 max-w-[16ch] text-[2.75rem] leading-[0.92] font-[840] [font-stretch:70%] sm:text-[4.25rem]">${business.name}</h1>
+      ${business.description ? html`<p class="mt-2.5 max-w-[52ch] text-[1.0625rem] leading-snug text-paper/85">${business.description}</p>` : ""}
+      <div class="mt-5 flex flex-wrap items-center gap-2.5">
+        <p class="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full px-3.5 py-2 text-sm ${TONE_CLASS[state.tone]}">
+          <span class="badge-dot inline-flex items-center gap-2 font-[700]">${state.label}</span>
+          <span>· ${state.detail}</span>
+        </p>
+        ${settings.whatsappPhone
+          ? html`<a class="btn btn-ghost min-h-10 border-paper px-3.5 text-sm" href="${whatsappLink(settings.whatsappPhone, business.name)}" target="_blank" rel="noopener">
+              ${icon("message-circle", "h-4 w-4 text-[#128c4b]")} Escribir por WhatsApp
+            </a>`
+          : ""}
+      </div>
+    </div>
+  </header>`;
+}
+
 function details(store) {
   const { business, settings } = store;
   const rows = [];
@@ -327,12 +353,19 @@ function footer(store) {
 }
 
 function page(store) {
+  // Con portada: la foto manda (nombre encima) y el detalle va debajo en una franja.
+  const top = store.business.bannerUrl
+    ? html`${bannerHero(store)}
+        <div class="mx-4 mt-5 rounded-[16px] border border-line px-4 sm:mx-8 lg:px-6 [&>ul]:lg:grid [&>ul]:lg:grid-cols-3 [&>ul]:lg:gap-x-8 [&>ul]:lg:divide-y-0">
+          ${details(store)}
+        </div>`
+    : html`${cover(store.business)}
+        <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-10 lg:pr-8">
+          ${header(store)}
+          <div class="mx-4 mt-6 rounded-[14px] border border-line px-4 sm:mx-8 lg:mx-0 lg:mt-8">${details(store)}</div>
+        </div>`;
   return html`<div class="mx-auto max-w-[64rem]">
-      ${cover(store.business)}
-      <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-10 lg:pr-8">
-        ${header(store)}
-        <div class="mx-4 mt-6 rounded-[14px] border border-line px-4 sm:mx-8 lg:mx-0 lg:mt-8">${details(store)}</div>
-      </div>
+      ${top}
       <main id="menu" class="mt-10 ${store.settings.whatsappPhone ? "pb-20" : ""}">${menu(store)}</main>
     </div>
     ${footer(store)}
