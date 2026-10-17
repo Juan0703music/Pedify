@@ -1,4 +1,4 @@
-// PedifyAI — modelo de datos multiempresa (multi-tenant).
+// Pedify — modelo de datos multiempresa (multi-tenant).
 // Cada negocio tiene sus propios productos, categorías, clientes, pedidos y configuración.
 // Los nombres de tabla siguen el documento de arquitectura (sección 5).
 // Dinero: enteros en pesos colombianos (COP), sin decimales.
@@ -41,7 +41,7 @@ enum DeliveryType {
   PICKUP
 }
 
-// Planes de PedifyAI (el detalle de precios y límites está en src/modules/subscriptions/plans.ts).
+// Planes de Pedify (el detalle de precios y límites está en src/modules/subscriptions/plans.ts).
 enum PlanCode {
   EMPRENDEDOR
   NEGOCIO
@@ -69,7 +69,7 @@ model User {
   name              String
   email             String    @unique
   passwordHash      String    @map("password_hash")
-  // Administra la plataforma (panel central de PedifyAI). Solo se asigna por consola.
+  // Administra la plataforma (panel central de Pedify). Solo se asigna por consola.
   isPlatformAdmin   Boolean   @default(false) @map("is_platform_admin")
   // Autorización del tratamiento de datos personales (Ley 1581 de 2012) al registrarse.
   privacyAcceptedAt DateTime? @map("privacy_accepted_at") @db.Timestamptz(3)
@@ -191,7 +191,7 @@ model BusinessSettings {
 
 // ─────────────────────────────── Suscripciones ───────────────────────────────
 
-// Suscripción del negocio a PedifyAI. El estado (prueba, activa, vencida) se calcula con las fechas:
+// Suscripción del negocio a Pedify. El estado (prueba, activa, vencida) se calcula con las fechas:
 // pagado hasta `paid_until`; si no, prueba hasta `trial_ends_at`; luego unos días de gracia.
 model Subscription {
   businessId  String    @id @map("business_id") @db.Uuid
@@ -206,7 +206,7 @@ model Subscription {
   @@map("subscriptions")
 }
 
-// Pagos de la suscripción registrados por el equipo de PedifyAI (transferencia, Nequi…).
+// Pagos de la suscripción registrados por el equipo de Pedify (transferencia, Nequi…).
 model SubscriptionPayment {
   id           String   @id @default(uuid(7)) @db.Uuid
   businessId   String   @map("business_id") @db.Uuid

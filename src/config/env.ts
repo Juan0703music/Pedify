@@ -49,9 +49,9 @@ const EnvSchema = z
 
     // Correo (recuperación de contraseña). Sin SMTP_URL, en desarrollo el enlace se muestra en el registro.
     SMTP_URL: optional(z.string()),
-    MAIL_FROM: z.string().default("PedifyAI <no-responder@pedifyai.com>"),
+    MAIL_FROM: z.string().default("Pedify <no-responder@pedifyai.com>"),
 
-    // WhatsApp del equipo de PedifyAI para pagos y soporte (formato 57XXXXXXXXXX).
+    // WhatsApp del equipo de Pedify para pagos y soporte (formato 57XXXXXXXXXX).
     SUPPORT_WHATSAPP: optional(z.string().regex(/^57\d{10}$/, "Usa el formato 57XXXXXXXXXX.")),
 
     // Métricas en formato Prometheus en /metrics (desactivadas si no hay token).

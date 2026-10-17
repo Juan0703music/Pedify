@@ -1,4 +1,4 @@
-# PedifyAI en un servidor: producción o entorno de pruebas (cada uno en su propio servidor).
+# Pedify en un servidor: producción o entorno de pruebas (cada uno en su propio servidor).
 # Guía paso a paso: docs/deployment.md
 #
 #   cp deploy/env.example .env   # completa el dominio, las contraseñas, el correo…
@@ -80,7 +80,7 @@ services:
       S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
       S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
       SMTP_URL: ${SMTP_URL:-}
-      MAIL_FROM: ${MAIL_FROM:-PedifyAI <no-responder@pedifyai.com>}
+      MAIL_FROM: ${MAIL_FROM:-Pedify <no-responder@pedifyai.com>}
       SUPPORT_WHATSAPP: ${SUPPORT_WHATSAPP:-}
       METRICS_TOKEN: ${METRICS_TOKEN:-}
     volumes:

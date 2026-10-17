@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# PedifyAI — imágenes de producción (multi-etapa). Guía de despliegue: docs/deployment.md
+# Pedify — imágenes de producción (multi-etapa). Guía de despliegue: docs/deployment.md
 
 # ─── Dependencias completas (incluye Prisma CLI, TypeScript, tsx y Tailwind) ───
 FROM node:24-alpine AS deps

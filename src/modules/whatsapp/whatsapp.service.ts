@@ -3,7 +3,7 @@ import { formatCOP } from "../../utils/currency.js";
 import { AppError } from "../../utils/errors.js";
 
 /**
- * Capa de WhatsApp de PedifyAI (secciones 9 y 10 del documento).
+ * Capa de WhatsApp de Pedify (secciones 9 y 10 del documento).
  *
  * Modo enlace (versión inicial): se arma un mensaje prellenado y un enlace wa.me con el número
  * del negocio. El cliente lo revisa y lo envía desde su propio WhatsApp. Abrir el enlace NO
@@ -11,7 +11,7 @@ import { AppError } from "../../utils/errors.js";
  * el momento en que el cliente abrió WhatsApp (`whatsappOpenedAt`) y el pedido aceptado (CONFIRMED).
  *
  * Modo API oficial (futuro): implementará la misma interfaz con credenciales de Meta, verificación
- * de webhooks y tratamiento de eventos repetidos. Estas operaciones son abstracciones de PedifyAI,
+ * de webhooks y tratamiento de eventos repetidos. Estas operaciones son abstracciones de Pedify,
  * no funciones oficiales de Meta.
  */
 
@@ -46,7 +46,7 @@ export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
 
 /**
  * Mensaje del pedido con el formato de la sección 9 del documento. Se agregan el número de
- * pedido (el identificador que el comerciante ve en PedifyAI), el nombre del cliente y, cuando
+ * pedido (el identificador que el comerciante ve en Pedify), el nombre del cliente y, cuando
  * existen, las referencias, el método de pago, las notas y el descuento.
  */
 export function buildOrderMessage(order: OrderMessage): string {

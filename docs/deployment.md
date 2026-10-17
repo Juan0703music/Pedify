@@ -1,6 +1,6 @@
 # Puesta en producción
 
-Guía paso a paso para publicar PedifyAI en un servidor propio y probarlo con un negocio real. Cubre lo que el documento de arquitectura pide antes de comercializar:
+Guía paso a paso para publicar Pedify en un servidor propio y probarlo con un negocio real. Cubre lo que el documento de arquitectura pide antes de comercializar:
 
 - **Sección 13**: dominio con HTTPS, backend y PostgreSQL separados, almacenamiento externo de fotos, copias automáticas, registros de errores, entorno de pruebas separado y despliegue en contenedores, sin Kubernetes ni microservicios.
 - **Sección 15**: CSS compilado para producción y procedimientos de migración, secretos, copias y despliegue implementados y **probados**.
@@ -240,7 +240,7 @@ El documento pide demostrar valor con un negocio real antes de ampliar el alcanc
 
 **Cada semana, en `/admin` y en las Analíticas del negocio:**
 
-- Pedidos por PedifyAI y qué parte de ellos llegó a abrir WhatsApp.
+- Pedidos por Pedify y qué parte de ellos llegó a abrir WhatsApp.
 - Tiempo hasta confirmar, pedidos cancelados y sus motivos, productos agotados.
 - Qué le costó al negocio, qué pidió y si **pagaría** el plan al terminar el piloto.
 

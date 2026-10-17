@@ -81,7 +81,7 @@ export const updateSettingsSchema = z
 export const addMemberSchema = z.object({
   name: personNameSchema,
   email: emailSchema,
-  /** Solo se usa si el correo aún no tiene cuenta en PedifyAI. */
+  /** Solo se usa si el correo aún no tiene cuenta en Pedify. */
   password: newPasswordSchema.optional(),
   role: z.enum(MembershipRole).default("EMPLOYEE"),
 });

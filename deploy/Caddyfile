@@ -1,4 +1,4 @@
-# PedifyAI — proxy con HTTPS automático (certificado de Let's Encrypt que Caddy renueva solo).
+# Pedify — proxy con HTTPS automático (certificado de Let's Encrypt que Caddy renueva solo).
 # El dominio sale de DOMAIN en .env. Con DOMAIN=localhost, Caddy usa un certificado local para probar.
 # El panel en vivo usa WebSocket (/socket.io/): Caddy lo reenvía sin configuración adicional.
 

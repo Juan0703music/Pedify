@@ -1,6 +1,6 @@
 # Arquitectura
 
-PedifyAI sigue el documento *Arquitectura de Software de PedifyAI*: un **monolito modular** que sirve la API y el frontend desde el mismo proceso Express.
+Pedify sigue el documento *Arquitectura de Software de Pedify*: un **monolito modular** que sirve la API y el frontend desde el mismo proceso Express.
 
 ```
 Navegador (HTML + JS + Tailwind)

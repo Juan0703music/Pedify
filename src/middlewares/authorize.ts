@@ -23,7 +23,7 @@ export function requireBusiness(...roles: MembershipRole[]): RequestHandler {
       throw forbidden("No tienes acceso a este negocio.", "NOT_A_MEMBER");
     }
     if (membership.business.status !== "ACTIVE") {
-      throw forbidden("Este negocio está suspendido. Comunícate con soporte de PedifyAI.", "BUSINESS_SUSPENDED");
+      throw forbidden("Este negocio está suspendido. Comunícate con soporte de Pedify.", "BUSINESS_SUSPENDED");
     }
     if (roles.length > 0 && !roles.includes(membership.role)) {
       throw forbidden("Solo el propietario del negocio puede realizar esta acción.", "ROLE_REQUIRED");
@@ -41,12 +41,12 @@ export function getTenant(req: Request): TenantContext {
 }
 
 /**
- * Panel central de PedifyAI: solo usuarios marcados como administradores de la plataforma
+ * Panel central de Pedify: solo usuarios marcados como administradores de la plataforma
  * (se asignan por consola con `npm run admin:grant`). Se verifica en la base en cada petición.
  */
 export const requirePlatformAdmin: RequestHandler = async (req, _res, next) => {
   const auth = getAuth(req);
   const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { isPlatformAdmin: true } });
-  if (!user?.isPlatformAdmin) throw forbidden("Esta sección es solo para el equipo de PedifyAI.", "ADMIN_REQUIRED");
+  if (!user?.isPlatformAdmin) throw forbidden("Esta sección es solo para el equipo de Pedify.", "ADMIN_REQUIRED");
   next();
 };

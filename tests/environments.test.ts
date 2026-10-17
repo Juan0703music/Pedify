@@ -49,7 +49,7 @@ describe("Entorno de pruebas (APP_ENV=staging)", () => {
     const { input } = await registerMerchant();
     await newAgent().post("/api/v1/auth/forgot-password").send({ email: input.email }).expect(200);
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(mailer.outbox[0]?.subject).toBe("[Pruebas] Restablece tu contraseña de PedifyAI");
+    expect(mailer.outbox[0]?.subject).toBe("[Pruebas] Restablece tu contraseña de Pedify");
   });
 });
 

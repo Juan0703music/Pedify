@@ -1,4 +1,4 @@
-// Panel central de PedifyAI (sección 16 del documento): negocios registrados, planes,
+// Panel central de Pedify (sección 16 del documento): negocios registrados, planes,
 // suscripciones y métricas globales. Solo para administradores de la plataforma.
 import { api, formatCOP, formatPhone, redirectToLogin } from "./api.js";
 import { brand, formAlert, html, icon, render, setBusy, showErrors, toast } from "./ui.js";
@@ -214,7 +214,7 @@ function page() {
     </header>
     <main class="mx-auto grid max-w-[84rem] grid-cols-[minmax(0,1fr)] gap-6 px-4 py-8 sm:px-6">
       <div>
-        <h1 class="text-[2rem] leading-tight font-[780]">Panel de PedifyAI</h1>
+        <h1 class="text-[2rem] leading-tight font-[780]">Panel de Pedify</h1>
         <p class="mt-1 text-muted">Negocios, suscripciones y métricas de toda la plataforma.</p>
       </div>
       <section class="grid gap-3" aria-label="Métricas" data-metrics>${metricsView(state.metrics)}</section>
@@ -372,7 +372,7 @@ try {
       html`<div class="grid min-h-dvh place-items-center p-6 text-center">
         <div class="grid max-w-sm justify-items-center gap-4">
           <span class="grid h-12 w-12 place-items-center rounded-full bg-ground">${icon("lock")}</span>
-          <h1 class="text-xl font-[750]">Esta sección es del equipo de PedifyAI</h1>
+          <h1 class="text-xl font-[750]">Esta sección es del equipo de Pedify</h1>
           <a class="btn btn-ink" href="/panel">Ir a mi panel</a>
         </div>
       </div>`,

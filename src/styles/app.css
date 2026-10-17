@@ -1,5 +1,5 @@
 /*
- * PedifyAI — hoja de estilos fuente (Tailwind CSS v4).
+ * Pedify — hoja de estilos fuente (Tailwind CSS v4).
  * Se compila a public/css/app.css con `npm run build:css` (o `npm run dev`).
  *
  * Mundo visual: la comanda. Tiquetes de pedido, tinta casi negra y amarillo mostaza
@@ -689,24 +689,6 @@
     background-size: 18px 18px;
   }
 
-  /* Cinta que se desplaza con los tipos de comida. */
-  .marquee {
-    overflow: hidden;
-  }
-  .marquee-track {
-    display: flex;
-    width: max-content;
-    animation: marquee 40s linear infinite;
-  }
-  .marquee:hover .marquee-track {
-    animation-play-state: paused;
-  }
-
-  /* Sello circular que gira despacio ("14 días gratis"). */
-  .sticker-spin {
-    animation: spin 22s linear infinite;
-  }
-
   /* Aparición al bajar por la página: solo si hay JavaScript (clase en <html>); sin él, todo se ve. */
   .js-reveal [data-reveal] {
     opacity: 0;
@@ -857,20 +839,6 @@
     border-radius: 999px;
     border: 2px solid var(--color-mustard);
     animation: ring-out 1.6s ease-out infinite;
-  }
-
-  /* Cinta inclinada que cruza entre secciones. */
-  .tape {
-    rotate: -2.5deg;
-  }
-  .tape-reverse {
-    rotate: 2deg;
-  }
-  .marquee-track.is-reverse {
-    animation-direction: reverse;
-  }
-  .marquee.is-paused .marquee-track {
-    animation-play-state: paused;
   }
 
   /* Fila con casilla para elegir productos (Mi menú → «Elegir productos» de una categoría). */
@@ -1280,12 +1248,6 @@
   to {
     opacity: 0;
     transform: scale(1.9);
-  }
-}
-
-@keyframes marquee {
-  to {
-    transform: translateX(-50%);
   }
 }
 

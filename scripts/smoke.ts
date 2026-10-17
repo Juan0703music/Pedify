@@ -90,7 +90,7 @@ await check("Portada", async () => {
   const html = await res.text();
   ensure(res.status === 200, `Respondió ${res.status}`);
   ensure(res.headers.get("content-type")?.includes("text/html"), "No es HTML");
-  ensure(html.includes("PedifyAI"), "No parece la portada de PedifyAI");
+  ensure(html.includes("Pedify"), "No parece la portada de Pedify");
   landingHeaders = res.headers;
 });
 

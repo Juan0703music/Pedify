@@ -2,7 +2,7 @@
   "name": "pedifyai",
   "version": "0.1.0",
   "private": true,
-  "description": "PedifyAI — plataforma SaaS de pedidos digitales para negocios de comida rápida.",
+  "description": "Pedify — plataforma SaaS de pedidos digitales para negocios de comida rápida.",
   "type": "module",
   "engines": {
     "node": ">=22.12"

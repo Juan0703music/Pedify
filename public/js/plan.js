@@ -49,7 +49,7 @@ function meter(label, used, limit) {
 
 function page(plan, business) {
   const status = STATUS[plan.status];
-  const payUrl = supportLink(plan, `Hola, quiero pagar el plan ${plan.planName} de PedifyAI para mi negocio ${business.name} (${business.storeUrl}).`);
+  const payUrl = supportLink(plan, `Hola, quiero pagar el plan ${plan.planName} de Pedify para mi negocio ${business.name} (${business.storeUrl}).`);
   return html`<div class="grid grid-cols-[minmax(0,1fr)] gap-6 lg:gap-8">
     <header>
       <h1 class="text-[1.875rem] leading-tight font-[780] sm:text-[2.375rem]">Mi plan</h1>
@@ -73,7 +73,7 @@ function page(plan, business) {
             ? html`<a class="btn btn-whatsapp w-full" href="${payUrl}" target="_blank" rel="noopener">
                 ${icon("message-circle")} ${plan.status === "TRIAL" ? "Elegir mi plan por WhatsApp" : "Pagar o renovar por WhatsApp"}
               </a>`
-            : html`<p class="rounded-[10px] bg-ground px-3.5 py-3 text-sm text-muted">Para pagar o cambiar de plan, comunícate con el equipo de PedifyAI.</p>`}
+            : html`<p class="rounded-[10px] bg-ground px-3.5 py-3 text-sm text-muted">Para pagar o cambiar de plan, comunícate con el equipo de Pedify.</p>`}
         </div>
       </section>
 
@@ -99,7 +99,7 @@ function page(plan, business) {
       <div class="grid gap-4 md:grid-cols-2">
         ${plan.plans.map((option) => {
           const current = option.code === plan.plan;
-          const changeUrl = supportLink(plan, `Hola, quiero cambiarme al plan ${option.name} de PedifyAI para mi negocio ${business.name} (${business.storeUrl}).`);
+          const changeUrl = supportLink(plan, `Hola, quiero cambiarme al plan ${option.name} de Pedify para mi negocio ${business.name} (${business.storeUrl}).`);
           return html`<article class="panel grid gap-3 p-5 sm:p-6 ${current ? "border-ink ring-2 ring-mustard" : ""}">
             <div class="flex items-center justify-between gap-3">
               <h3 class="text-xl font-[780]">${option.name}</h3>

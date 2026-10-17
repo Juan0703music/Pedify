@@ -1,5 +1,5 @@
-// Portada: demostración interactiva del teléfono, fotos que siguen al mouse, aparición de las
-// secciones al bajar y pausa de las cintas. Sin JavaScript la página se ve completa (con la
+// Portada: demostración interactiva del teléfono, fotos que siguen al mouse y aparición de las
+// secciones al bajar. Sin JavaScript la página se ve completa (con la
 // demostración ya terminada); con "reducir movimiento" no hay animaciones automáticas.
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -41,17 +41,6 @@ if (hero && finePointer && !reduceMotion) {
   });
   hero.addEventListener("pointerleave", () => layers.forEach((layer) => (layer.style.transform = "")));
 }
-
-// ───────────────────────────── Cintas: pausa ─────────────────────────────
-
-const pauseButton = document.querySelector("[data-pause-marquee]");
-pauseButton?.addEventListener("click", () => {
-  const paused = pauseButton.getAttribute("aria-pressed") !== "true";
-  pauseButton.setAttribute("aria-pressed", String(paused));
-  pauseButton.textContent = paused ? "Reanudar animación" : "Pausar animación";
-  document.querySelectorAll(".marquee").forEach((marquee) => marquee.classList.toggle("is-paused", paused));
-});
-if (reduceMotion && pauseButton) pauseButton.hidden = true;
 
 // ───────────────────────────── Demostración del teléfono ─────────────────────────────
 

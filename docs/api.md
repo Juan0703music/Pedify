@@ -370,7 +370,7 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 | `/panel/tienda` | `public/pages/dashboard/store.html` |
 | `/panel/configuracion` | `public/pages/dashboard/settings.html` |
 | `/panel/plan` | `public/pages/dashboard/plan.html` |
-| `/admin` | `public/pages/admin/index.html` (panel central de PedifyAI) |
+| `/admin` | `public/pages/admin/index.html` (panel central de Pedify) |
 | `/recuperar` · `/restablecer` | `public/pages/auth/forgot.html` · `reset.html` |
 | `/privacidad` | `public/pages/legal/privacy.html` |
 | `/tienda/:slug` | `public/pages/store/index.html` con las etiquetas Open Graph del negocio (404 si no existe; mayúsculas → redirección 301) |

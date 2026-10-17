@@ -347,7 +347,7 @@ function footer(store) {
       <p class="font-[680] text-ink">${business.name}</p>
       ${business.address ? html`<p>${[business.address, business.city].filter(Boolean).join(", ")}</p>` : ""}
       <p>Teléfono: <a class="text-ink" href="tel:+${business.phone}">${formatPhone(business.phone)}</a></p>
-      <p class="mt-4">Tienda creada con <a class="font-[680] text-ink" href="/">PedifyAI</a></p>
+      <p class="mt-4">Tienda creada con <a class="font-[680] text-ink" href="/">Pedify</a></p>
     </div>
   </footer>`;
 }
@@ -381,7 +381,7 @@ function errorPage(error) {
       </span>
       <h1 class="text-2xl font-[780]">${notFound ? "Esta tienda no está disponible" : "No pudimos cargar el menú"}</h1>
       <p class="text-muted">${notFound ? "Revisa el enlace o pídele al negocio que te lo envíe de nuevo." : error.message}</p>
-      ${notFound ? html`<a class="btn btn-ink" href="/">Ir a PedifyAI</a>` : html`<a class="btn btn-ink" href="">Intentar de nuevo</a>`}
+      ${notFound ? html`<a class="btn btn-ink" href="/">Ir a Pedify</a>` : html`<a class="btn btn-ink" href="">Intentar de nuevo</a>`}
     </div>
   </div>`;
 }

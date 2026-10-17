@@ -91,9 +91,9 @@ describe("Suscripción del negocio", () => {
   });
 });
 
-describe("Panel central de PedifyAI", () => {
+describe("Panel central de Pedify", () => {
   async function admin() {
-    const merchant = await registerMerchant({ businessName: "PedifyAI Soporte" });
+    const merchant = await registerMerchant({ businessName: "Pedify Soporte" });
     await prisma.user.update({ where: { id: merchant.profile.user.id }, data: { isPlatformAdmin: true } });
     return merchant;
   }

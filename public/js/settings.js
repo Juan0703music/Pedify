@@ -337,7 +337,7 @@ function teamSection() {
           <div class="field">
             <label class="label" for="m-password">Contraseña inicial</label>
             <input class="input" id="m-password" name="password" type="text" autocomplete="new-password" minlength="8" />
-            <p class="hint">Solo si la persona aún no tiene cuenta en PedifyAI. Compártela en persona.</p>
+            <p class="hint">Solo si la persona aún no tiene cuenta en Pedify. Compártela en persona.</p>
           </div>
           <div class="field">
             <label class="label" for="m-role">Rol</label>
@@ -361,7 +361,7 @@ function planSection() {
   return section(
     "plan",
     "Mi plan",
-    "Tu suscripción a PedifyAI.",
+    "Tu suscripción a Pedify.",
     html`<div class="flex flex-wrap items-center justify-between gap-4">
       <p><span class="font-[700]">Plan ${subscription.planName}</span> · ${status}</p>
       <a class="btn btn-ghost" href="/panel/plan">Ver plan, límites y pagos</a>
@@ -374,7 +374,7 @@ function accountSection() {
   return section(
     "cuenta",
     "Mi cuenta",
-    "Tus datos de acceso a PedifyAI.",
+    "Tus datos de acceso a Pedify.",
     html`<div class="grid gap-8">
       <form data-form="perfil" class="grid gap-5 sm:grid-cols-2" novalidate>
         <div class="sm:col-span-2">${formAlert()}</div>

@@ -20,7 +20,7 @@ try {
       process.exitCode = 1;
     } else {
       await prisma.user.update({ where: { id: user.id }, data: { isPlatformAdmin: action === "grant" } });
-      console.log(action === "grant" ? `${email} ahora es administrador de PedifyAI (/admin).` : `${email} ya no es administrador.`);
+      console.log(action === "grant" ? `${email} ahora es administrador de Pedify (/admin).` : `${email} ya no es administrador.`);
     }
   }
 } finally {

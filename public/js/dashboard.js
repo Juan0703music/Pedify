@@ -198,7 +198,7 @@ function planLink(business) {
 function adminLink(me) {
   return me.user.isPlatformAdmin
     ? html`<a href="/admin" class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-sm text-ink-soft no-underline hover:bg-ink-2 hover:text-paper">
-        ${icon("shield", "h-4 w-4")} Panel de PedifyAI
+        ${icon("shield", "h-4 w-4")} Panel de Pedify
       </a>`
     : "";
 }
@@ -207,7 +207,7 @@ function shell(me, business, page) {
   const role = business?.role;
   return html`<div class="min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
     <aside class="on-ink scroll-thin sticky top-0 hidden h-dvh flex-col gap-6 overflow-y-auto bg-ink p-4 text-paper lg:flex">
-      <a href="/panel" class="w-fit rounded-md px-2 pt-2 no-underline" aria-label="PedifyAI, inicio del panel">${brand({ onInk: true })}</a>
+      <a href="/panel" class="w-fit rounded-md px-2 pt-2 no-underline" aria-label="Pedify, inicio del panel">${brand({ onInk: true })}</a>
       ${business ? businessSwitcher(me, business, "business-menu") : ""}
       <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, role)}</nav>
       <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
@@ -218,7 +218,7 @@ function shell(me, business, page) {
 
     <div class="flex min-w-0 flex-col">
       <header class="on-ink sticky top-0 z-30 flex items-center gap-2 bg-ink px-3 py-2.5 text-paper lg:hidden">
-        <a href="/panel" class="flex-none rounded-md p-1" aria-label="PedifyAI, inicio del panel">
+        <a href="/panel" class="flex-none rounded-md p-1" aria-label="Pedify, inicio del panel">
           <img src="/assets/icons/logo.svg" alt="" class="h-8 w-8" width="32" height="32" />
         </a>
         <div class="min-w-0 flex-1">${business ? businessSwitcher(me, business, "business-menu-mobile", { compact: true }) : ""}</div>
@@ -812,7 +812,7 @@ async function renderHome(context) {
 
   const params = new URLSearchParams(location.search);
   if (params.has("bienvenida")) {
-    toast(`¡Listo! ${business.name} ya está en PedifyAI.`);
+    toast(`¡Listo! ${business.name} ya está en Pedify.`);
     history.replaceState(null, "", location.pathname);
   }
 }

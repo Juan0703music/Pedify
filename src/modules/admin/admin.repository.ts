@@ -3,7 +3,7 @@ import { Prisma } from "../../generated/prisma/client.js";
 import { GRACE_DAYS } from "../subscriptions/plans.js";
 
 /**
- * Consultas del panel central de PedifyAI (sección 16 del documento): negocios registrados,
+ * Consultas del panel central de Pedify (sección 16 del documento): negocios registrados,
  * planes, suscripciones y métricas globales. El estado de la suscripción se calcula en SQL con
  * las mismas reglas que `subscriptionState` (pagada → prueba → gracia → vencida).
  */

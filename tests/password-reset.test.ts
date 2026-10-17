@@ -19,7 +19,7 @@ describe("Recuperación de contraseña (sección 12)", () => {
     expect(unknown.body).toEqual(known.body);
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(mailer.outbox).toHaveLength(1);
-    expect(mailer.outbox[0]).toMatchObject({ to: input.email.toLowerCase(), subject: "Restablece tu contraseña de PedifyAI" });
+    expect(mailer.outbox[0]).toMatchObject({ to: input.email.toLowerCase(), subject: "Restablece tu contraseña de Pedify" });
     expect(mailer.outbox[0]?.text).toContain("http://localhost:3000/restablecer?token=");
   });
 

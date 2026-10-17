@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>PedifyAI · Tu tienda en un enlace, tus pedidos en orden</title>
+    <title>Pedify · Tu tienda en un enlace, tus pedidos en orden</title>
     <meta
       name="description"
       content="Tienda digital para salchipaperías, pizzerías, reposterías y negocios de comida rápida. Tus clientes arman el pedido, lo envían por WhatsApp y tú lo ves llegar a tu panel."
     />
     <meta name="theme-color" content="#17161c" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="PedifyAI · Tu tienda en un enlace, tus pedidos en orden" />
+    <meta property="og:title" content="Pedify · Tu tienda en un enlace, tus pedidos en orden" />
     <meta property="og:description" content="Menú digital con fotos, pedidos por WhatsApp con el total calculado y un panel en vivo para tu negocio de comida." />
     <meta property="og:image" content="/assets/images/food/burger-closeup-960.webp" />
     <link rel="icon" href="/assets/icons/logo.svg" type="image/svg+xml" />
@@ -24,9 +24,9 @@
       <div class="dots-mustard pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" aria-hidden="true"></div>
 
       <header class="mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-6">
-        <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="PedifyAI, inicio">
+        <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="Pedify, inicio">
           <img src="/assets/icons/logo.svg" alt="" class="h-9 w-9" width="32" height="32" />
-          <span class="text-[1.6rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify<span class="text-mustard">AI</span></span>
+          <span class="text-[1.6rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
         </a>
         <nav class="flex items-center gap-1 sm:gap-2" aria-label="Cuenta">
           <a href="#planes" class="btn btn-quiet hidden px-3 text-paper hover:bg-ink-3 sm:inline-flex sm:px-4">Planes</a>
@@ -174,51 +174,104 @@
       <p class="display pointer-events-none mx-auto -mb-[3.2vw] max-w-none overflow-hidden text-center text-[21vw] leading-[0.8] whitespace-nowrap text-paper/[0.06] select-none" aria-hidden="true">PEDIDOS</p>
     </div>
 
-    <!-- ═══════════════════════════ CINTAS CRUZADAS ═══════════════════════════ -->
-    <div class="relative z-10 -mt-6 overflow-hidden py-6 sm:-mt-8" data-marquees>
-      <div class="marquee tape relative z-10 -mx-4 bg-mustard py-3.5 text-ink shadow-[0_18px_40px_-18px_rgb(23_22_28/0.5)] sm:py-4" aria-hidden="true">
-        <div class="marquee-track">
-          <ul class="flex flex-none items-center">
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Salchipapas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Hamburguesas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Pizzas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Perros calientes</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Jugos naturales</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Postres</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Asados</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-          </ul>
-          <ul class="flex flex-none items-center">
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Salchipapas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Hamburguesas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Pizzas</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Perros calientes</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Jugos naturales</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Postres</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-            <li class="display px-6 text-[1.75rem] sm:text-[2.5rem]">Asados</li><li class="h-3 w-3 flex-none rotate-45 bg-ink"></li>
-          </ul>
+    <!-- ═══════════════════════════ ANTES / CON PEDIFY ═══════════════════════════ -->
+    <section class="relative px-4 pt-20 pb-24 sm:px-8 lg:pt-28 lg:pb-32" aria-labelledby="chaos-title">
+      <div class="mx-auto grid max-w-[80rem] gap-12 lg:gap-16">
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:items-end" data-reveal>
+          <h2 id="chaos-title" class="display text-[clamp(2.9rem,7vw,6.25rem)] leading-[0.86]">
+            <span class="block">Se acabó el</span>
+            <span class="relative inline-block">desorden<span class="absolute top-[50%] left-[-3%] h-[0.13em] w-[106%] -rotate-3 rounded-full bg-tomato" aria-hidden="true"></span></span>
+            <span class="block">en el chat.</span>
+          </h2>
+          <p class="max-w-[30rem] text-[1.125rem] leading-relaxed text-muted lg:justify-self-end">
+            Pedir por WhatsApp no tiene por qué ser una conversación eterna. Con Pedify, el cliente elige en tu tienda y a ti te llega un
+            solo mensaje con todo: productos, dirección y total.
+          </p>
         </div>
-      </div>
-      <div class="marquee tape-reverse absolute inset-x-0 top-1/2 -mx-4 -translate-y-1/2 bg-ink py-2.5 text-paper sm:py-3" aria-hidden="true">
-        <div class="marquee-track is-reverse">
-          <ul class="flex flex-none items-center text-[0.9375rem] font-[700] tracking-[0.14em] uppercase sm:text-[1.0625rem]">
-            <li class="px-5">Pedidos por WhatsApp</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Total calculado</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
-            <li class="px-5">Panel en vivo</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Tu enlace y tu QR</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
-            <li class="px-5">Fotos que venden</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Precios en pesos</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
-          </ul>
-          <ul class="flex flex-none items-center text-[0.9375rem] font-[700] tracking-[0.14em] uppercase sm:text-[1.0625rem]">
-            <li class="px-5">Pedidos por WhatsApp</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Total calculado</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
-            <li class="px-5">Panel en vivo</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Tu enlace y tu QR</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
-            <li class="px-5">Fotos que venden</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li><li class="px-5">Precios en pesos</li><li class="h-2 w-2 flex-none rotate-45 bg-mustard"></li>
-          </ul>
+
+        <div class="grid gap-5 lg:grid-cols-2 lg:gap-6">
+          <!-- Antes: el chat de siempre (ilustrativo) -->
+          <figure class="relative overflow-hidden rounded-[30px] bg-[#efeae2] p-4 pb-24 sm:p-6 sm:pb-24" data-reveal>
+            <figcaption class="mb-4 flex items-center justify-between gap-3">
+              <span class="badge bg-tomato px-3 py-1.5 text-[0.8125rem] text-paper">Antes</span>
+              <span class="text-sm font-[650] text-ink/60">Un pedido, muchos mensajes</span>
+            </figcaption>
+            <ul class="grid gap-2 text-[0.9375rem] leading-snug text-ink" aria-label="Ejemplo de un pedido por chat sin Pedify">
+            <li class="flex"><p class="max-w-[82%] rounded-[14px] rounded-tl-[4px] bg-paper px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] ">Buenas, ¿qué tienen hoy?</p></li>
+            <li class="flex justify-end"><p class="max-w-[82%] rounded-[14px] rounded-tr-[4px] bg-[#d9fdd3] px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] ">¡Hola! Ya le mando la carta</p></li>
+            <li class="flex justify-end"><p class="max-w-[82%] rounded-[14px] rounded-tr-[4px] bg-[#d9fdd3] px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] "><span class="flex items-center gap-2 text-ink/70"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-image"></use></svg>carta-2024-final.jpg</span></p></li>
+            <li class="flex"><p class="max-w-[82%] rounded-[14px] rounded-tl-[4px] bg-paper px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] ">¿La salchipapa especial cuánto vale?</p></li>
+            <li class="flex"><p class="max-w-[82%] rounded-[14px] rounded-tl-[4px] bg-paper px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] ">Y una hamburguesa sin cebolla</p></li>
+            <li class="flex"><p class="max-w-[82%] rounded-[14px] rounded-tl-[4px] bg-paper px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] "><span class="flex items-center gap-2.5"><svg class="icon h-4 w-4 text-[#11804a]" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-phone"></use></svg><span class="flex h-4 items-center gap-[3px]" aria-hidden="true"><span class="h-2 w-[3px] rounded bg-ink/40"></span><span class="h-4 w-[3px] rounded bg-ink/40"></span><span class="h-3 w-[3px] rounded bg-ink/40"></span><span class="h-4 w-[3px] rounded bg-ink/40"></span><span class="h-2 w-[3px] rounded bg-ink/40"></span><span class="h-3 w-[3px] rounded bg-ink/40"></span><span class="h-1.5 w-[3px] rounded bg-ink/40"></span><span class="h-3.5 w-[3px] rounded bg-ink/40"></span></span><span class="text-xs text-ink/60">Nota de voz · 0:42</span></span></p></li>
+            <li class="flex justify-end"><p class="max-w-[82%] rounded-[14px] rounded-tr-[4px] bg-[#d9fdd3] px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] ">Serían 37 mil más el domicilio</p></li>
+            <li class="flex"><p class="max-w-[82%] rounded-[14px] rounded-tl-[4px] bg-paper px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] ">¿Cuánto es el domicilio? Le mando la dirección por aquí</p></li>
+            <li class="flex justify-end"><p class="max-w-[82%] rounded-[14px] rounded-tr-[4px] bg-[#d9fdd3] px-3 py-2 shadow-[0_1px_1px_rgb(0_0_0/0.08)] font-[650] ring-2 ring-tomato/60">¿Me repite el pedido, porfa?</p></li>
+            </ul>
+            <span class="display absolute bottom-6 left-1/2 -translate-x-1/2 rotate-[-6deg] rounded-[12px] border-[3px] border-tomato px-4 py-1 text-[1.75rem] whitespace-nowrap text-tomato sm:text-[2.25rem]" aria-hidden="true">¿Y el total?</span>
+          </figure>
+
+          <!-- Con Pedify: un solo mensaje ordenado y la comanda en el panel (ilustrativo) -->
+          <figure class="relative overflow-hidden rounded-[30px] bg-ink p-4 pb-6 text-paper sm:p-6" data-reveal>
+            <div class="dots-mustard pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent)]" aria-hidden="true"></div>
+            <figcaption class="relative mb-4 flex items-center justify-between gap-3">
+              <span class="badge bg-mustard px-3 py-1.5 text-[0.8125rem] text-ink">Con Pedify</span>
+              <span class="text-sm font-[650] text-paper/60">Un pedido, un mensaje</span>
+            </figcaption>
+            <div class="relative grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div class="rounded-[16px] rounded-tr-[4px] bg-[#d9fdd3] p-4 text-[0.875rem] leading-snug text-ink shadow-[0_30px_60px_-25px_rgb(0_0_0/0.8)]">
+                <p class="font-[700]">¡Hola! Quiero realizar el siguiente pedido:</p>
+                <p class="mt-2">Negocio: Sabores del Caribe<br />Pedido: #129<br />Nombre: Laura Vergara</p>
+                <p class="mt-2 font-[700]">PRODUCTOS</p>
+                <p class="num">1. Salchipapa especial x1 - $22.000<br />2. Hamburguesa especial x1 - $18.000</p>
+                <p class="mt-2">Entrega: Domicilio<br />Dirección: Calle 23 #18-40, La Ford<br />Referencias: casa de rejas blancas<br />Pago: Nequi<br />Notas: hamburguesa sin cebolla</p>
+                <p class="num mt-2">Subtotal: $40.000<br />Domicilio: $4.000</p>
+                <p class="num mt-1 text-[1.0625rem] font-[800]">TOTAL: $44.000</p>
+              </div>
+              <div class="ticket-shadow w-full rotate-[2deg] sm:w-[13rem]">
+                <div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                  <div class="flex items-center gap-2">
+                    <span class="bell-ring grid h-6 w-6 flex-none place-items-center rounded-full bg-mustard"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-bell-ring"></use></svg></span>
+                    <span class="text-[1.15rem] font-[820] [font-stretch:75%]">PEDIDO #129</span>
+                  </div>
+                  <p class="mt-0.5 text-muted">En tu panel · ahora</p>
+                  <hr class="ticket-rule my-2" />
+                  <div class="num flex justify-between font-[780]"><span>Total</span><span>$44.000</span></div>
+                  <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-xs font-bold">Confirmar pedido</div>
+                </div>
+              </div>
+            </div>
+            <ul class="relative mt-5 grid gap-2 text-[0.9375rem] font-[620] sm:grid-cols-3">
+              <li class="flex items-center gap-2"><svg class="icon h-4 w-4 flex-none text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Total calculado</li>
+              <li class="flex items-center gap-2"><svg class="icon h-4 w-4 flex-none text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Dirección completa</li>
+              <li class="flex items-center gap-2"><svg class="icon h-4 w-4 flex-none text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Suena en tu panel</li>
+            </ul>
+          </figure>
         </div>
+
+        <!-- Datos del producto (no son estadísticas: es lo que incluye Pedify) -->
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-8 border-t-2 border-ink pt-8 lg:grid-cols-4" data-reveal>
+          <div class="grid content-start gap-2">
+            <dt class="display text-[clamp(3.5rem,7vw,6rem)] leading-none">0<span class="text-mustard-press"> %</span></dt>
+            <dd class="max-w-[16rem] text-[1rem] leading-snug text-muted"><span class="font-[720] text-ink">de comisión</span> por pedido. Pagas un plan fijo al mes.</dd>
+          </div>
+          <div class="grid content-start gap-2">
+            <dt class="display text-[clamp(3.5rem,7vw,6rem)] leading-none">14</dt>
+            <dd class="max-w-[16rem] text-[1rem] leading-snug text-muted"><span class="font-[720] text-ink">días gratis</span> con todo incluido y sin tarjeta.</dd>
+          </div>
+          <div class="grid content-start gap-2">
+            <dt class="display text-[clamp(3.5rem,7vw,6rem)] leading-none">1</dt>
+            <dd class="max-w-[16rem] text-[1rem] leading-snug text-muted"><span class="font-[720] text-ink">enlace y un QR</span> para estados, redes, mostrador y mesas.</dd>
+          </div>
+          <div class="grid content-start gap-2">
+            <dt class="display text-[clamp(3.5rem,7vw,6rem)] leading-none">0</dt>
+            <dd class="max-w-[16rem] text-[1rem] leading-snug text-muted"><span class="font-[720] text-ink">apps que descargar.</span> Tus clientes piden desde el navegador.</dd>
+          </div>
+        </dl>
       </div>
-      <button type="button" class="absolute right-3 bottom-0 z-20 rounded-full bg-paper px-2.5 py-1 text-[0.6875rem] font-[700] text-muted shadow-[var(--shadow-lift)] hover:text-ink" data-pause-marquee aria-pressed="false">
-        Pausar animación
-      </button>
-    </div>
+    </section>
 
     <!-- ═══════════════════════════ DEL ANTOJO… ═══════════════════════════ -->
-    <section class="overflow-hidden px-4 pt-16 pb-6 text-center sm:px-8 lg:pt-24" aria-labelledby="antojo-title">
+    <section class="overflow-hidden bg-ground px-4 pt-20 pb-6 text-center sm:px-8 lg:pt-28" aria-labelledby="antojo-title">
       <h2 id="antojo-title" class="mx-auto grid max-w-[80rem] justify-items-center" data-reveal>
         <span class="text-[clamp(1.25rem,2.4vw,2rem)] font-[760]">Del</span>
         <span class="display image-text block bg-[url(/assets/images/food/burger-dark-960.webp)] text-[clamp(6rem,25vw,22rem)] leading-[0.8] tracking-tight">antojo</span>
@@ -227,27 +280,27 @@
     </section>
 
     <!-- ═══════════════════════════ PASOS ═══════════════════════════ -->
-    <section id="como-funciona" class="scroll-mt-4 px-4 pt-10 pb-24 sm:px-8 lg:pb-32" aria-label="Cómo funciona">
+    <section id="como-funciona" class="scroll-mt-4 bg-ground px-4 pt-10 pb-24 sm:px-8 lg:pb-32" aria-label="Cómo funciona">
       <ol class="mx-auto grid max-w-[80rem] gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <li class="group relative overflow-hidden rounded-[24px] bg-ground p-6 transition-colors hover:bg-mustard" data-reveal>
+        <li class="group relative overflow-hidden rounded-[24px] bg-paper p-6 shadow-[var(--shadow-lift)] transition-colors hover:bg-mustard" data-reveal>
           <span class="display text-outline-ink block text-[4.5rem] leading-none">01</span>
           <h3 class="mt-4 text-[1.25rem] font-[780]">Tu menú con fotos</h3>
           <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Precios en pesos y agotados marcados. Lo cambias cuando quieras.</p>
         </li>
-        <li class="group relative overflow-hidden rounded-[24px] bg-ground p-6 transition-colors hover:bg-mustard" data-reveal>
+        <li class="group relative overflow-hidden rounded-[24px] bg-paper p-6 shadow-[var(--shadow-lift)] transition-colors hover:bg-mustard" data-reveal>
           <span class="display text-outline-ink block text-[4.5rem] leading-none">02</span>
           <h3 class="mt-4 text-[1.25rem] font-[780]">El cliente arma su pedido</h3>
           <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Desde el celular, sin descargar nada. Domicilio o para recoger.</p>
         </li>
-        <li class="group relative overflow-hidden rounded-[24px] bg-ground p-6 transition-colors hover:bg-mustard" data-reveal>
+        <li class="group relative overflow-hidden rounded-[24px] bg-paper p-6 shadow-[var(--shadow-lift)] transition-colors hover:bg-mustard" data-reveal>
           <span class="display text-outline-ink block text-[4.5rem] leading-none">03</span>
           <h3 class="mt-4 text-[1.25rem] font-[780]">Deja sus datos</h3>
           <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Nombre, celular, dirección y referencias para que nadie llame a preguntar.</p>
         </li>
-        <li class="group relative overflow-hidden rounded-[24px] bg-ground p-6 transition-colors hover:bg-mustard" data-reveal>
+        <li class="group relative overflow-hidden rounded-[24px] bg-paper p-6 shadow-[var(--shadow-lift)] transition-colors hover:bg-mustard" data-reveal>
           <span class="display text-outline-ink block text-[4.5rem] leading-none">04</span>
           <h3 class="mt-4 text-[1.25rem] font-[780]">Lo envía por WhatsApp</h3>
-          <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Con el resumen listo y el total que calculó PedifyAI, no el cliente.</p>
+          <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Con el resumen listo y el total que calculó Pedify, no el cliente.</p>
         </li>
         <li class="group relative overflow-hidden rounded-[24px] bg-ink p-6 text-paper sm:col-span-2 lg:col-span-1" data-reveal>
           <span class="display text-outline block text-[4.5rem] leading-none">05</span>
@@ -357,7 +410,7 @@
           <ul class="grid max-w-[32rem] gap-5 text-[1rem]">
             <li class="flex gap-4">
               <span class="grid h-12 w-12 flex-none place-items-center rounded-[16px] bg-ink text-mustard"><svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-camera"></use></svg></span>
-              <span><span class="block text-[1.0625rem] font-[780]">Fotos del celular, listas para vender</span><span class="text-ink/75">PedifyAI las endereza, las reduce y les quita la ubicación. Cargan rápido hasta con datos.</span></span>
+              <span><span class="block text-[1.0625rem] font-[780]">Fotos del celular, listas para vender</span><span class="text-ink/75">Pedify las endereza, las reduce y les quita la ubicación. Cargan rápido hasta con datos.</span></span>
             </li>
             <li class="flex gap-4">
               <span class="grid h-12 w-12 flex-none place-items-center rounded-[16px] bg-ink text-mustard"><svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-flame"></use></svg></span>
@@ -390,7 +443,7 @@
         <figure class="overflow-hidden rounded-[22px] bg-ink-2 shadow-[0_50px_100px_-30px_rgb(0_0_0/0.8)] ring-1 ring-paper/10" data-reveal>
           <div class="flex items-center gap-2 border-b border-paper/10 px-4 py-3" aria-hidden="true">
             <span class="h-3 w-3 rounded-full bg-tomato"></span><span class="h-3 w-3 rounded-full bg-mustard"></span><span class="h-3 w-3 rounded-full bg-leaf"></span>
-            <span class="ml-3 truncate rounded-full bg-ink px-3 py-1 text-[0.75rem] text-paper/60">pedifyai.com/panel/pedidos</span>
+            <span class="ml-3 truncate rounded-full bg-ink px-3 py-1 text-[0.75rem] text-paper/60">pedify.com/panel/pedidos</span>
             <span class="ml-auto hidden items-center gap-1.5 text-[0.75rem] font-[650] text-leaf sm:flex"><span class="h-2 w-2 rounded-full bg-leaf"></span>En vivo</span>
           </div>
           <div class="no-scrollbar grid auto-cols-[16rem] grid-flow-col gap-4 overflow-x-auto p-4 sm:auto-cols-[minmax(0,1fr)] sm:p-6" aria-hidden="true">
@@ -540,9 +593,9 @@
 
     <footer class="bg-ink px-4 py-10 text-ink-soft sm:px-8">
       <div class="mx-auto flex max-w-[80rem] flex-wrap items-center justify-between gap-6">
-        <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="PedifyAI, inicio">
+        <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="Pedify, inicio">
           <img src="/assets/icons/logo.svg" alt="" class="h-8 w-8" width="32" height="32" />
-          <span class="text-[1.4rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify<span class="text-mustard">AI</span></span>
+          <span class="text-[1.4rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
         </a>
         <p class="text-sm">Pedidos digitales para negocios de comida en Colombia.</p>
         <nav class="flex gap-5 text-sm font-semibold" aria-label="Pie de página">

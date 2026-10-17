@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PedifyAI — despliegue en el servidor con Docker Compose (guía: docs/deployment.md).
+# Pedify — despliegue en el servidor con Docker Compose (guía: docs/deployment.md).
 #
 #   scripts/deploy.sh                 Trae la última versión (git pull), construye, hace una copia de la base,
 #                                     aplica las migraciones, arranca y verifica. Si la app no queda sana,

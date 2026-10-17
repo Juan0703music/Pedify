@@ -5,7 +5,7 @@ import { validate } from "../../middlewares/validate.js";
 import { adminController } from "./admin.controller.js";
 import { businessParamsSchema, listBusinessesQuerySchema, recordPaymentSchema, updateBusinessAdminSchema } from "./admin.schemas.js";
 
-// ─── /api/v1/admin — panel central de PedifyAI (sección 16 del documento) ───
+// ─── /api/v1/admin — panel central de Pedify (sección 16 del documento) ───
 export const adminRoutes = Router();
 adminRoutes.use(authenticate, requirePlatformAdmin);
 

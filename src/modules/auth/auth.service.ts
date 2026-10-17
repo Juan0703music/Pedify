@@ -188,17 +188,17 @@ export const authService = {
     void mailer
       .send({
         to: user.email,
-        subject: "Restablece tu contraseña de PedifyAI",
+        subject: "Restablece tu contraseña de Pedify",
         text: [
           `Hola, ${firstName}:`,
           "",
-          "Recibimos una solicitud para restablecer la contraseña de tu cuenta de PedifyAI.",
+          "Recibimos una solicitud para restablecer la contraseña de tu cuenta de Pedify.",
           `Ábrela en los próximos 30 minutos desde este enlace: ${link}`,
           "",
           "Si no fuiste tú, ignora este correo: tu contraseña no cambia.",
         ].join("\n"),
         html: `<p>Hola, ${escapeHtml(firstName)}:</p>
-<p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de PedifyAI.</p>
+<p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de Pedify.</p>
 <p><a href="${link}" style="display:inline-block;padding:12px 18px;background:#17161c;color:#ffffff;border-radius:10px;text-decoration:none;font-weight:600">Crear una contraseña nueva</a></p>
 <p>El enlace vence en 30 minutos y solo se puede usar una vez.</p>
 <p style="color:#5c5a63">Si no fuiste tú, ignora este correo: tu contraseña no cambia.</p>`,

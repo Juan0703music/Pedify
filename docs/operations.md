@@ -1,6 +1,6 @@
 # Operación en producción
 
-Guía para operar, vigilar y respaldar PedifyAI (fase 5 del documento: suscripciones, monitoreo, copias y mejoras; secciones 12, 13 y 15). La instalación del servidor paso a paso está en [`deployment.md`](deployment.md).
+Guía para operar, vigilar y respaldar Pedify (fase 5 del documento: suscripciones, monitoreo, copias y mejoras; secciones 12, 13 y 15). La instalación del servidor paso a paso está en [`deployment.md`](deployment.md).
 
 ## 1. Antes de comercializar
 
@@ -95,7 +95,7 @@ Alertas sugeridas: salud distinta de 200 por más de 2 minutos; tasa de respuest
 - El comerciante autoriza el tratamiento al registrarse (se guarda la fecha en `users.privacy_accepted_at`).
 - El cliente de una tienda ve el aviso y el enlace a la política antes de enviar su pedido.
 - **Supresión**: desde Clientes, el propietario puede eliminar los datos de un cliente que lo pida. Se anonimizan su nombre, celular y direcciones (también la copia en sus pedidos); los valores de los pedidos se conservan para la contabilidad.
-- PedifyAI es **responsable** de los datos de los comerciantes y **encargado** de los datos de los clientes de cada tienda (el negocio es el responsable).
+- Pedify es **responsable** de los datos de los comerciantes y **encargado** de los datos de los clientes de cada tienda (el negocio es el responsable).
 
 ## 7. Desplegar una versión nueva
 

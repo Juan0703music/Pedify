@@ -18,7 +18,7 @@ PostgreSQL con Prisma 7 (`prisma/schema.prisma`). Identificadores UUID v7, fecha
 | `orders` | Pedidos | business_id, customer_id, number (consecutivo por negocio), status, delivery_type, copia de datos del cliente, subtotal, delivery_fee, discount, total, idempotency_key, whatsapp_opened_at |
 | `order_items` | Detalle | business_id, order_id, product_id, product_name, unit_price, quantity, subtotal |
 | `order_status_history` | Historial de estados | order_id, from_status, to_status, changed_by_id, note |
-| `subscriptions` | Suscripción del negocio a PedifyAI | business_id, plan (`EMPRENDEDOR`/`NEGOCIO`), trial_ends_at, paid_until |
+| `subscriptions` | Suscripción del negocio a Pedify | business_id, plan (`EMPRENDEDOR`/`NEGOCIO`), trial_ends_at, paid_until |
 | `subscription_payments` | Pagos registrados por el equipo | business_id, plan, amount, months, method, reference, period_start, period_end, recorded_by_id |
 | `password_reset_tokens` | Enlaces para restablecer la contraseña | user_id, token_hash (único), expires_at, used_at |
 

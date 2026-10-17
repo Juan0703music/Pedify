@@ -37,7 +37,7 @@ export const storeController = {
       `<meta name="description" content="${escapeHtml(description)}" />`,
       `<link rel="canonical" href="${escapeHtml(url)}" />`,
       `<meta property="og:type" content="website" />`,
-      `<meta property="og:site_name" content="PedifyAI" />`,
+      `<meta property="og:site_name" content="Pedify" />`,
       `<meta property="og:locale" content="es_CO" />`,
       `<meta property="og:title" content="${escapeHtml(business.name)}" />`,
       `<meta property="og:description" content="${escapeHtml(description)}" />`,

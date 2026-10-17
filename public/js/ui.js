@@ -51,14 +51,14 @@ export function render(element, template) {
   element.innerHTML = String(template);
 }
 
-/** Logotipo de PedifyAI: comanda + nombre. */
+/** Logotipo de Pedify: comanda + nombre. */
 export function brand({ onInk = false, size = "md" } = {}) {
   const box = size === "lg" ? "h-9 w-9" : "h-7 w-7";
   const text = size === "lg" ? "text-[1.6rem]" : "text-[1.3rem]";
   return html`<span class="inline-flex items-center gap-2">
     <img src="/assets/icons/logo.svg" alt="" class="${box}" width="32" height="32" />
     <span class="${text} leading-none font-[850] tracking-tight [font-stretch:72%] ${onInk ? "text-paper" : "text-ink"}"
-      >Pedify<span class="${onInk ? "text-mustard" : "text-ink"}">AI</span></span
+      >Pedify</span
     >
   </span>`;
 }

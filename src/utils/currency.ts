@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Dinero en PedifyAI: enteros en pesos colombianos (COP), sin centavos.
+ * Dinero en Pedify: enteros en pesos colombianos (COP), sin centavos.
  *
  * Reglas de redondeo explícitas:
  * - Precios, domicilios y totales siempre son enteros ≥ 0.

@@ -1,5 +1,5 @@
 #!/bin/sh
-# PedifyAI — copias de seguridad en Docker (servicio `backup` de docker-compose.yml).
+# Pedify — copias de seguridad en Docker (servicio `backup` de docker-compose.yml).
 #  1. pg_dump de la base (formato personalizado, comprimido).
 #  2. Prueba de restauración: se restaura en una base temporal, se comparan los pedidos y se borra.
 #  3. Copia de las fotos guardadas en disco (volumen uploads).

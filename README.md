@@ -1,8 +1,10 @@
-# PedifyAI
+# Pedify
 
 Plataforma SaaS para que restaurantes, salchipaperías, pizzerías, reposterías y otros negocios de comida administren su menú, reciban pedidos ordenados por WhatsApp y consulten sus ventas desde un panel.
 
 Arquitectura: **monolito modular** con Node.js + Express + TypeScript, PostgreSQL + Prisma, HTML + JavaScript + Tailwind CSS (compilado), Socket.IO, Zod, Vitest + Supertest y Docker. Ver [`docs/architecture.md`](docs/architecture.md).
+
+El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnicos siguen en minúscula como `pedifyai` (carpeta, paquete, base de datos, imágenes de Docker y cookie) para no romper sesiones ni despliegues.
 
 ## Estado por fases
 
@@ -62,7 +64,7 @@ Arquitectura: **monolito modular** con Node.js + Express + TypeScript, PostgreSQ
 ### Incluido en la fase 5
 
 - **Planes y suscripciones**: Emprendedor ($39.900/mes) y Negocio ($69.900/mes) con límites de productos y de personas; 14 días de prueba al registrarse; vencido con 5 días de gracia y, después, la tienda deja de recibir pedidos en línea (el panel sigue funcionando). Página **Mi plan** con uso, planes, cómo pagar (WhatsApp del equipo) y pagos registrados; avisos en el panel cuando la prueba termina o el plan vence. Sección de planes en la portada.
-- **Panel central de PedifyAI** (`/admin`, sección 16): métricas globales (negocios por estado, ingreso mensual estimado, pedidos y ventas de las tiendas, salud del sistema), negocios con búsqueda y filtros, registrar pagos, cambiar de plan, ampliar la prueba y suspender o reactivar. Los administradores se asignan solo por consola (`npm run admin:grant`).
+- **Panel central de Pedify** (`/admin`, sección 16): métricas globales (negocios por estado, ingreso mensual estimado, pedidos y ventas de las tiendas, salud del sistema), negocios con búsqueda y filtros, registrar pagos, cambiar de plan, ampliar la prueba y suspender o reactivar. Los administradores se asignan solo por consola (`npm run admin:grant`).
 - **Monitoreo**: identificador por petición (`X-Request-Id`) en los registros y código de soporte en los errores 500; `/api/v1/health` con estado de la base (503 si falla); métricas Prometheus en `/metrics` protegidas con `METRICS_TOKEN`.
 - **Copias de seguridad**: `npm run db:backup`, `db:backup:verify` (restaura en una base temporal y compara) y `db:restore` (solo en una base vacía); en Docker, servicio `backup` con `pg_dump` diario y prueba de restauración.
 - **Recuperación de contraseña** (sección 12): enlace de un solo uso por correo (SMTP), válido 30 minutos, del que solo se guarda el hash; al usarlo se cierran todas las sesiones. La respuesta no revela si el correo tiene cuenta.
@@ -108,7 +110,7 @@ npm run db:seed            # opcional: comerciante demo con menú (demo@pedifyai
 npm run dev                # terminal 2: API + Tailwind en modo observación → http://localhost:3000
 ```
 
-Páginas: `/` portada · `/registro` · `/login` · `/recuperar` · `/privacidad` · `/admin` (equipo de PedifyAI) · `/panel/plan` · `/panel` · `/panel/pedidos` · `/panel/menu` · `/panel/clientes` · `/panel/analiticas` · `/panel/tienda` · `/panel/configuracion` · `/tienda/<slug>` (tienda pública, p. ej. `/tienda/sabores-del-caribe`).
+Páginas: `/` portada · `/registro` · `/login` · `/recuperar` · `/privacidad` · `/admin` (equipo de Pedify) · `/panel/plan` · `/panel` · `/panel/pedidos` · `/panel/menu` · `/panel/clientes` · `/panel/analiticas` · `/panel/tienda` · `/panel/configuracion` · `/tienda/<slug>` (tienda pública, p. ej. `/tienda/sabores-del-caribe`).
 
 Las fotos se guardan en `uploads/` en desarrollo. En producción se recomienda `STORAGE_DRIVER=s3` (ver `.env.example`).
 

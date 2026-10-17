@@ -39,7 +39,7 @@ export const subscriptionsService = {
       subscriptionsRepository.usage(tenant.businessId),
       subscriptionsRepository.listPayments(tenant.businessId),
     ]);
-    const message = `Hola, quiero pagar el plan ${plan.name} de PedifyAI para mi negocio ${business.name} (${business.storeUrl}).`;
+    const message = `Hola, quiero pagar el plan ${plan.name} de Pedify para mi negocio ${business.name} (${business.storeUrl}).`;
     return {
       plan: subscription.plan,
       planName: plan.name,

@@ -26,7 +26,7 @@ const server = http.createServer(createApp());
 const live = attachSocket(server);
 
 server.listen(env.PORT, () => {
-  logger.info(`PedifyAI (${environmentName}) escuchando en el puerto ${env.PORT} (${env.APP_URL})`);
+  logger.info(`Pedify (${environmentName}) escuchando en el puerto ${env.PORT} (${env.APP_URL})`);
 });
 
 let shuttingDown = false;

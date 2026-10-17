@@ -1,4 +1,4 @@
-# Sistema visual de PedifyAI
+# Sistema visual de Pedify
 
 **Mundo:** la comanda de un negocio de comidas rápidas. Tiquetes de pedido con borde dentado, tinta casi negra y el amarillo mostaza de los letreros de barrio. La portada usa el color a página completa; el panel es sobrio (neutros + un acento) porque es una herramienta de trabajo diario en un mostrador con mucha luz.
 
@@ -74,13 +74,13 @@ Una portada de noche: fondo tinta con resplandor mostaza (`.glow-mustard`) y pun
 
 - **Demostración interactiva** (`[data-demo]`, `public/js/landing.js`): un teléfono con la tienda de ejemplo. El visitante toca «+», ve el contador y el total, y al enviar aparecen la burbuja de WhatsApp con el mensaje armado y la comanda que se imprime en el panel (con una campana que late). Si nadie toca, se arma sola **una vez** al aparecer en pantalla; «Repetir» la reinicia. Sin JavaScript o con «reducir movimiento» se ve el pedido de ejemplo ya enviado.
 - Fotos que flotan alrededor del teléfono (`.float-a/b/c`) y se mueven un poco con el mouse (`[data-depth]`, solo con puntero fino).
-- **Cintas cruzadas**: una mostaza con los tipos de comida y una tinta con los beneficios, inclinadas en sentidos opuestos (`.tape`, `.tape-reverse`), con botón «Pausar animación».
+- **Antes / Con Pedify**: «Se acabó el ~~desorden~~ en el chat» (tachón tomate). A la izquierda, un chat de WhatsApp desordenado (fondo crema de WhatsApp, nota de voz, «¿Me repite el pedido?» y un sello tomate «¿Y el total?»); a la derecha, sobre tinta, el único mensaje que genera Pedify (con el formato real de `buildOrderMessage`) y la comanda en el panel. Debajo, una franja con datos del producto en números gigantes: 0 % de comisión, 14 días gratis, 1 enlace y QR, 0 apps que descargar (son características, no estadísticas).
 - «Del **antojo** al pedido confirmado»: la palabra gigante rellena con una foto (`.image-text`).
 - Pasos en tarjetas con numerales en contorno (`.text-outline-ink`) que se vuelven mostaza al pasar el mouse; mosaico de tipos de negocio (`.food-card`); abanico de fotos con la insignia «Los más pedidos»; el tablero de pedidos ilustrativo en una ventana de navegador; planes (tiquetes) y cierre mostaza con «Abre tu tienda **hoy**» enorme.
 
 ## Tienda pública
 
-Es la vitrina del comerciante, no de PedifyAI: manda la portada, el logo y el nombre del negocio. Con portada, la foto ocupa la parte de arriba (26–30 rem de alto) con un degradado tinta desde abajo y, encima, el logo, el nombre en grande, la descripción, el estado y el botón de WhatsApp; el detalle (domicilio, horario, pagos) va debajo en una franja (tres columnas en escritorio). Sin portada, letrero mostaza con puntos y el nombre en grande, con el detalle a la derecha en escritorio.
+Es la vitrina del comerciante, no de Pedify: manda la portada, el logo y el nombre del negocio. Con portada, la foto ocupa la parte de arriba (26–30 rem de alto) con un degradado tinta desde abajo y, encima, el logo, el nombre en grande, la descripción, el estado y el botón de WhatsApp; el detalle (domicilio, horario, pagos) va debajo en una franja (tres columnas en escritorio). Sin portada, letrero mostaza con puntos y el nombre en grande, con el detalle a la derecha en escritorio.
 
 - **Los más pedidos**: carrusel horizontal con fotos 4:3 grandes, número mostaza (1–3) y el botón de agregar sobre la foto. Si aún no hay ventas, «Para abrir el apetito» con los productos que tienen foto.
 - **Productos**: en el celular, filas con la foto a la derecha (patrón de las apps de domicilios); en escritorio, tarjetas en tres columnas con la foto arriba (o `.food-placeholder`). Toda la tarjeta abre la **ficha del producto**; el control de cantidad queda encima.
@@ -96,7 +96,7 @@ Es la vitrina del comerciante, no de PedifyAI: manda la portada, el logo y el no
 ## Movimiento
 
 - El gesto propio es el **tiquete que se imprime** (`.print-in`, revelado de arriba hacia abajo con `clip-path`, 0.9–1 s, curva exponencial).
-- En la portada: la demostración del teléfono (una vez), las cintas que se desplazan (`.marquee`, con botón de pausa), las fotos que flotan y siguen al mouse, y las secciones que aparecen al bajar (`[data-reveal]`, solo con JavaScript: sin él, todo se ve).
+- En la portada: la demostración del teléfono (una vez), las fotos que flotan y siguen al mouse, y las secciones que aparecen al bajar (`[data-reveal]`, solo con JavaScript: sin él, todo se ve). Nada se mueve en bucle salvo el flotar suave de las fotos.
 - Las fotos se acercan un 5–6 % al pasar el mouse (solo en dispositivos con puntero).
 - Transiciones de interfaz de 150–250 ms. Todo se anula con `prefers-reduced-motion`.
 

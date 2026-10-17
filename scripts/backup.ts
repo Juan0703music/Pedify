@@ -1,5 +1,5 @@
 /**
- * Copias de seguridad de PedifyAI (sección 12: "mantener copias de seguridad y probar su restauración").
+ * Copias de seguridad de Pedify (sección 12: "mantener copias de seguridad y probar su restauración").
  *
  *   npm run db:backup                          crea una copia en BACKUP_DIR (por defecto backups/)
  *   npm run db:backup:verify [-- <carpeta>]    restaura la copia más reciente en una base temporal,
@@ -161,7 +161,7 @@ async function createBackup(): Promise<string> {
 
 async function restoreBackup(dir: string, targetUrl: string, options: { withUploads?: string } = {}) {
   const manifest = JSON.parse(readFileSync(path.join(dir, "manifest.json"), "utf8")) as Manifest;
-  if (manifest.app !== "pedifyai" || manifest.format !== 1) throw new Error("La carpeta no es una copia de PedifyAI.");
+  if (manifest.app !== "pedifyai" || manifest.format !== 1) throw new Error("La carpeta no es una copia de Pedify.");
 
   // 1. Esquema: las mismas migraciones que tenía la base original.
   execFileSync(path.resolve("node_modules/.bin/prisma"), ["migrate", "deploy"], {

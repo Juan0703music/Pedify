@@ -1,4 +1,4 @@
-// Cliente de la API de PedifyAI. La sesión viaja en una cookie httpOnly:
+// Cliente de la API de Pedify. La sesión viaja en una cookie httpOnly:
 // el navegador la envía sola y el JavaScript nunca la ve.
 
 export class ApiError extends Error {

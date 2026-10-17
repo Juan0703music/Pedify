@@ -1,7 +1,7 @@
 import type { PlanCode } from "../../generated/prisma/enums.js";
 
 /**
- * Planes de PedifyAI (fase 5: comercialización). Los precios son mensuales en pesos colombianos.
+ * Planes de Pedify (fase 5: comercialización). Los precios son mensuales en pesos colombianos.
  * Ambos planes incluyen todas las funciones; cambian los límites de productos y de personas del equipo.
  * Para cambiar precios o límites basta con editar este archivo (no requiere migración).
  */

@@ -5,7 +5,7 @@ type Env = typeof currentEnv;
 /**
  * Lo que falta configurar para operar en producción (sección 15 del documento: secretos, HTTPS,
  * almacenamiento externo, correo y monitoreo). No impide arrancar: se registra al iniciar
- * y el panel central lo muestra al equipo de PedifyAI.
+ * y el panel central lo muestra al equipo de Pedify.
  */
 export function productionWarnings(env: Env = currentEnv): string[] {
   const warnings: string[] = [];
