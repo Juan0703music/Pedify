@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/database.js";
-import { login, PASSWORD, registerMerchant, uniqueEmail } from "./helpers/app.js";
+import { login, newAgent, PASSWORD, registerMerchant, uniqueEmail } from "./helpers/app.js";
 import { resetDatabase } from "./helpers/db.js";
 
 beforeEach(resetDatabase);
@@ -198,6 +198,25 @@ describe("Miembros y roles", () => {
 
     const me = await other.agent.get("/api/v1/auth/me").expect(200);
     expect(me.body.data.businesses).toHaveLength(2);
+  });
+
+  it("si el correo ya tiene cuenta, avisa y no cambia su contraseña (entra con la suya)", async () => {
+    const owner = await registerMerchant({ businessName: "Negocio A" });
+    const other = await registerMerchant({ businessName: "Negocio B" });
+    const added = await owner.agent
+      .post("/api/v1/businesses/current/members")
+      .send({ name: "Ana", email: other.input.email, password: "clave-nueva-que-no-se-usa" })
+      .expect(201);
+    expect(added.body.data).toMatchObject({ role: "EMPLOYEE", existingAccount: true });
+
+    await newAgent().post("/api/v1/auth/login").send({ email: other.input.email, password: "clave-nueva-que-no-se-usa", as: "EMPLOYEE" }).expect(401);
+    await newAgent().post("/api/v1/auth/login").send({ email: other.input.email, password: PASSWORD, as: "EMPLOYEE" }).expect(200);
+
+    const fresh = await owner.agent
+      .post("/api/v1/businesses/current/members")
+      .send({ name: "Nuevo", email: uniqueEmail("nuevo"), password: PASSWORD })
+      .expect(201);
+    expect(fresh.body.data.existingAccount).toBe(false);
   });
 
   it("pide contraseña inicial si el correo no tiene cuenta", async () => {

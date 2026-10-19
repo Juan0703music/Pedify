@@ -382,7 +382,7 @@ function teamSection() {
           <div class="field">
             <label class="label" for="m-password">Contraseña inicial</label>
             <input class="input" id="m-password" name="password" type="text" autocomplete="new-password" minlength="8" />
-            <p class="hint">Solo si la persona aún no tiene cuenta en Pedify. Compártela en persona.</p>
+            <p class="hint">Para crearle la cuenta. Si su correo ya tiene cuenta en Pedify, entrará con su propia contraseña. Compártela en persona.</p>
           </div>
           <div class="field">
             <label class="label" for="m-role">Rol</label>
@@ -586,15 +586,47 @@ async function submitForm(form) {
       form.reset();
       markDirty(form, false);
     } else if (name === "miembro") {
-      state.members.push(result);
+      const { existingAccount, ...member } = result;
+      state.members.push(member);
+      const typedPassword = Boolean(form.elements.password?.value);
       form.reset();
       form.querySelector("[data-new-permissions]").hidden = false;
       redrawMembers();
+      if (existingAccount) {
+        // La cuenta ya existía: entra con su propia contraseña (la que se escribió no se usa).
+        showMemberNotice(member, typedPassword);
+      }
     }
   } catch (error) {
     setBusy(button, false);
     showErrors(form, error);
   }
+}
+
+/** Aviso que queda a la vista (no un mensaje que desaparece): cómo entra la persona agregada. */
+function showMemberNotice(member, typedPassword) {
+  const list = document.querySelector("[data-member-list]");
+  if (!list) return;
+  document.querySelector("[data-member-notice]")?.remove();
+  const notice = document.createElement("div");
+  notice.dataset.memberNotice = "";
+  notice.setAttribute("role", "status");
+  notice.className = "mb-4 flex items-start gap-3 rounded-[12px] border border-sky/25 bg-sky-soft px-4 py-3 text-[0.9375rem] text-sky";
+  render(
+    notice,
+    html`${icon("info", "mt-0.5 flex-none")}
+      <div class="grid gap-1">
+        <p class="font-[700]">${member.user.name} ya tenía cuenta en Pedify con ${member.user.email}.</p>
+        <p>
+          ${typedPassword ? "Por seguridad no cambiamos su contraseña por la que escribiste: " : ""}entra con la contraseña que ya usaba,
+          eligiendo «${member.role === "OWNER" ? "Soy el dueño" : "Soy empleado"}». Si no la recuerda, que toque «¿La olvidaste?» en el inicio de sesión.
+        </p>
+      </div>
+      <button type="button" class="btn btn-quiet btn-icon -mt-1 -mr-2 ml-auto flex-none text-sky" aria-label="Cerrar aviso" data-close-notice>${icon("x")}</button>`,
+  );
+  notice.querySelector("[data-close-notice]").addEventListener("click", () => notice.remove());
+  list.before(notice);
+  notice.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 function redrawMembers() {

@@ -181,7 +181,7 @@ await fetch("/api/v1/products/<id>/image", { method: "POST", headers: { "Content
 
 - Siempre solo del propietario: editar el menú y las categorías, configurar el negocio (datos, horario, entrega, pagos, ventas, logo, portada), el equipo, el plan y borrar los datos de un cliente.
 - Sin el permiso → 403 `PERMISSION_REQUIRED` con el motivo. `GET /businesses/current` incluye `role` y `permissions` (el propietario, todos en `true`).
-- Equipo: `POST /businesses/current/members` acepta `permissions` (parcial, sobre los iniciales); `PATCH /businesses/current/members/:id` acepta `role` y/o `permissions`. Los miembros se devuelven con `permissions`.
+- Equipo: `POST /businesses/current/members` acepta `permissions` (parcial, sobre los iniciales) y responde con `existingAccount`: si el correo ya tenía cuenta en Pedify, solo se vincula al negocio y la persona entra con **su** contraseña (la contraseña inicial enviada se ignora; un propietario nunca puede cambiar la contraseña de una cuenta existente); `PATCH /businesses/current/members/:id` acepta `role` y/o `permissions`. Los miembros se devuelven con `permissions`.
 - **Iniciar sesión con el rol**: `POST /auth/login` acepta `as: "OWNER" | "EMPLOYEE"` («Soy el dueño» / «Soy empleado»). No da permisos: si la cuenta no tiene ese rol en ningún negocio → 403 `ROLE_MISMATCH` y no se abre sesión (con contraseña equivocada sigue siendo 401, sin revelar el rol). Si la persona es dueña de un negocio y empleada de otro, empieza en el negocio del rol que eligió.
 
 ## Avisos push — `/push`

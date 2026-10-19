@@ -113,7 +113,7 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - El dueño puede todo. A cada empleado el dueño le elige, en **Configuración → Equipo**, si puede **marcar agotados**, **ver las ventas del día**, **ver los clientes** y **ver las analíticas** (por defecto, todo menos analíticas). Atender pedidos siempre puede; editar el menú, configurar el negocio, el equipo, el plan y borrar datos de clientes es solo del dueño.
 - El panel oculta lo que no puede ver y el servidor lo bloquea igual (403). Los empleados ven en Configuración solo sus avisos y su cuenta.
 - Cuenta de ejemplo: `empleado@pedifyai.com` (misma contraseña del demo).
-- 148 pruebas en total.
+- 149 pruebas en total.
 
 ## Requisitos
 

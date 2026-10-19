@@ -168,8 +168,10 @@ export const businessesService = {
   },
 
   /**
-   * Agrega un miembro. Si el correo ya tiene cuenta, solo se vincula al negocio;
-   * si no, se crea la cuenta con la contraseña inicial indicada por el propietario.
+   * Agrega un miembro. Si el correo ya tiene cuenta, solo se vincula al negocio y la persona sigue
+   * entrando con SU contraseña (un propietario nunca puede cambiar la contraseña de una cuenta que
+   * ya existe); la respuesta lo indica con `existingAccount: true` para avisarle al propietario.
+   * Si no tiene cuenta, se crea con la contraseña inicial indicada por el propietario.
    */
   async addMember(tenant: TenantContext, input: AddMemberInput) {
     return prisma.$transaction(async (tx) => {
@@ -179,9 +181,12 @@ export const businessesService = {
         if (await businessesRepository.findMembership(existing.id, tenant.businessId, tx)) {
           throw conflict("Esa persona ya pertenece a tu negocio.", "ALREADY_MEMBER");
         }
-        return toMember(
-          await businessesRepository.createMembership({ userId: existing.id, businessId: tenant.businessId, role: input.role, ...permissionsFor(input) }, tx),
-        );
+        return {
+          ...toMember(
+            await businessesRepository.createMembership({ userId: existing.id, businessId: tenant.businessId, role: input.role, ...permissionsFor(input) }, tx),
+          ),
+          existingAccount: true,
+        };
       }
 
       if (!input.password) {
@@ -193,9 +198,12 @@ export const businessesService = {
         { name: input.name, email: input.email, passwordHash: await hashPassword(input.password) },
         tx,
       );
-      return toMember(
-        await businessesRepository.createMembership({ userId: user.id, businessId: tenant.businessId, role: input.role, ...permissionsFor(input) }, tx),
-      );
+      return {
+        ...toMember(
+          await businessesRepository.createMembership({ userId: user.id, businessId: tenant.businessId, role: input.role, ...permissionsFor(input) }, tx),
+        ),
+        existingAccount: false,
+      };
     });
   },
 
