@@ -100,6 +100,13 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - El WhatsApp del negocio queda como contacto opcional en la tienda y en el seguimiento.
 - 136 pruebas en total.
 
+### Notificaciones push
+
+- Cada persona del equipo activa **avisos en su celular o computador** (tarjeta en Inicio, botón del menú o Configuración → Pedidos): con cada pedido nuevo le llega una notificación aunque tenga el panel cerrado, y al tocarla se abre el pedido. Incluye aviso de prueba.
+- Web Push estándar con llaves VAPID (`npm run push:keys`), service worker `/sw.js` y manifiesto para instalar Pedify en la pantalla de inicio (necesario en iPhone).
+- Al salir del equipo, cerrar sesión o cambiar la contraseña, los dispositivos dejan de recibir avisos.
+- 141 pruebas en total.
+
 ## Requisitos
 
 - Node.js 22.12 o superior (probado con Node 24).
@@ -141,6 +148,7 @@ Las fotos se guardan en `uploads/` en desarrollo. En producción se recomienda `
 | `npm run db:backup:verify` | Prueba de restauración de la última copia (base temporal) |
 | `npm run db:restore` | Restaura una copia en una base vacía |
 | `npm run admin:grant -- correo` | Da acceso al panel central `/admin` |
+| `npm run push:keys` | Genera las llaves VAPID de los avisos push |
 
 Los íconos (Lucide) y la fuente (Archivo) se generan en `public/assets` con `npx tsx scripts/build-assets.ts`; las fotos de comida, con `npx tsx scripts/photos.ts`.
 

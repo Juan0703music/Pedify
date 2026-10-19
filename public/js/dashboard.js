@@ -2,6 +2,8 @@
 import { api, formatCOP, redirectToLogin } from "./api.js";
 import { connectLive, disableSound, enableSound, onLive, soundReady, soundWanted } from "./notifications.js";
 import { elapsedLabel, nextAction, statusBadge } from "./order-ui.js";
+import { disablePush, enablePush, PUSH_COPY, sendTestPush } from "./push.js";
+import { handlePushClick, pushView, safePushState } from "./push-ui.js";
 import { brand, copyText, formAlert, html, icon, initials, raw, readForm, render, setBusy, showErrors, toast } from "./ui.js";
 
 /** Navegación del panel (sección 6 del documento de arquitectura). `ownerOnly`: solo el propietario. */
@@ -47,7 +49,15 @@ function liveControl({ compact = false } = {}) {
         <button type="button" class="btn btn-sm w-full justify-start border-ink-3 bg-ink-3 text-paper hover:bg-ink" data-sound-toggle>
           <span data-sound-icon>${icon("bell-off")}</span><span data-sound-text>Activar sonido de pedidos</span>
         </button>
+        ${pushButton()}
       </div>`;
+}
+
+/** Botón de avisos push en este dispositivo (menú lateral y cajón del celular). */
+function pushButton() {
+  return html`<button type="button" class="btn btn-sm hidden w-full justify-start border-ink-3 bg-ink-3 text-paper hover:bg-ink" data-push-toggle>
+    <span data-push-icon>${icon("smartphone")}</span><span class="truncate" data-push-text>Avisos en este dispositivo</span>
+  </button>`;
 }
 
 function tabLinks(page) {
@@ -240,7 +250,7 @@ function shell(me, business, page) {
           <button type="button" class="btn btn-quiet btn-icon text-paper hover:bg-ink-3" data-close-drawer aria-label="Cerrar menú">${icon("x")}</button>
         </div>
         <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, role)}</nav>
-        <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3"><div class="grid grid-cols-[minmax(0,1fr)] gap-0.5">${planLink(business)} ${adminLink(me)}</div> ${userBlock(me)}</div>
+        <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">${business ? pushButton() : ""}<div class="grid grid-cols-[minmax(0,1fr)] gap-0.5">${planLink(business)} ${adminLink(me)}</div> ${userBlock(me)}</div>
       </div>
     </dialog>
   </div>`;
@@ -274,6 +284,8 @@ function bindShell(root) {
     if (target.matches("[data-logout]")) {
       setBusy(target, true);
       try {
+        // Este dispositivo deja de recibir avisos de pedidos de la cuenta (sin esperar más de 2 s).
+        await Promise.race([disablePush().catch(() => {}), new Promise((resolve) => setTimeout(resolve, 2000))]);
         await api("/auth/logout", { method: "POST" });
       } finally {
         location.assign("/login");
@@ -379,8 +391,62 @@ async function refreshPendingCount(root) {
   }
 }
 
+/** Estado del botón de avisos push: "Activar" o "activados" (un toque envía una prueba). */
+function paintPush(root, state) {
+  const available = !["unsupported", "disabled", "insecure"].includes(state);
+  root.querySelectorAll("[data-push-toggle]").forEach((button) => {
+    button.classList.toggle("hidden", !available);
+    button.classList.toggle("flex", available);
+    const on = state === "on";
+    button.setAttribute("aria-pressed", String(on));
+    button.title = PUSH_COPY[state]?.hint ?? "";
+    button.querySelector("[data-push-icon]").innerHTML = String(icon("smartphone", on ? "text-mustard" : ""));
+    button.querySelector("[data-push-text]").textContent = on ? "Avisos activados aquí" : state === "off" ? "Activar avisos aquí" : "Avisos en este dispositivo";
+  });
+}
+
+async function startPush(root) {
+  let state = await safePushState();
+  paintPush(root, state);
+  root.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-push-toggle]");
+    if (!button) return;
+    setBusy(button, true);
+    try {
+      if (state === "on") {
+        const result = await sendTestPush();
+        toast(result.sent > 0 ? "Los avisos están activos. Te enviamos uno de prueba." : "No pudimos enviar el aviso. Vuelve a activarlos.", result.sent > 0 ? "success" : "error");
+      } else if (state === "off") {
+        await enablePush();
+        state = "on";
+        toast("Listo: te avisaremos de cada pedido nuevo en este dispositivo.");
+      } else {
+        toast(PUSH_COPY[state]?.hint ?? "Los avisos no están disponibles aquí.", "info");
+      }
+    } catch (error) {
+      toast(error.message, "error");
+      state = await safePushState();
+    } finally {
+      setBusy(button, false);
+      paintPush(root, state);
+    }
+  });
+  // La tarjeta de Inicio o Configuración también activan y desactivan.
+  window.addEventListener("pedify:push", (event) => {
+    state = event.detail;
+    paintPush(root, state);
+  });
+  // Permisos cambiados en el navegador: se vuelve a leer al volver a la pestaña.
+  document.addEventListener("visibilitychange", async () => {
+    if (document.hidden) return;
+    state = await safePushState();
+    paintPush(root, state);
+  });
+}
+
 function startLive(root) {
   connectLive();
+  void startPush(root);
   let liveState = "connecting";
   onLive("status", (status) => {
     liveState = status;
@@ -708,6 +774,7 @@ async function renderHome(context) {
   if (!business) return renderNoBusiness(main);
 
   render(main, homeSkeleton());
+  let pushStatus = await safePushState();
   let settings;
   let catalog;
   let today;
@@ -745,6 +812,8 @@ async function renderHome(context) {
           </div>
         </header>
 
+        ${pushView(pushStatus, "card")}
+
         <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
           <div class="grid gap-6">${summary(today)} ${liveOrders(orders)} ${featuredProducts(today)}</div>
           <div class="grid gap-6">${storeCard(business, catalog)} ${checklist(business, settings, catalog)}</div>
@@ -770,7 +839,18 @@ async function renderHome(context) {
   onLive("resync", refresh);
   setInterval(() => main.querySelector("[data-live-orders]") && draw(), 60_000);
 
+  window.addEventListener("pedify:push", (event) => {
+    if (pushStatus === event.detail) return;
+    pushStatus = event.detail;
+    draw();
+  });
   main.addEventListener("click", async (event) => {
+    const pushNext = await handlePushClick(event, pushStatus);
+    if (pushNext !== null) {
+      pushStatus = pushNext;
+      draw();
+      return;
+    }
     const advance = event.target.closest("[data-advance]");
     if (advance) {
       setBusy(advance, true);

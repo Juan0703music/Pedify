@@ -28,6 +28,7 @@
     "postinstall": "prisma generate",
     "admin:grant": "tsx scripts/admin.ts grant",
     "admin:revoke": "tsx scripts/admin.ts revoke",
+    "push:keys": "tsx scripts/push-keys.ts",
     "db:backup": "tsx scripts/backup.ts create",
     "db:backup:verify": "tsx scripts/backup.ts verify",
     "db:restore": "tsx scripts/backup.ts restore"
@@ -49,6 +50,7 @@
     "qrcode": "^1.5.4",
     "sharp": "^0.35.5",
     "socket.io": "^4.8.4",
+    "web-push": "^3.6.7",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -62,6 +64,7 @@
     "@types/pg-copy-streams": "^1.2.5",
     "@types/qrcode": "^1.5.6",
     "@types/supertest": "^7.2.1",
+    "@types/web-push": "^3.6.4",
     "concurrently": "^10.0.6",
     "embedded-postgres": "^18.4.0-beta.17",
     "lucide-static": "^1.57.0",

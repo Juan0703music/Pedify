@@ -2,6 +2,7 @@
 // notificación visual y actualización de listas. Socket.IO solo avisa: cada pantalla vuelve
 // a consultar la API al recibir un evento o al reconectarse (PostgreSQL es la fuente de verdad).
 import { io } from "/socket.io/socket.io.esm.min.js";
+import { pushRemembered } from "./push.js";
 import { formatCOP } from "./api.js";
 import { escapeHtml, icon } from "./ui.js";
 
@@ -122,6 +123,8 @@ function showOrderAlert(order) {
 /** Aviso del sistema operativo si la pestaña no está a la vista y hay permiso. */
 function systemNotification(order) {
   if (!("Notification" in window) || Notification.permission !== "granted" || !document.hidden) return;
+  // Con los avisos push activos, el aviso llega por el service worker: no se repite aquí.
+  if (pushRemembered()) return;
   const notification = new Notification(`Nuevo pedido #${order.number}`, {
     body: `${order.customerName} · ${formatCOP(order.total)}`,
     icon: "/assets/icons/logo.svg",

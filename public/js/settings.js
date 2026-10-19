@@ -1,6 +1,7 @@
 // Página de Configuración: datos del negocio, WhatsApp, horario, entrega, pagos, equipo y cuenta.
 import { api, formatPhone, parseMoney } from "./api.js";
 import { initPanel, renderNoBusiness, ROLE_LABEL } from "./dashboard.js";
+import { mountPush } from "./push-ui.js";
 import {
   clearFieldErrors,
   formAlert,
@@ -153,7 +154,11 @@ function whatsappSection() {
         )}
       </fieldset>
       ${isOwner ? saveBar() : ""}
-    </form>`,
+    </form>
+    <div class="mt-8 grid gap-3">
+      <h3 class="font-[740]">Avisos de pedidos nuevos</h3>
+      <div data-push-section></div>
+    </div>`,
   );
 }
 
@@ -714,6 +719,7 @@ if (context) {
       state.settings = settings;
       state.members = members;
       render(main, page());
+      void mountPush(main.querySelector("[data-push-section]"), "section");
       updateCounter(main.querySelector("#b-description"));
       bindPage(main);
       trackSections(main);

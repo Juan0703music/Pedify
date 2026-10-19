@@ -167,6 +167,21 @@ await fetch("/api/v1/products/<id>/image", { method: "POST", headers: { "Content
 - Cada versión recibe un nombre aleatorio nuevo y se sirve con caché de un año (`immutable`); la versión anterior se borra.
 - Límite: 60 subidas cada 15 minutos por IP.
 
+## Avisos push — `/push`
+
+Sesión de cualquier persona del equipo (propietario o empleado). Web Push con llaves VAPID; el service worker es `/sw.js`.
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| GET | `/push/public-key` | — | `{ enabled, publicKey }` (`enabled: false` si el servidor no tiene llaves) |
+| POST | `/push/subscriptions` | `{ endpoint, keys: { p256dh, auth } }` (lo que entrega `PushManager.subscribe()`) | 201 `{ devices }` — se asocia a la persona y a su negocio activo |
+| DELETE | `/push/subscriptions` | `{ endpoint }` | 204 |
+| POST | `/push/test` | — | `{ sent, devices }` — aviso de prueba a sus dispositivos |
+
+- `endpoint` debe ser `https://` de un servicio de push conocido (Google FCM, Mozilla, Apple, Microsoft); cualquier otra dirección → 400 (el servidor no hace peticiones a direcciones arbitrarias).
+- Con cada pedido nuevo se avisa a los dispositivos de las personas que **siguen** en el equipo: título `Nuevo pedido #N`, cuerpo `Nombre · Domicilio|Para recoger · $total`, abre `/panel/pedidos?pedido=<id>`. Los dispositivos que el servicio rechaza (404/410) se borran.
+- Sin llaves VAPID: `POST /push/subscriptions` y `/push/test` → 409 `PUSH_DISABLED`.
+
 ## Tienda pública — `/store`
 
 Sin sesión.

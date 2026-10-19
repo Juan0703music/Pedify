@@ -12,6 +12,7 @@ La sección 15 pide implementar **y probar** migraciones, validaciones, controle
 - [ ] Imágenes en almacenamiento externo (`STORAGE_DRIVER=s3`) con el bucket **versionado**.
 - [ ] Correo configurado (`SMTP_URL`) y probada la recuperación de contraseña.
 - [ ] `SUPPORT_WHATSAPP` con el número del equipo (pagos de planes y soporte).
+- [ ] Llaves VAPID (`npm run push:keys`) para los avisos push, y probado un aviso desde Configuración → Pedidos.
 - [ ] Copias automáticas activas y **una restauración probada** (ver 4).
 - [ ] Monitoreo de `/api/v1/health` y de `/metrics` (ver 5).
 - [ ] Política de tratamiento de datos (`/privacidad`) completada con razón social, NIT, dirección y correo, y revisada por un abogado (Ley 1581 de 2012).
@@ -29,6 +30,7 @@ En desarrollo están en [`.env.example`](../.env.example); en el servidor, en [`
 | `SMTP_URL`, `MAIL_FROM` | Correos de recuperación de contraseña. Sin `SMTP_URL`, en desarrollo el enlace aparece en el registro; en producción no se envía (y se registra una advertencia). |
 | `SUPPORT_WHATSAPP` | WhatsApp del equipo (57XXXXXXXXXX). Lo usan "Mi plan" y los botones de pago. |
 | `METRICS_TOKEN` | Activa `/metrics` (mínimo 16 caracteres). Sin token, la ruta no existe. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Avisos push de pedidos nuevos en los dispositivos del negocio. Se generan con `npm run push:keys`; la privada es un secreto. Si se cambian, cada dispositivo debe volver a activar los avisos. |
 
 ## 3. Planes, suscripciones y panel central
 

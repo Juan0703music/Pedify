@@ -54,10 +54,20 @@ const EnvSchema = z
     // WhatsApp del equipo de Pedify para pagos y soporte (formato 57XXXXXXXXXX).
     SUPPORT_WHATSAPP: optional(z.string().regex(/^57\d{10}$/, "Usa el formato 57XXXXXXXXXX.")),
 
+    // Notificaciones push de pedidos nuevos (Web Push). Se generan con `npm run push:keys`.
+    // Sin las dos llaves no hay avisos push (el panel sigue sonando mientras esté abierto).
+    VAPID_PUBLIC_KEY: optional(z.string().regex(/^[A-Za-z0-9_-]{80,100}$/, "VAPID_PUBLIC_KEY no es una llave válida (npm run push:keys).")),
+    VAPID_PRIVATE_KEY: optional(z.string().regex(/^[A-Za-z0-9_-]{40,50}$/, "VAPID_PRIVATE_KEY no es una llave válida (npm run push:keys).")),
+    // Contacto del responsable para los servicios de push: mailto:… o https://… (por defecto, el de MAIL_FROM).
+    VAPID_SUBJECT: optional(z.string().regex(/^(mailto:|https:\/\/)/, "VAPID_SUBJECT debe empezar por mailto: o https://.")),
+
     // Métricas en formato Prometheus en /metrics (desactivadas si no hay token).
     METRICS_TOKEN: optional(z.string().min(16, "METRICS_TOKEN debe tener al menos 16 caracteres.")),
   })
   .superRefine((value, ctx) => {
+    if (Boolean(value.VAPID_PUBLIC_KEY) !== Boolean(value.VAPID_PRIVATE_KEY)) {
+      ctx.addIssue({ code: "custom", path: ["VAPID_PRIVATE_KEY"], message: "Define VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY juntas (npm run push:keys)." });
+    }
     if (value.STORAGE_DRIVER !== "s3") return;
     for (const key of ["S3_BUCKET", "S3_PUBLIC_URL"] as const) {
       if (!value[key]) ctx.addIssue({ code: "custom", path: [key], message: `${key} es obligatoria con STORAGE_DRIVER=s3.` });

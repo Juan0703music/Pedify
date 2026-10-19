@@ -76,11 +76,12 @@ model User {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  memberships          BusinessMembership[]
-  sessions             Session[]
-  statusChanges        OrderStatusHistory[]
-  passwordResetTokens  PasswordResetToken[]
-  recordedPayments     SubscriptionPayment[]
+  memberships         BusinessMembership[]
+  sessions            Session[]
+  statusChanges       OrderStatusHistory[]
+  passwordResetTokens PasswordResetToken[]
+  pushSubscriptions   PushSubscription[]
+  recordedPayments    SubscriptionPayment[]
 
   @@map("users")
 }
@@ -139,14 +140,15 @@ model Business {
   createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  memberships  BusinessMembership[]
-  settings     BusinessSettings?
-  subscription Subscription?
-  payments     SubscriptionPayment[]
-  categories   Category[]
-  products    Product[]
-  customers   Customer[]
-  orders      Order[]
+  memberships       BusinessMembership[]
+  settings          BusinessSettings?
+  subscription      Subscription?
+  pushSubscriptions PushSubscription[]
+  payments          SubscriptionPayment[]
+  categories        Category[]
+  products          Product[]
+  customers         Customer[]
+  orders            Order[]
 
   @@map("businesses")
 }
@@ -387,4 +389,26 @@ model OrderStatusHistory {
 
   @@index([orderId, createdAt])
   @@map("order_status_history")
+}
+
+/// Dispositivos que reciben notificaciones push de pedidos nuevos (Web Push con llaves VAPID).
+/// Una suscripción pertenece a una persona y al negocio que tenía activo al activarla.
+model PushSubscription {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  businessId String    @map("business_id") @db.Uuid
+  /// URL del servicio de push del navegador (Google, Mozilla, Apple o Microsoft).
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  userAgent  String?   @map("user_agent")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSentAt DateTime? @map("last_sent_at") @db.Timestamptz(3)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([userId])
+  @@map("push_subscriptions")
 }

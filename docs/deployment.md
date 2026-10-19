@@ -101,6 +101,7 @@ Completa `.env` (cada variable está explicada en el archivo):
 | `STORAGE_DRIVER`, `S3_*` | bucket `pedifyai-fotos` | bucket `pedifyai-fotos-pruebas` |
 | `SMTP_URL` | p. ej. `smtp://usuario:clave@smtp-relay.brevo.com:587` | el mismo proveedor |
 | `SUPPORT_WHATSAPP`, `METRICS_TOKEN` | `57XXXXXXXXXX`, `openssl rand -hex 24` | igual |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | `npm run push:keys` | otras distintas |
 | `COMPOSE_PROFILES=offsite` y `OFFSITE_*` | bucket `pedifyai-copias` | bucket `pedifyai-copias-pruebas` |
 | `DEMO_PASSWORD` | (vacío) | una clave para la cuenta demo |
 
@@ -135,6 +136,15 @@ npm run smoke -- https://pedifyai.com
 ```
 
 Revisa salud y base de datos, cabeceras de seguridad, HTTPS (redirección y vencimiento del certificado), CSS de producción comprimido, rutas protegidas, `robots.txt` y el canal en vivo por WebSocket a través del proxy. Solo lee: no crea datos.
+
+### Avisos push de pedidos
+
+Con las llaves VAPID, cada persona del equipo activa los avisos en su celular o computador (Inicio, menú del panel o Configuración → Pedidos) y le llega una notificación con cada pedido nuevo aunque tenga el panel cerrado; al tocarla se abre el pedido.
+
+- Funcionan solo con HTTPS (en producción ya lo tienes con Caddy; en el PC, solo en `http://localhost`).
+- Android, Windows, Mac y Linux: Chrome, Edge, Firefox o Safari actualizados.
+- iPhone y iPad (iOS 16.4 o más): primero hay que **agregar Pedify a la pantalla de inicio** (Compartir → «Agregar a pantalla de inicio») y activar los avisos desde ese ícono. El panel lo explica.
+- Al cerrar sesión en un dispositivo, ese dispositivo deja de recibir avisos; «Cerrar sesión en todos» y el cambio de contraseña los quitan todos.
 
 ## 7. Entorno de pruebas
 

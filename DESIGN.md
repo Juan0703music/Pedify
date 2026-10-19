@@ -92,6 +92,7 @@ Es la vitrina del comerciante, no de Pedify: manda la portada, el logo y el nomb
 ## Panel
 
 - **Inicio**: saludo sobre la portada del negocio (o una foto de comida si aún no tiene) con degradado tinta de izquierda a derecha; el interruptor de pedidos va encima.
+- **Avisos push**: en Inicio, tarjeta tinta con campana mostaza que late, «Que ningún pedido se te pase» y «Activar avisos» (se oculta cuando ya están activos o si se descarta); en el menú lateral y en el cajón del celular, botón «Activar avisos aquí» / «Avisos activados aquí» (un toque envía una prueba); en Configuración → Pedidos, estado del dispositivo con probar y desactivar. En iPhone sin instalar, explica cómo agregar Pedify a la pantalla de inicio. La notificación usa el ícono tinta con la comanda mostaza y una insignia blanca para Android.
 - **Mi menú**: aviso tinta con fotos circulares cuando hay productos sin foto («Agregar foto» abre el primero). Cada categoría termina con «Agregar producto» y **«Elegir productos»**: hoja con toda la carta agrupada por categoría, casillas (`.pick`, `.pick-check`), búsqueda, «Seleccionar todo» / «Quitar selección», insignias «Entra» (tinta) y «Sale» (tomate), y el resumen de cambios antes de guardar.
 - **Ingreso y registro**: columna mostaza con puntos, foto grande inclinada detrás de la comanda (o mosaico de tres fotos en el registro); en el celular, una tira de tres fotos sobre el formulario.
 

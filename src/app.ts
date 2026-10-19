@@ -20,6 +20,8 @@ import { ordersRoutes, storeOrderRoutes } from "./modules/orders/orders.routes.j
 import { categoriesRoutes, productsRoutes } from "./modules/products/products.routes.js";
 import { storeController } from "./modules/products/store.controller.js";
 import { storeRoutes } from "./modules/products/store.routes.js";
+import { pushRoutes } from "./modules/push/push.routes.js";
+import { pushService } from "./modules/push/push.service.js";
 import { subscriptionRoutes } from "./modules/subscriptions/subscriptions.routes.js";
 import { metrics } from "./services/metrics.service.js";
 import { imageOrigin } from "./services/storage.service.js";
@@ -104,6 +106,7 @@ function apiRouter(): Router {
   api.use("/customers", customersRoutes);
   api.use("/analytics", analyticsRoutes);
   api.use("/subscription", subscriptionRoutes);
+  api.use("/push", pushRoutes);
   api.use("/admin", adminRoutes);
   api.use("/store/:slug/orders", storeOrderRoutes);
   api.use("/store", storeRoutes);
@@ -113,6 +116,8 @@ function apiRouter(): Router {
 
 export function createApp() {
   const app = express();
+  // Avisos push de pedidos nuevos (si hay llaves VAPID).
+  pushService.listen();
 
   app.disable("x-powered-by");
   app.set("trust proxy", env.TRUST_PROXY);
@@ -167,6 +172,16 @@ export function createApp() {
       await sendPage(res, file);
     });
   }
+
+  // Service worker de los avisos push: en la raíz (alcance de todo el sitio) y sin caché.
+  app.get("/sw.js", (_req, res) => {
+    res.set("Cache-Control", "no-cache").type("application/javascript");
+    res.sendFile(path.join(publicDir, "sw.js"));
+  });
+  app.get("/manifest.webmanifest", (_req, res) => {
+    res.set("Cache-Control", "no-cache").type("application/manifest+json");
+    res.sendFile(path.join(publicDir, "manifest.webmanifest"));
+  });
 
   // Tienda pública de cada negocio (las etiquetas para compartir se generan en el servidor).
   app.get("/tienda/:slug", storeController.page);

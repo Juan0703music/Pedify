@@ -83,6 +83,9 @@ services:
       MAIL_FROM: ${MAIL_FROM:-Pedify <no-responder@pedifyai.com>}
       SUPPORT_WHATSAPP: ${SUPPORT_WHATSAPP:-}
       METRICS_TOKEN: ${METRICS_TOKEN:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
     volumes:
       - uploads:/app/uploads
     depends_on:
