@@ -96,7 +96,17 @@ export const authService = {
     }
 
     const memberships = await businessesRepository.listUserMemberships(credentials.id);
-    const opened = await openSession(credentials.id, memberships[0]?.businessId ?? null, meta);
+    // El rol elegido al entrar debe ser el de la cuenta; además define con qué negocio empieza.
+    const matching = input.as ? memberships.filter((membership) => membership.role === input.as) : memberships;
+    if (input.as && matching.length === 0 && (input.as === "EMPLOYEE" || memberships.length > 0)) {
+      throw forbidden(
+        input.as === "EMPLOYEE"
+          ? "Esta cuenta no es de empleado. Elige «Soy el dueño» para entrar."
+          : "Esta cuenta es de empleado. Elige «Soy empleado» para entrar.",
+        "ROLE_MISMATCH",
+      );
+    }
+    const opened = await openSession(credentials.id, (matching[0] ?? memberships[0])?.businessId ?? null, meta);
     await authRepository.deleteStaleSessions(credentials.id, new Date(Date.now() - SESSION_MAX_LIFETIME_MS));
     return opened;
   },

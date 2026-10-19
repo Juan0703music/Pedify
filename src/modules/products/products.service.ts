@@ -3,6 +3,7 @@ import { Prisma } from "../../generated/prisma/client.js";
 import { deleteImage, saveImage } from "../../services/storage.service.js";
 import type { TenantContext } from "../../types/common.js";
 import { badRequest, conflict, forbidden, notFound } from "../../utils/errors.js";
+import { PERMISSION_DENIED } from "../businesses/permissions.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { categoriesRepository } from "./categories.repository.js";
 import { productsRepository } from "./products.repository.js";
@@ -82,8 +83,11 @@ export const productsService = {
    */
   async update(tenant: TenantContext, id: string, input: UpdateProductInput) {
     const changes = Object.entries(input).filter(([, value]) => value !== undefined);
-    if (tenant.role !== "OWNER" && changes.some(([key]) => key !== "isAvailable")) {
-      throw forbidden("Solo el propietario puede editar el menú. Tú puedes marcar productos como agotados o disponibles.", "ROLE_REQUIRED");
+    if (tenant.role !== "OWNER") {
+      if (changes.some(([key]) => key !== "isAvailable")) {
+        throw forbidden("Solo el propietario puede editar el menú. Tú puedes marcar productos como agotados o disponibles.", "ROLE_REQUIRED");
+      }
+      if (!tenant.permissions.markSoldOut) throw forbidden(PERMISSION_DENIED.markSoldOut, "PERMISSION_REQUIRED");
     }
 
     return prisma.$transaction(async (tx) => {

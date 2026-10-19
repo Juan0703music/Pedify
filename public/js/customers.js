@@ -1,7 +1,7 @@
 // Clientes (sección 6 del documento): consultar información e historial de pedidos.
-// Solo el propietario ve esta página (datos personales y compras de los clientes).
+// La ven el propietario y los empleados con permiso; borrar los datos de un cliente es solo del propietario.
 import { api, formatCOP, formatPhone } from "./api.js";
-import { initPanel, renderNoBusiness } from "./dashboard.js";
+import { can, initPanel, renderNoBusiness } from "./dashboard.js";
 import { customerWhatsapp, dateTimeLabel, statusBadge } from "./order-ui.js";
 import { html, icon, initials, render, setBusy, toast } from "./ui.js";
 
@@ -136,7 +136,7 @@ function detailView(customer) {
             )}
           </ul>
         </section>
-        <section class="grid gap-2 rounded-[12px] border border-line p-4" aria-labelledby="erase-title">
+        ${state.business.role !== "OWNER" ? "" : html`<section class="grid gap-2 rounded-[12px] border border-line p-4" aria-labelledby="erase-title">
           <h3 id="erase-title" class="font-[740]">Eliminar los datos de este cliente</h3>
           <p class="text-sm text-muted">
             Si el cliente lo pide (Ley 1581 de 2012), se borran su nombre, celular y direcciones. Sus pedidos se conservan sin datos
@@ -150,7 +150,7 @@ function detailView(customer) {
             <button type="button" class="btn btn-ghost btn-sm" data-cancel-erase>Cancelar</button>
             <button type="button" class="btn btn-danger btn-sm" data-confirm-erase="${customer.id}">Sí, eliminar</button>
           </div>
-        </section>
+        </section>`}
       </div>
     </div>
   </div>`;
@@ -230,11 +230,12 @@ if (context) {
   main = context.main;
   if (!context.business) {
     renderNoBusiness(main);
-  } else if (context.business.role !== "OWNER") {
+  } else if (!can(context.business, "viewCustomers")) {
     render(
       main,
       html`<p class="panel mx-auto mt-6 flex max-w-lg items-start gap-3 p-6 text-[0.9375rem]">
-        ${icon("lock", "mt-0.5")} Solo el propietario del negocio puede ver la información de los clientes.
+        ${icon("lock", "mt-0.5")} El propietario no te dio permiso para ver los clientes. Si lo necesitas, pídeselo: él lo activa en
+        Configuración → Equipo.
       </p>`,
     );
   } else {

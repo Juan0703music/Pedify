@@ -4,7 +4,7 @@
 // redondeado arriba, cuadrícula tenue, valor solo en el punto alto, información al pasar el
 // cursor o enfocar con el teclado, y una vista de tabla equivalente.
 import { api, formatCOP } from "./api.js";
-import { initPanel, renderNoBusiness } from "./dashboard.js";
+import { can, initPanel, renderNoBusiness } from "./dashboard.js";
 import { onLive } from "./notifications.js";
 import { html, icon, render } from "./ui.js";
 
@@ -394,11 +394,12 @@ if (context) {
   main = context.main;
   if (!context.business) {
     renderNoBusiness(main);
-  } else if (context.business.role !== "OWNER") {
+  } else if (!can(context.business, "viewAnalytics")) {
     render(
       main,
       html`<p class="panel mx-auto mt-6 flex max-w-lg items-start gap-3 p-6 text-[0.9375rem]">
-        ${icon("lock", "mt-0.5")} Solo el propietario del negocio puede ver las analíticas. El resumen del día está en Inicio.
+        ${icon("lock", "mt-0.5")} El propietario no te dio permiso para ver las analíticas. Si lo necesitas, pídeselo: él lo activa en
+        Configuración → Equipo.
       </p>`,
     );
   } else {

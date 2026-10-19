@@ -1,4 +1,5 @@
 import type { MembershipRole } from "../generated/prisma/enums.js";
+import type { Permissions } from "../modules/businesses/permissions.js";
 
 /** Usuario autenticado por la cookie de sesión. */
 export interface AuthContext {
@@ -12,6 +13,8 @@ export interface AuthContext {
 export interface TenantContext {
   businessId: string;
   role: MembershipRole;
+  /** Lo que puede hacer en este negocio (el propietario, todo). */
+  permissions: Permissions;
 }
 
 export interface Paginated<T> {

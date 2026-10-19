@@ -71,8 +71,33 @@ if (page === "login" || page === "register") {
 }
 
 if (page === "login") {
-  setupForm(document.getElementById("login-form"), async (data) => {
-    await api("/auth/login", { method: "POST", body: { email: data.email, password: data.password } });
+  const form = document.getElementById("login-form");
+  // "Soy el dueño" / "Soy empleado": se recuerda en este dispositivo. No da permisos: el servidor
+  // verifica que el rol elegido sea el de la cuenta.
+  const showRole = (role) => {
+    document.querySelectorAll("[data-for-role]").forEach((element) => (element.hidden = element.dataset.forRole !== role));
+  };
+  let remembered = null;
+  try {
+    remembered = localStorage.getItem("pedify:login-as");
+  } catch {
+    // Sin almacenamiento: queda "Soy el dueño".
+  }
+  const initial = form.querySelector(`[name="as"][value="${remembered === "EMPLOYEE" ? "EMPLOYEE" : "OWNER"}"]`);
+  initial.checked = true;
+  showRole(initial.value);
+  form.addEventListener("change", (event) => {
+    if (event.target.name !== "as") return;
+    showRole(event.target.value);
+    try {
+      localStorage.setItem("pedify:login-as", event.target.value);
+    } catch {
+      // Sin almacenamiento: solo no se recuerda.
+    }
+  });
+
+  setupForm(form, async (data) => {
+    await api("/auth/login", { method: "POST", body: { email: data.email, password: data.password, as: data.as } });
     location.assign(nextUrl());
   });
 }

@@ -39,6 +39,11 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string({ error: "Escribe tu contraseña." }).min(1, "Escribe tu contraseña.").max(128),
+  /**
+   * Rol con el que la persona dice entrar ("Soy el dueño" / "Soy empleado"). No da permisos:
+   * el rol real lo define la cuenta; si no coincide, no se abre la sesión.
+   */
+  as: z.enum(["OWNER", "EMPLOYEE"]).optional(),
 });
 
 export const updateProfileSchema = z.object({

@@ -78,17 +78,32 @@ export const updateSettingsSchema = z
   })
   .partial();
 
+/** Permisos de un empleado (cualquier combinación; los que no se envían no cambian). */
+export const permissionsSchema = z
+  .object({
+    markSoldOut: z.boolean(),
+    viewSales: z.boolean(),
+    viewCustomers: z.boolean(),
+    viewAnalytics: z.boolean(),
+  })
+  .partial();
+
 export const addMemberSchema = z.object({
   name: personNameSchema,
   email: emailSchema,
   /** Solo se usa si el correo aún no tiene cuenta en Pedify. */
   password: newPasswordSchema.optional(),
   role: z.enum(MembershipRole).default("EMPLOYEE"),
+  /** Solo para empleados; si no se envían, se usan los permisos iniciales. */
+  permissions: permissionsSchema.optional(),
 });
 
-export const updateMemberSchema = z.object({
-  role: z.enum(MembershipRole),
-});
+export const updateMemberSchema = z
+  .object({
+    role: z.enum(MembershipRole).optional(),
+    permissions: permissionsSchema.optional(),
+  })
+  .refine((value) => value.role !== undefined || value.permissions !== undefined, "Indica el rol o los permisos.");
 
 export const membershipParamsSchema = z.object({
   membershipId: z.uuid("Miembro inválido."),

@@ -160,6 +160,13 @@ model BusinessMembership {
   role       MembershipRole
   createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
 
+  /// Permisos de un empleado; los elige el propietario en Configuración → Equipo.
+  /// El propietario siempre puede todo (estas columnas no se usan para él).
+  canMarkSoldOut   Boolean @default(true) @map("can_mark_sold_out")
+  canViewSales     Boolean @default(true) @map("can_view_sales")
+  canViewCustomers Boolean @default(true) @map("can_view_customers")
+  canViewAnalytics Boolean @default(false) @map("can_view_analytics")
+
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 

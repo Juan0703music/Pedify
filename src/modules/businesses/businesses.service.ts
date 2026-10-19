@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { DEFAULT_EMPLOYEE_PERMISSIONS, permissionsOf, toPermissionColumns } from "./permissions.js";
 import { prisma, type DbClient } from "../../config/database.js";
 import type { MembershipRole } from "../../generated/prisma/enums.js";
 import type { TenantContext } from "../../types/common.js";
@@ -10,6 +11,7 @@ import { hashPassword } from "../auth/password.js";
 import { businessesRepository } from "./businesses.repository.js";
 import type {
   AddMemberInput,
+  UpdateMemberInput,
   CreateBusinessInput,
   DaySchedule,
   UpdateBusinessInput,
@@ -56,6 +58,19 @@ async function generateUniqueSlug(name: string, db: DbClient): Promise<string> {
   return `${base.slice(0, 44)}-${randomBytes(3).toString("hex")}`;
 }
 
+type StoredMember = Awaited<ReturnType<typeof businessesRepository.listMembers>>[number];
+
+/** Miembro para la API: sus permisos efectivos en lugar de las columnas. */
+function toMember(member: StoredMember) {
+  const { canMarkSoldOut: _a, canViewSales: _b, canViewCustomers: _c, canViewAnalytics: _d, ...rest } = member;
+  return { ...rest, permissions: permissionsOf(member) };
+}
+
+/** Permisos de un miembro nuevo: los indicados, sobre los valores iniciales de un empleado. */
+function permissionsFor(input: AddMemberInput) {
+  return toPermissionColumns({ ...DEFAULT_EMPLOYEE_PERMISSIONS, ...(input.permissions ?? {}) });
+}
+
 export const businessesService = {
   /** Registra un negocio con el usuario como propietario. Acepta un cliente de transacción. */
   async createForOwner(ownerId: string, input: CreateBusinessInput, db: DbClient = prisma) {
@@ -90,7 +105,12 @@ export const businessesService = {
   async getCurrent(tenant: TenantContext) {
     const business = await businessesRepository.findById(tenant.businessId);
     if (!business) throw notFound("No encontramos el negocio.");
-    return { ...business, role: tenant.role, subscription: await subscriptionsService.summary(tenant.businessId) };
+    return {
+      ...business,
+      role: tenant.role,
+      permissions: tenant.permissions,
+      subscription: await subscriptionsService.summary(tenant.businessId),
+    };
   },
 
   async updateCurrent(tenant: TenantContext, input: UpdateBusinessInput) {
@@ -144,7 +164,7 @@ export const businessesService = {
   },
 
   async listMembers(tenant: TenantContext) {
-    return businessesRepository.listMembers(tenant.businessId);
+    return (await businessesRepository.listMembers(tenant.businessId)).map(toMember);
   },
 
   /**
@@ -159,9 +179,8 @@ export const businessesService = {
         if (await businessesRepository.findMembership(existing.id, tenant.businessId, tx)) {
           throw conflict("Esa persona ya pertenece a tu negocio.", "ALREADY_MEMBER");
         }
-        return businessesRepository.createMembership(
-          { userId: existing.id, businessId: tenant.businessId, role: input.role },
-          tx,
+        return toMember(
+          await businessesRepository.createMembership({ userId: existing.id, businessId: tenant.businessId, role: input.role, ...permissionsFor(input) }, tx),
         );
       }
 
@@ -174,20 +193,28 @@ export const businessesService = {
         { name: input.name, email: input.email, passwordHash: await hashPassword(input.password) },
         tx,
       );
-      return businessesRepository.createMembership({ userId: user.id, businessId: tenant.businessId, role: input.role }, tx);
+      return toMember(
+        await businessesRepository.createMembership({ userId: user.id, businessId: tenant.businessId, role: input.role, ...permissionsFor(input) }, tx),
+      );
     });
   },
 
-  /** Cambia el rol de un miembro; el negocio nunca puede quedar sin propietario. */
-  async updateMemberRole(tenant: TenantContext, membershipId: string, role: MembershipRole) {
+  /** Cambia el rol o los permisos de un miembro; el negocio nunca puede quedar sin propietario. */
+  async updateMember(tenant: TenantContext, membershipId: string, input: UpdateMemberInput) {
     return prisma.$transaction(
       async (tx) => {
         const member = await businessesRepository.findMember(membershipId, tenant.businessId, tx);
         if (!member) throw notFound("No encontramos ese miembro.");
+        const role = input.role ?? member.role;
         if (member.role === "OWNER" && role !== "OWNER" && (await businessesRepository.countOwners(tenant.businessId, tx)) <= 1) {
           throw conflict("El negocio debe tener al menos un propietario.", "LAST_OWNER");
         }
-        return businessesRepository.updateMembershipRole(membershipId, role, tx);
+        const updated = await businessesRepository.updateMembership(
+          membershipId,
+          { role, ...toPermissionColumns(input.permissions ?? {}) },
+          tx,
+        );
+        return toMember(updated);
       },
       { isolationLevel: "Serializable" },
     );

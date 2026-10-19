@@ -92,8 +92,7 @@ export const businessesController = {
 
   async updateMember(req: Request, res: Response) {
     const { membershipId } = req.params as MembershipParams;
-    const { role } = req.body as UpdateMemberInput;
-    res.json({ data: await businessesService.updateMemberRole(getTenant(req), membershipId, role) });
+    res.json({ data: await businessesService.updateMember(getTenant(req), membershipId, req.body as UpdateMemberInput) });
   },
 
   async removeMember(req: Request, res: Response) {

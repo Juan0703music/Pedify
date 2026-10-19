@@ -1,4 +1,5 @@
 import { prisma, type DbClient } from "../../config/database.js";
+import { permissionColumnsSelect, type PermissionColumns } from "./permissions.js";
 import type { MembershipRole, PaymentMethod } from "../../generated/prisma/enums.js";
 import type { Prisma } from "../../generated/prisma/client.js";
 
@@ -35,6 +36,7 @@ const memberSelect = {
   id: true,
   role: true,
   createdAt: true,
+  ...permissionColumnsSelect,
   user: { select: { id: true, name: true, email: true } },
 } as const;
 
@@ -115,7 +117,7 @@ export const businessesRepository = {
   findMembership(userId: string, businessId: string, db: DbClient = prisma) {
     return db.businessMembership.findUnique({
       where: { userId_businessId: { userId, businessId } },
-      select: { id: true, role: true, businessId: true, business: { select: { status: true } } },
+      select: { id: true, role: true, businessId: true, ...permissionColumnsSelect, business: { select: { status: true } } },
     });
   },
 
@@ -140,12 +142,15 @@ export const businessesRepository = {
     return db.businessMembership.findFirst({ where: { id: membershipId, businessId }, select: memberSelect });
   },
 
-  createMembership(data: { userId: string; businessId: string; role: MembershipRole }, db: DbClient = prisma) {
+  createMembership(
+    data: { userId: string; businessId: string; role: MembershipRole } & Partial<PermissionColumns>,
+    db: DbClient = prisma,
+  ) {
     return db.businessMembership.create({ data, select: memberSelect });
   },
 
-  updateMembershipRole(membershipId: string, role: MembershipRole, db: DbClient = prisma) {
-    return db.businessMembership.update({ where: { id: membershipId }, data: { role }, select: memberSelect });
+  updateMembership(membershipId: string, data: Prisma.BusinessMembershipUpdateInput, db: DbClient = prisma) {
+    return db.businessMembership.update({ where: { id: membershipId }, data, select: memberSelect });
   },
 
   deleteMembership(membershipId: string, db: DbClient = prisma) {

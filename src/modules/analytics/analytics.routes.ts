@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
-import { requireBusiness } from "../../middlewares/authorize.js";
+import { requireBusiness, requirePermission } from "../../middlewares/authorize.js";
 import { validate } from "../../middlewares/validate.js";
 import { analyticsController } from "./analytics.controller.js";
 import { rangeQuerySchema } from "./analytics.schemas.js";
@@ -9,7 +9,13 @@ import { rangeQuerySchema } from "./analytics.schemas.js";
 export const analyticsRoutes = Router();
 analyticsRoutes.use(authenticate);
 
-// Resumen del día para el Inicio: todo el equipo.
-analyticsRoutes.get("/today", requireBusiness(), analyticsController.today);
-// Analíticas completas: solo el propietario.
-analyticsRoutes.get("/summary", requireBusiness("OWNER"), validate({ query: rangeQuerySchema }), analyticsController.summary);
+// Resumen del día para el Inicio: el propietario y los empleados con permiso de ver las ventas.
+analyticsRoutes.get("/today", requireBusiness(), requirePermission("viewSales"), analyticsController.today);
+// Analíticas completas: el propietario y los empleados con ese permiso.
+analyticsRoutes.get(
+  "/summary",
+  requireBusiness(),
+  requirePermission("viewAnalytics"),
+  validate({ query: rangeQuerySchema }),
+  analyticsController.summary,
+);

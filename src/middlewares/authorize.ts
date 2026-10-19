@@ -2,6 +2,7 @@ import type { Request, RequestHandler } from "express";
 import type { MembershipRole } from "../generated/prisma/enums.js";
 import { prisma } from "../config/database.js";
 import { businessesRepository } from "../modules/businesses/businesses.repository.js";
+import { PERMISSION_DENIED, permissionsOf, type Permission } from "../modules/businesses/permissions.js";
 import type { TenantContext } from "../types/common.js";
 import { forbidden } from "../utils/errors.js";
 import { getAuth } from "./authenticate.js";
@@ -29,7 +30,19 @@ export function requireBusiness(...roles: MembershipRole[]): RequestHandler {
       throw forbidden("Solo el propietario del negocio puede realizar esta acción.", "ROLE_REQUIRED");
     }
 
-    req.tenant = { businessId: membership.businessId, role: membership.role };
+    req.tenant = { businessId: membership.businessId, role: membership.role, permissions: permissionsOf(membership) };
+    next();
+  };
+}
+
+/**
+ * Exige un permiso de empleado (el propietario siempre pasa). Va después de `requireBusiness()`.
+ * Se verifica en el servidor: ocultar la sección en el panel no es suficiente.
+ */
+export function requirePermission(permission: Permission): RequestHandler {
+  return (req, _res, next) => {
+    const tenant = getTenant(req);
+    if (!tenant.permissions[permission]) throw forbidden(PERMISSION_DENIED[permission], "PERMISSION_REQUIRED");
     next();
   };
 }

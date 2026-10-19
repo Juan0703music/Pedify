@@ -107,6 +107,14 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - Al salir del equipo, cerrar sesión o cambiar la contraseña, los dispositivos dejan de recibir avisos.
 - 141 pruebas en total.
 
+### Roles al iniciar sesión y permisos por empleado
+
+- En el inicio de sesión se elige **Soy el dueño** o **Soy empleado**; el servidor verifica que la cuenta tenga ese rol (si no, no entra y le dice cuál elegir).
+- El dueño puede todo. A cada empleado el dueño le elige, en **Configuración → Equipo**, si puede **marcar agotados**, **ver las ventas del día**, **ver los clientes** y **ver las analíticas** (por defecto, todo menos analíticas). Atender pedidos siempre puede; editar el menú, configurar el negocio, el equipo, el plan y borrar datos de clientes es solo del dueño.
+- El panel oculta lo que no puede ver y el servidor lo bloquea igual (403). Los empleados ven en Configuración solo sus avisos y su cuenta.
+- Cuenta de ejemplo: `empleado@pedifyai.com` (misma contraseña del demo).
+- 148 pruebas en total.
+
 ## Requisitos
 
 - Node.js 22.12 o superior (probado con Node 24).
@@ -120,7 +128,8 @@ cp .env.example .env       # variables de entorno locales
 
 npm run db:start           # terminal 1: PostgreSQL local en el puerto 5433 (datos en .pgdata/)
 npm run db:deploy          # aplica las migraciones
-npm run db:seed            # opcional: comerciante demo con menú (demo@pedifyai.com / pedifyai123),
+npm run db:seed            # opcional: comerciante demo con menú (demo@pedifyai.com / pedifyai123)
+                           # y un empleado (empleado@pedifyai.com, misma contraseña),
                            # abierto de martes a domingo de 8:00 a. m. a 11:30 p. m.
 npm run dev                # terminal 2: API + Tailwind en modo observación → http://localhost:3000
 ```

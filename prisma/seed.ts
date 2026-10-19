@@ -18,6 +18,8 @@ import { addDays, dateIn, startOfDay } from "../src/utils/dates.js";
 
 const DEMO_EMAIL = "demo@pedifyai.com";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "pedifyai123";
+/** Empleado de ejemplo (entra con «Soy empleado»), con los permisos iniciales de un empleado. */
+const DEMO_EMPLOYEE_EMAIL = "empleado@pedifyai.com";
 const DEMO_HOURS = Array.from({ length: 7 }, (_, day) => ({ day, closed: day === 1, open: "08:00", close: "23:30" }));
 
 /** Menú de ejemplo; los precios del ejemplo del documento (sección 8): hamburguesa $18.000, bebida $4.000, salchipapa $15.000. */
@@ -96,6 +98,20 @@ async function ensurePhotos(businessId: string): Promise<number> {
     await prisma.business.update({ where: { id: businessId }, data: { bannerUrl: saved.url, bannerKey: saved.key } });
   }
   return products.length;
+}
+
+/** Crea el empleado de ejemplo del negocio demo si no existe. */
+async function ensureEmployee(businessId: string): Promise<boolean> {
+  const existing = await authRepository.findUserByEmail(DEMO_EMPLOYEE_EMAIL);
+  if (existing) {
+    const member = await prisma.businessMembership.findUnique({ where: { userId_businessId: { userId: existing.id, businessId } } });
+    if (member) return false;
+    await prisma.businessMembership.create({ data: { userId: existing.id, businessId, role: "EMPLOYEE" } });
+    return true;
+  }
+  const user = await authRepository.createUser({ name: "Carlos Mesa", email: DEMO_EMPLOYEE_EMAIL, passwordHash: await hashPassword(DEMO_PASSWORD) });
+  await prisma.businessMembership.create({ data: { userId: user.id, businessId, role: "EMPLOYEE" } });
+  return true;
 }
 
 async function ensureMenu(businessId: string): Promise<number> {
@@ -278,7 +294,9 @@ async function main() {
     const added = membership ? await ensureMenu(membership.businessId) : 0;
     const orders = membership ? await ensureDemoOrders(membership.businessId) : 0;
     const photos = membership ? await ensurePhotos(membership.businessId) : 0;
+    const employee = membership ? await ensureEmployee(membership.businessId) : false;
     const changes = [
+      employee ? `empleado de ejemplo (${DEMO_EMPLOYEE_EMAIL})` : "",
       added ? `menú de ejemplo (${added} productos)` : "",
       orders ? `historial de ejemplo (${orders} pedidos)` : "",
       photos ? `fotos de ejemplo (${photos} productos)` : "",
@@ -317,10 +335,12 @@ async function main() {
   const products = await ensureMenu(business.id);
   const orders = await ensureDemoOrders(business.id);
   await ensurePhotos(business.id);
+  await ensureEmployee(business.id);
 
   console.log("Datos de demostración creados:");
   console.log(`  Correo:     ${DEMO_EMAIL}`);
   console.log(`  Contraseña: ${process.env.DEMO_PASSWORD ? "la de DEMO_PASSWORD" : DEMO_PASSWORD}`);
+  console.log(`  Empleado:   ${DEMO_EMPLOYEE_EMAIL} (misma contraseña, entra con «Soy empleado»)`);
   console.log(`  Negocio:    Sabores del Caribe (/tienda/${business.slug}), ${products} productos con fotos, ${orders} pedidos de ejemplo`);
 }
 

@@ -1,7 +1,7 @@
 // Mi menú: productos y categorías (sección 6 del documento: "Menú digital" y "Categorías").
 // Crear, editar, desactivar, marcar agotados y ordenar productos; fotos procesadas en el servidor.
 import { api, formatCOP, formatThousands, parseMoney, upload } from "./api.js";
-import { initPanel, renderNoBusiness } from "./dashboard.js";
+import { can, initPanel, renderNoBusiness } from "./dashboard.js";
 import {
   checkImageFile,
   clearFieldErrors,
@@ -22,6 +22,8 @@ const CATEGORY_SUGGESTIONS = ["Salchipapas", "Hamburguesas", "Perros calientes",
 const state = {
   business: null,
   isOwner: false,
+  /** Marcar agotados: el propietario y los empleados con ese permiso. */
+  canMarkSoldOut: false,
   categories: [],
   products: [],
   ordering: false,
@@ -116,10 +118,12 @@ function productRow(product, index, list) {
     </div>
     ${ordering
       ? moveButtons("product", product.id, index, list.length, product.name)
-      : html`<label class="flex flex-none cursor-pointer items-center gap-2.5">
-            <span class="hidden w-[4.75rem] text-right text-sm text-muted sm:inline">${product.isAvailable ? "Disponible" : "Agotado"}</span>
-            <input type="checkbox" role="switch" class="switch" data-available="${product.id}" ${product.isAvailable ? "checked" : ""} aria-label="Disponible: ${product.name}" />
-          </label>
+      : html`${state.canMarkSoldOut
+            ? html`<label class="flex flex-none cursor-pointer items-center gap-2.5">
+                <span class="hidden w-[4.75rem] text-right text-sm text-muted sm:inline">${product.isAvailable ? "Disponible" : "Agotado"}</span>
+                <input type="checkbox" role="switch" class="switch" data-available="${product.id}" ${product.isAvailable ? "checked" : ""} aria-label="Disponible: ${product.name}" />
+              </label>`
+            : html`<span class="badge flex-none ${product.isAvailable ? "bg-leaf-soft text-leaf" : "bg-tomato-soft text-tomato"}">${product.isAvailable ? "Disponible" : "Agotado"}</span>`}
           ${isOwner
             ? html`<button type="button" class="btn btn-quiet btn-icon hidden flex-none text-muted hover:text-ink sm:inline-flex" data-edit="${product.id}" aria-label="Editar ${product.name}" title="Editar">
                 ${icon("pencil")}
@@ -449,7 +453,10 @@ function page() {
       ${isOwner
         ? ""
         : html`<p class="flex items-start gap-2.5 rounded-[12px] border border-sky/20 bg-sky-soft px-4 py-3 text-[0.9375rem] font-medium text-sky">
-            ${icon("info", "mt-0.5")} Puedes marcar productos como agotados o disponibles. Para editar el menú, pídeselo al propietario.
+            ${icon("info", "mt-0.5")}
+            ${state.canMarkSoldOut
+              ? "Puedes marcar productos como agotados o disponibles. Para editar el menú, pídeselo al propietario."
+              : "Puedes ver el menú. Para marcar productos agotados o editarlo, pídele permiso al propietario."}
           </p>`}
       <div data-photo-tip></div>
       <div class="grid gap-3" data-toolbar-area></div>
@@ -1181,6 +1188,7 @@ if (context) {
   } else {
     state.business = context.business;
     state.isOwner = context.business.role === "OWNER";
+    state.canMarkSoldOut = can(context.business, "markSoldOut");
     render(main, html`<div class="grid gap-6" aria-busy="true" aria-label="Cargando el menú"><div class="skeleton h-12 w-48"></div><div class="skeleton h-11"></div><div class="skeleton h-64"></div><div class="skeleton h-48"></div></div>`);
     try {
       await loadMenu();

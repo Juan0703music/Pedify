@@ -10,6 +10,7 @@ import {
   icon,
   initials,
   moneyInput,
+  raw,
   readForm,
   render,
   setBusy,
@@ -36,19 +37,38 @@ const PAYMENT_METHODS = [
   { value: "CARD", label: "Datáfono (tarjeta)", icon: "wallet" },
 ];
 
+// La configuración del negocio es del propietario; un empleado ve sus avisos y su cuenta.
 const SECTIONS = [
-  { id: "negocio", label: "Negocio" },
-  { id: "whatsapp", label: "Pedidos" },
-  { id: "horario", label: "Horario" },
-  { id: "entrega", label: "Entrega" },
-  { id: "pagos", label: "Pagos" },
-  { id: "ventas", label: "Ventas" },
+  { id: "negocio", label: "Negocio", ownerOnly: true },
+  { id: "whatsapp", label: "Pedidos", employeeLabel: "Avisos" },
+  { id: "horario", label: "Horario", ownerOnly: true },
+  { id: "entrega", label: "Entrega", ownerOnly: true },
+  { id: "pagos", label: "Pagos", ownerOnly: true },
+  { id: "ventas", label: "Ventas", ownerOnly: true },
   { id: "equipo", label: "Equipo", ownerOnly: true },
   { id: "plan", label: "Mi plan", ownerOnly: true },
   { id: "cuenta", label: "Mi cuenta" },
 ];
 
 const state = { me: null, business: null, settings: null, members: [], isOwner: false };
+
+/** Permisos que el propietario elige para cada empleado (el servidor los verifica en cada petición). */
+const PERMISSION_OPTIONS = [
+  { id: "markSoldOut", label: "Marcar agotados", hint: "Activar o desactivar productos agotados en Mi menú." },
+  { id: "viewSales", label: "Ver ventas del día", hint: "Ventas, pedidos y ticket promedio en Inicio." },
+  { id: "viewCustomers", label: "Ver clientes", hint: "Lista de clientes con celular, direcciones e historial." },
+  { id: "viewAnalytics", label: "Ver analíticas", hint: "Ventas por día, horas pico y productos más vendidos." },
+];
+const DEFAULT_PERMISSIONS = { markSoldOut: true, viewSales: true, viewCustomers: true, viewAnalytics: false };
+
+/** Casilla de un permiso (en la lista del equipo o al agregar a alguien). */
+function permissionChoice(name, option, checked, attributes = "") {
+  return html`<label class="choice min-h-10 text-sm" title="${option.hint}">
+    <input type="checkbox" name="${name}" ${checked ? "checked" : ""} ${raw(attributes)} />
+    <span class="choice-check" aria-hidden="true">${icon("check", "h-3 w-3")}</span>
+    ${option.label}
+  </label>`;
+}
 
 // ───────────────────────────── Utilidades ─────────────────────────────
 
@@ -159,6 +179,16 @@ function whatsappSection() {
       <h3 class="font-[740]">Avisos de pedidos nuevos</h3>
       <div data-push-section></div>
     </div>`,
+  );
+}
+
+/** Empleados: solo los avisos de pedidos de su dispositivo. */
+function employeeAlertsSection() {
+  return section(
+    "whatsapp",
+    "Avisos de pedidos nuevos",
+    "Recibe cada pedido en tu celular o computador, aunque cierres el panel.",
+    html`<div data-push-section></div>`,
   );
 }
 
@@ -310,6 +340,16 @@ function memberRow(member) {
         ${icon("trash-2")}
       </button>
     </span>
+    ${member.role === "EMPLOYEE"
+      ? html`<fieldset class="w-full sm:pl-[3.25rem]">
+          <legend class="mb-2 text-sm font-[650] text-muted">Puede, además de atender pedidos:</legend>
+          <div class="flex flex-wrap gap-2">
+            ${PERMISSION_OPTIONS.map((option) =>
+              permissionChoice(`perm-${member.id}-${option.id}`, option, member.permissions?.[option.id], `data-member-permission="${member.id}" data-permission="${option.id}"`),
+            )}
+          </div>
+        </fieldset>`
+      : html`<p class="w-full text-sm text-muted sm:pl-[3.25rem]">Propietario: puede ver y cambiar todo.</p>`}
     <div class="hidden w-full items-center justify-end gap-2 rounded-[10px] bg-tomato-soft px-3 py-2.5" data-confirm-remove>
       <span class="mr-auto text-sm font-medium text-tomato">¿Quitar a ${member.user.name}? Perderá el acceso de inmediato.</span>
       <button type="button" class="btn btn-ghost btn-sm" data-cancel-remove>Cancelar</button>
@@ -351,6 +391,13 @@ function teamSection() {
               <option value="OWNER">Propietario: también configura el negocio</option>
             </select>
           </div>
+          <fieldset class="sm:col-span-2" data-new-permissions>
+            <legend class="label mb-2">Qué puede hacer, además de atender pedidos</legend>
+            <div class="flex flex-wrap gap-2">
+              ${PERMISSION_OPTIONS.map((option) => permissionChoice(`perm_${option.id}`, option, DEFAULT_PERMISSIONS[option.id]))}
+            </div>
+            <p class="hint mt-2">Lo puedes cambiar después. Editar el menú, la configuración, el plan y el equipo son siempre solo del propietario.</p>
+          </fieldset>
           <div class="flex justify-end sm:col-span-2">
             <button class="btn btn-ink" type="submit">${icon("user-plus")} Agregar al equipo</button>
           </div>
@@ -426,7 +473,7 @@ function sectionNav() {
     <ul class="scroll-thin flex gap-1.5 overflow-x-auto lg:grid lg:gap-0.5 lg:overflow-visible">
       ${items.map(
         (item) => html`<li class="flex-none">
-          <a href="#${item.id}" data-section-link="${item.id}" class="block rounded-full border border-line bg-paper px-3.5 py-2 text-sm font-[620] whitespace-nowrap text-muted no-underline hover:text-ink aria-[current=true]:border-ink aria-[current=true]:bg-ink aria-[current=true]:text-paper lg:rounded-[10px] lg:border-0 lg:bg-transparent lg:px-3 lg:py-2.5 lg:text-[0.9375rem] lg:aria-[current=true]:bg-paper lg:aria-[current=true]:text-ink lg:aria-[current=true]:shadow-[var(--shadow-lift)]">${item.label}</a>
+          <a href="#${item.id}" data-section-link="${item.id}" class="block rounded-full border border-line bg-paper px-3.5 py-2 text-sm font-[620] whitespace-nowrap text-muted no-underline hover:text-ink aria-[current=true]:border-ink aria-[current=true]:bg-ink aria-[current=true]:text-paper lg:rounded-[10px] lg:border-0 lg:bg-transparent lg:px-3 lg:py-2.5 lg:text-[0.9375rem] lg:aria-[current=true]:bg-paper lg:aria-[current=true]:text-ink lg:aria-[current=true]:shadow-[var(--shadow-lift)]">${!state.isOwner && item.employeeLabel ? item.employeeLabel : item.label}</a>
         </li>`,
       )}
     </ul>
@@ -443,13 +490,16 @@ function page() {
     ${isOwner
       ? ""
       : html`<p class="flex items-start gap-2.5 rounded-[12px] border border-sky/20 bg-sky-soft px-4 py-3 text-[0.9375rem] font-medium text-sky">
-          ${icon("lock", "mt-0.5")} Solo el propietario puede cambiar la configuración del negocio. Puedes consultarla y editar tu cuenta.
+          ${icon("lock", "mt-0.5")} La configuración del negocio la maneja el propietario. Aquí activas tus avisos de pedidos y editas tu cuenta.
         </p>`}
     <div class="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-10">
       ${sectionNav()}
       <div class="grid min-w-0 gap-6">
-        ${businessSection()} ${whatsappSection()} ${scheduleSection()} ${deliverySection()} ${paymentsSection()} ${salesSection()}
-        ${isOwner ? teamSection() : ""} ${isOwner ? planSection() : ""} ${accountSection()}
+        ${isOwner
+          ? html`${businessSection()} ${whatsappSection()} ${scheduleSection()} ${deliverySection()} ${paymentsSection()} ${salesSection()}
+              ${teamSection()} ${planSection()}`
+          : employeeAlertsSection()}
+        ${accountSection()}
       </div>
     </div>
   </div>`;
@@ -483,6 +533,12 @@ const PAYLOADS = {
   miembro: (form) => {
     const data = readForm(form);
     if (!data.password) delete data.password;
+    const permissions = {};
+    for (const option of PERMISSION_OPTIONS) {
+      permissions[option.id] = Boolean(data[`perm_${option.id}`]);
+      delete data[`perm_${option.id}`];
+    }
+    if (data.role === "EMPLOYEE") data.permissions = permissions;
     return data;
   },
 };
@@ -532,6 +588,7 @@ async function submitForm(form) {
     } else if (name === "miembro") {
       state.members.push(result);
       form.reset();
+      form.querySelector("[data-new-permissions]").hidden = false;
       redrawMembers();
     }
   } catch (error) {
@@ -583,6 +640,10 @@ function bindPage(main) {
       main.querySelectorAll("[data-delivery-fields] input").forEach((field) => (field.disabled = !input.checked));
     }
     if (input.matches("[data-role-select]")) changeRole(input);
+    if (input.matches("[data-member-permission]")) changePermission(input);
+    if (input.name === "role" && form?.dataset.form === "miembro") {
+      form.querySelector("[data-new-permissions]").hidden = input.value !== "EMPLOYEE";
+    }
     if (form && form.dataset.form !== "miembro") markDirty(form, true);
   });
 
@@ -643,6 +704,7 @@ function bindPage(main) {
 }
 
 function updateCounter(textarea) {
+  if (!textarea) return;
   const counter = document.querySelector(`[data-counter-for="${textarea.id}"]`);
   if (counter) counter.textContent = `${textarea.value.length}/${textarea.maxLength}`;
 }
@@ -655,12 +717,33 @@ async function changeRole(select) {
     const updated = await api(`/businesses/current/members/${membershipId}`, { method: "PATCH", body: { role: select.value } });
     Object.assign(member, updated);
     toast(`${updated.user.name} ahora es ${ROLE_LABEL[updated.role].toLowerCase()}.`);
+    redrawMembers();
     if (updated.user.id === state.me.user.id && updated.role !== "OWNER") location.reload();
   } catch (error) {
     select.value = member.role;
     toast(error.message, "error");
   } finally {
     select.disabled = false;
+  }
+}
+
+async function changePermission(input) {
+  const membershipId = input.dataset.memberPermission;
+  const member = state.members.find((item) => item.id === membershipId);
+  const option = PERMISSION_OPTIONS.find((item) => item.id === input.dataset.permission);
+  input.disabled = true;
+  try {
+    const updated = await api(`/businesses/current/members/${membershipId}`, {
+      method: "PATCH",
+      body: { permissions: { [option.id]: input.checked } },
+    });
+    Object.assign(member, updated);
+    toast(`${member.user.name}: ${input.checked ? "ahora puede" : "ya no puede"} ${option.label.toLowerCase()}.`);
+  } catch (error) {
+    input.checked = !input.checked;
+    toast(error.message, "error");
+  } finally {
+    input.disabled = false;
   }
 }
 

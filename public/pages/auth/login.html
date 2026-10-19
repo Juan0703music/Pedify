@@ -69,13 +69,36 @@
             <span class="photo h-20 rounded-[16px] sm:h-28"><img src="/assets/images/food/juice-orange-480.webp" alt="" width="480" height="320" decoding="async" /></span>
           </div>
           <h1 class="text-[2rem] leading-tight font-[780]">Entra a tu panel</h1>
-          <p class="mt-2 text-muted">
+          <p class="mt-2 text-muted" data-for-role="OWNER">
             ¿Aún no tienes cuenta?
             <a href="/registro" class="font-semibold text-ink underline">Registra tu negocio</a>
+          </p>
+          <p class="mt-2 text-muted" data-for-role="EMPLOYEE" hidden>
+            Tu cuenta te la crea el dueño del negocio en <span class="font-semibold text-ink">Configuración → Equipo</span>.
           </p>
 
           <form id="login-form" class="mt-8 grid gap-5" novalidate>
             <div data-slot="alert"></div>
+
+            <fieldset class="grid gap-2">
+              <legend class="label mb-2">¿Cómo entras?</legend>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="role-option">
+                  <input type="radio" name="as" value="OWNER" checked />
+                  <span class="role-check" aria-hidden="true"></span>
+                  <svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-store"></use></svg>
+                  <span class="mt-1.5 font-[740]">Soy el dueño</span>
+                  <span class="text-sm leading-snug text-muted">Ves y configuras todo tu negocio</span>
+                </label>
+                <label class="role-option">
+                  <input type="radio" name="as" value="EMPLOYEE" />
+                  <span class="role-check" aria-hidden="true"></span>
+                  <svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-chef-hat"></use></svg>
+                  <span class="mt-1.5 font-[740]">Soy empleado</span>
+                  <span class="text-sm leading-snug text-muted">Atiendes los pedidos del negocio</span>
+                </label>
+              </div>
+            </fieldset>
 
             <div class="field">
               <label class="label" for="email">Correo</label>

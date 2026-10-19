@@ -167,6 +167,23 @@ await fetch("/api/v1/products/<id>/image", { method: "POST", headers: { "Content
 - Cada versión recibe un nombre aleatorio nuevo y se sirve con caché de un año (`immutable`); la versión anterior se borra.
 - Límite: 60 subidas cada 15 minutos por IP.
 
+## Roles y permisos
+
+- **Propietario** (`OWNER`): puede todo.
+- **Empleado** (`EMPLOYEE`): atiende pedidos (`/orders`) siempre. Además, lo que el propietario le permita en Configuración → Equipo:
+
+| Permiso | Abre | Inicial |
+|---|---|---|
+| `markSoldOut` | `PATCH /products/:id` con solo `isAvailable` | sí |
+| `viewSales` | `GET /analytics/today` (ventas del día en Inicio) | sí |
+| `viewCustomers` | `GET /customers`, `GET /customers/:id` | sí |
+| `viewAnalytics` | `GET /analytics/summary` | no |
+
+- Siempre solo del propietario: editar el menú y las categorías, configurar el negocio (datos, horario, entrega, pagos, ventas, logo, portada), el equipo, el plan y borrar los datos de un cliente.
+- Sin el permiso → 403 `PERMISSION_REQUIRED` con el motivo. `GET /businesses/current` incluye `role` y `permissions` (el propietario, todos en `true`).
+- Equipo: `POST /businesses/current/members` acepta `permissions` (parcial, sobre los iniciales); `PATCH /businesses/current/members/:id` acepta `role` y/o `permissions`. Los miembros se devuelven con `permissions`.
+- **Iniciar sesión con el rol**: `POST /auth/login` acepta `as: "OWNER" | "EMPLOYEE"` («Soy el dueño» / «Soy empleado»). No da permisos: si la cuenta no tiene ese rol en ningún negocio → 403 `ROLE_MISMATCH` y no se abre sesión (con contraseña equivocada sigue siendo 401, sin revelar el rol). Si la persona es dueña de un negocio y empleada de otro, empieza en el negocio del rol que eligió.
+
 ## Avisos push — `/push`
 
 Sesión de cualquier persona del equipo (propietario o empleado). Web Push con llaves VAPID; el service worker es `/sw.js`.

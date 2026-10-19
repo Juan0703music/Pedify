@@ -142,7 +142,7 @@ describe("Analíticas (sección 11)", () => {
     expect(invalid.body.error.fields.to).toBeDefined();
   });
 
-  it("el resumen de hoy lo ve todo el equipo; las analíticas completas, solo el propietario", async () => {
+  it("el resumen de hoy lo ve el equipo (con el permiso inicial); las analíticas completas, solo con permiso", async () => {
     const { agent, businessId, hamburguesa } = await setup();
     await insertOrder(businessId, { at: "2026-10-16T18:00:00-05:00", status: "CONFIRMED", lines: [{ ...hamburguesa, quantity: 1 }] });
     const email = `empleado-${randomUUID()}@ejemplo.com`;
@@ -154,7 +154,8 @@ describe("Analíticas (sección 11)", () => {
     expect(today.body.data).toMatchObject({ date: "2026-10-16", sales: 18000, created: 1, pending: 0, averageTicket: 18000 });
     expect(today.body.data.topProducts[0]).toMatchObject({ name: "Hamburguesa especial", quantity: 1 });
     await employee.get("/api/v1/analytics/summary").expect(403);
-    await employee.get("/api/v1/customers").expect(403);
+    // Ver clientes viene activado para los empleados nuevos (el propietario lo puede quitar).
+    await employee.get("/api/v1/customers").expect(200);
   });
 
   it("no mezcla datos de otros negocios", async () => {

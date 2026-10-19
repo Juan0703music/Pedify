@@ -169,6 +169,10 @@ export function readForm(form) {
   const data = {};
   for (const element of form.elements) {
     if (!element.name || element.disabled) continue;
+    if (element.type === "radio") {
+      if (element.checked) data[element.name] = element.value;
+      continue;
+    }
     if (element.type === "checkbox" && element.dataset.group === undefined) data[element.name] = element.checked;
     else if (element.type === "checkbox") {
       data[element.name] ??= [];

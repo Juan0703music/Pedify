@@ -6,18 +6,26 @@ import { disablePush, enablePush, PUSH_COPY, sendTestPush } from "./push.js";
 import { handlePushClick, pushView, safePushState } from "./push-ui.js";
 import { brand, copyText, formAlert, html, icon, initials, raw, readForm, render, setBusy, showErrors, toast } from "./ui.js";
 
-/** Navegación del panel (sección 6 del documento de arquitectura). `ownerOnly`: solo el propietario. */
+/**
+ * Navegación del panel (sección 6 del documento de arquitectura). `ownerOnly`: solo el propietario;
+ * `permission`: el propietario y los empleados a quienes él les dio ese permiso.
+ */
 export const NAV = [
   { id: "inicio", label: "Inicio", href: "/panel", icon: "house" },
   { id: "pedidos", label: "Pedidos", href: "/panel/pedidos", icon: "receipt", live: true },
   { id: "menu", label: "Mi menú", href: "/panel/menu", icon: "utensils" },
-  { id: "clientes", label: "Clientes", href: "/panel/clientes", icon: "users", ownerOnly: true },
-  { id: "analiticas", label: "Analíticas", href: "/panel/analiticas", icon: "chart-column", ownerOnly: true },
+  { id: "clientes", label: "Clientes", href: "/panel/clientes", icon: "users", permission: "viewCustomers" },
+  { id: "analiticas", label: "Analíticas", href: "/panel/analiticas", icon: "chart-column", permission: "viewAnalytics" },
   { id: "tienda", label: "Mi tienda", href: "/panel/tienda", icon: "store" },
   { id: "configuracion", label: "Configuración", href: "/panel/configuracion", icon: "settings" },
 ];
 
 export const ROLE_LABEL = { OWNER: "Propietario", EMPLOYEE: "Empleado" };
+
+/** ¿La persona puede esto en el negocio activo? El propietario, siempre. (El servidor también lo verifica.) */
+export function can(business, permission) {
+  return business?.role === "OWNER" || Boolean(business?.permissions?.[permission]);
+}
 
 const TABS = ["inicio", "pedidos", "menu"];
 
@@ -27,8 +35,9 @@ const TABS = ["inicio", "pedidos", "menu"];
 const pendingBadge = (extra = "") =>
   html`<span class="badge num hidden bg-mustard px-2 text-ink ${extra}" data-pending-count aria-label="Pedidos pendientes"></span>`;
 
-function navLinks(page, role) {
-  return NAV.filter((item) => !item.ownerOnly || role === "OWNER").map(
+function navLinks(page, business) {
+  const role = business?.role;
+  return NAV.filter((item) => (!item.ownerOnly || role === "OWNER") && (!item.permission || can(business, item.permission))).map(
     (item) => html`<a class="nav-item" href="${item.href}" ${item.id === page ? raw('aria-current="page"') : ""}>
       ${icon(item.icon)}<span class="flex-1">${item.label}</span>${item.live ? pendingBadge() : ""}
     </a>`,
@@ -219,7 +228,7 @@ function shell(me, business, page) {
     <aside class="on-ink scroll-thin sticky top-0 hidden h-dvh flex-col gap-6 overflow-y-auto bg-ink p-4 text-paper lg:flex">
       <a href="/panel" class="w-fit rounded-md px-2 pt-2 no-underline" aria-label="Pedify, inicio del panel">${brand({ onInk: true })}</a>
       ${business ? businessSwitcher(me, business, "business-menu") : ""}
-      <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, role)}</nav>
+      <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, business)}</nav>
       <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
         <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5">${planLink(business)} ${adminLink(me)}</div>
         ${business ? liveControl() : ""} ${userBlock(me)}
@@ -249,7 +258,7 @@ function shell(me, business, page) {
           ${brand({ onInk: true })}
           <button type="button" class="btn btn-quiet btn-icon text-paper hover:bg-ink-3" data-close-drawer aria-label="Cerrar menú">${icon("x")}</button>
         </div>
-        <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, role)}</nav>
+        <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, business)}</nav>
         <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">${business ? pushButton() : ""}<div class="grid grid-cols-[minmax(0,1fr)] gap-0.5">${planLink(business)} ${adminLink(me)}</div> ${userBlock(me)}</div>
       </div>
     </dialog>
@@ -774,6 +783,8 @@ async function renderHome(context) {
   if (!business) return renderNoBusiness(main);
 
   render(main, homeSkeleton());
+  // Las ventas del día solo las ve el propietario o un empleado con ese permiso.
+  const seesSales = can(business, "viewSales");
   let pushStatus = await safePushState();
   let settings;
   let catalog;
@@ -783,7 +794,7 @@ async function renderHome(context) {
     [settings, catalog, today, orders] = await Promise.all([
       api("/businesses/current/settings"),
       api("/products/summary"),
-      api("/analytics/today"),
+      seesSales ? api("/analytics/today") : null,
       api("/orders").then((page) => page.items),
     ]);
   } catch (error) {
@@ -815,8 +826,8 @@ async function renderHome(context) {
         ${pushView(pushStatus, "card")}
 
         <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
-          <div class="grid gap-6">${summary(today)} ${liveOrders(orders)} ${featuredProducts(today)}</div>
-          <div class="grid gap-6">${storeCard(business, catalog)} ${checklist(business, settings, catalog)}</div>
+          <div class="grid gap-6">${seesSales ? summary(today) : ""} ${liveOrders(orders)} ${seesSales ? featuredProducts(today) : ""}</div>
+          <div class="grid gap-6">${storeCard(business, catalog)} ${business.role === "OWNER" ? checklist(business, settings, catalog) : ""}</div>
         </div>
       </div>`,
     );
@@ -825,7 +836,7 @@ async function renderHome(context) {
   // En vivo: un pedido nuevo o un cambio de estado vuelve a consultar la API.
   let refreshing = null;
   const refresh = () => {
-    refreshing ??= Promise.all([api("/analytics/today"), api("/orders").then((page) => page.items)])
+    refreshing ??= Promise.all([seesSales ? api("/analytics/today") : null, api("/orders").then((page) => page.items)])
       .then(([nextToday, nextOrders]) => {
         today = nextToday;
         orders = nextOrders;
