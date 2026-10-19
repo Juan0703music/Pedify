@@ -52,9 +52,10 @@ export const storeOrderParamsSchema = z.object({
   slug: z.string().trim().toLowerCase().max(60),
 });
 
-export const whatsappOpenedParamsSchema = storeOrderParamsSchema.extend({
+export const storeOrderIdParamsSchema = storeOrderParamsSchema.extend({
   id: z.uuid("Pedido inválido."),
 });
+export const whatsappOpenedParamsSchema = storeOrderIdParamsSchema;
 
 export const whatsappOpenedSchema = z.object({
   idempotencyKey: idempotencyKeySchema,
@@ -94,3 +95,4 @@ export type ChangeStatusInput = z.infer<typeof changeStatusSchema>;
 export type PaymentInput = z.infer<typeof paymentSchema>;
 export type StoreOrderParams = z.infer<typeof storeOrderParamsSchema>;
 export type WhatsappOpenedParams = z.infer<typeof whatsappOpenedParamsSchema>;
+export type StoreOrderIdParams = z.infer<typeof storeOrderIdParamsSchema>;

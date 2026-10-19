@@ -6,12 +6,12 @@
     <title>Pedify · Tu tienda en un enlace, tus pedidos en orden</title>
     <meta
       name="description"
-      content="Tienda digital para salchipaperías, pizzerías, reposterías y negocios de comida rápida. Tus clientes arman el pedido, lo envían por WhatsApp y tú lo ves llegar a tu panel."
+      content="Tienda digital para salchipaperías, pizzerías, reposterías y negocios de comida rápida. Tus clientes arman el pedido en tu tienda y tú lo recibes al instante en tu panel."
     />
     <meta name="theme-color" content="#17161c" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Pedify · Tu tienda en un enlace, tus pedidos en orden" />
-    <meta property="og:description" content="Menú digital con fotos, pedidos por WhatsApp con el total calculado y un panel en vivo para tu negocio de comida." />
+    <meta property="og:description" content="Menú digital con fotos, pedidos directos a tu panel con el total calculado y seguimiento en vivo para tus clientes." />
     <meta property="og:image" content="/assets/images/food/burger-closeup-960.webp" />
     <link rel="icon" href="/assets/icons/logo.svg" type="image/svg+xml" />
     <link rel="preload" href="/assets/fonts/archivo-latin-wdth.woff2" as="font" type="font/woff2" crossorigin />
@@ -44,8 +44,8 @@
             <span class="block">en orden.</span>
           </h1>
           <p class="max-w-[33rem] text-[1.125rem] leading-relaxed text-paper/75 sm:text-[1.25rem]">
-            Tu salchipapería, pizzería o repostería con un menú digital lleno de fotos. Tu cliente arma el pedido, lo envía por WhatsApp
-            y tú lo ves llegar a tu panel con el total ya calculado.
+            Tu salchipapería, pizzería o repostería con un menú digital lleno de fotos. Tu cliente pide con un toque, el pedido te llega
+            al instante a tu panel con el total calculado y él ve en vivo cuándo está listo y cuándo va en camino.
           </p>
           <div class="flex flex-wrap items-center gap-3">
             <a href="/registro" class="btn btn-primary min-h-14 px-7 text-[1.0625rem]">
@@ -139,15 +139,22 @@
             </p>
           </div>
 
-          <!-- Lo que pasa al enviar: WhatsApp del cliente y comanda en el panel -->
+          <!-- Lo que pasa al pedir: el cliente ve su seguimiento y la comanda llega al panel -->
           <div class="demo-reveal is-shown absolute top-[13rem] right-0 z-20 w-[13rem] sm:top-[14rem] sm:-right-6 sm:w-[15rem]" data-demo-bubble aria-hidden="true">
-            <div class="rounded-[16px] rounded-tr-[4px] bg-[#d9fdd3] p-3 text-[0.6875rem] leading-snug text-ink shadow-[0_30px_60px_-20px_rgb(0_0_0/0.7)] sm:text-[0.75rem]">
-              <p class="mb-1 flex items-center gap-1.5 text-[0.65rem] font-bold text-[#11804a]">
-                <svg class="icon h-3.5 w-3.5"><use href="/assets/icons/sprite.svg#i-message-circle"></use></svg>WhatsApp · al negocio
+            <div class="rounded-[16px] bg-paper p-3 text-[0.6875rem] leading-snug text-ink shadow-[0_30px_60px_-20px_rgb(0_0_0/0.7)] sm:p-3.5 sm:text-[0.75rem]">
+              <p class="mb-1 flex items-center gap-1.5 text-[0.65rem] font-bold text-leaf">
+                <svg class="icon h-3.5 w-3.5"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Lo que ve tu cliente
               </p>
-              <p class="font-semibold">¡Hola! Quiero realizar el siguiente pedido:</p>
-              <p class="num mt-1" data-demo-lines>1. Hamburguesa especial x1 - $18.000<br />2. Salchipapa especial x1 - $22.000<br />3. Jugo natural x2 - $12.000</p>
+              <p class="text-[0.8125rem] font-[800] sm:text-[0.875rem]">¡Pedido enviado!</p>
+              <p class="num mt-1 text-muted" data-demo-lines>1. Hamburguesa especial x1 - $18.000<br />2. Salchipapa especial x1 - $22.000<br />3. Jugo natural x2 - $12.000</p>
               <p class="num mt-1 font-bold" data-demo-bubble-total>TOTAL: $52.000</p>
+              <div class="mt-2 flex items-center gap-1.5 text-[0.625rem] font-[700]" aria-hidden="true">
+                <span class="grid h-4 w-4 place-items-center rounded-full bg-ink text-mustard"><svg class="icon h-2.5 w-2.5"><use href="/assets/icons/sprite.svg#i-check"></use></svg></span>Recibido
+                <span class="h-0.5 flex-1 rounded bg-line"></span>
+                <span class="h-4 w-4 rounded-full border-2 border-line"></span><span class="text-muted">Cocina</span>
+                <span class="h-0.5 flex-1 rounded bg-line"></span>
+                <span class="h-4 w-4 rounded-full border-2 border-line"></span><span class="text-muted">En camino</span>
+              </div>
             </div>
           </div>
           <div class="demo-reveal is-shown absolute right-2 bottom-0 z-20 w-[12.5rem] rotate-[2.5deg] sm:-right-2 sm:bottom-6 sm:w-[14.5rem]" data-demo-ticket aria-hidden="true">
@@ -163,7 +170,7 @@
                 <p class="mt-0.5 text-muted">Llegó ahora · Domicilio</p>
                 <hr class="ticket-rule my-2" />
                 <div class="num flex justify-between font-[750]"><span>TOTAL</span><span data-demo-ticket-total>$52.000</span></div>
-                <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-[0.6875rem] font-bold sm:text-[0.75rem]">Confirmar pedido</div>
+                <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-[0.6875rem] font-bold sm:text-[0.75rem]">Aceptar y preparar</div>
               </div>
             </div>
           </div>
@@ -184,8 +191,8 @@
             <span class="block">en el chat.</span>
           </h2>
           <p class="max-w-[30rem] text-[1.125rem] leading-relaxed text-muted lg:justify-self-end">
-            Pedir por WhatsApp no tiene por qué ser una conversación eterna. Con Pedify, el cliente elige en tu tienda y a ti te llega un
-            solo mensaje con todo: productos, dirección y total.
+            Pedir no tiene por qué ser una conversación eterna. Con Pedify, el cliente elige en tu tienda y el pedido te llega directo al
+            panel con todo: productos, dirección y total. Sin chats, sin audios y sin cuentas a mano.
           </p>
         </div>
 
@@ -210,40 +217,53 @@
             <span class="display absolute bottom-6 left-1/2 -translate-x-1/2 rotate-[-6deg] rounded-[12px] border-[3px] border-tomato px-4 py-1 text-[1.75rem] whitespace-nowrap text-tomato sm:text-[2.25rem]" aria-hidden="true">¿Y el total?</span>
           </figure>
 
-          <!-- Con Pedify: un solo mensaje ordenado y la comanda en el panel (ilustrativo) -->
+          <!-- Con Pedify: el pedido llega completo al panel y el cliente ve su estado (ilustrativo) -->
           <figure class="relative overflow-hidden rounded-[30px] bg-ink p-4 pb-6 text-paper sm:p-6" data-reveal>
             <div class="dots-mustard pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent)]" aria-hidden="true"></div>
             <figcaption class="relative mb-4 flex items-center justify-between gap-3">
               <span class="badge bg-mustard px-3 py-1.5 text-[0.8125rem] text-ink">Con Pedify</span>
-              <span class="text-sm font-[650] text-paper/60">Un pedido, un mensaje</span>
+              <span class="text-sm font-[650] text-paper/60">Un pedido, cero mensajes</span>
             </figcaption>
-            <div class="relative grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-              <div class="rounded-[16px] rounded-tr-[4px] bg-[#d9fdd3] p-4 text-[0.875rem] leading-snug text-ink shadow-[0_30px_60px_-25px_rgb(0_0_0/0.8)]">
-                <p class="font-[700]">¡Hola! Quiero realizar el siguiente pedido:</p>
-                <p class="mt-2">Negocio: Sabores del Caribe<br />Pedido: #129<br />Nombre: Laura Vergara</p>
-                <p class="mt-2 font-[700]">PRODUCTOS</p>
-                <p class="num">1. Salchipapa especial x1 - $22.000<br />2. Hamburguesa especial x1 - $18.000</p>
-                <p class="mt-2">Entrega: Domicilio<br />Dirección: Calle 23 #18-40, La Ford<br />Referencias: casa de rejas blancas<br />Pago: Nequi<br />Notas: hamburguesa sin cebolla</p>
-                <p class="num mt-2">Subtotal: $40.000<br />Domicilio: $4.000</p>
-                <p class="num mt-1 text-[1.0625rem] font-[800]">TOTAL: $44.000</p>
-              </div>
-              <div class="ticket-shadow w-full rotate-[2deg] sm:w-[13rem]">
-                <div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
-                  <div class="flex items-center gap-2">
-                    <span class="bell-ring grid h-6 w-6 flex-none place-items-center rounded-full bg-mustard"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-bell-ring"></use></svg></span>
-                    <span class="text-[1.15rem] font-[820] [font-stretch:75%]">PEDIDO #129</span>
+            <div class="relative grid gap-4 sm:grid-cols-[minmax(0,1fr)_12.5rem] sm:items-end">
+              <!-- La comanda tal como llega al panel -->
+              <div class="ticket-shadow">
+                <div class="ticket rounded-t-[12px] px-5 pt-4 text-[0.875rem] text-ink">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-2">
+                      <span class="bell-ring grid h-7 w-7 flex-none place-items-center rounded-full bg-mustard"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-bell-ring"></use></svg></span>
+                      <span class="text-[1.4rem] leading-none font-[820] [font-stretch:75%]">#129</span>
+                    </span>
+                    <span class="badge bg-mustard text-[0.6875rem] text-ink">Nuevo · ahora</span>
                   </div>
-                  <p class="mt-0.5 text-muted">En tu panel · ahora</p>
-                  <hr class="ticket-rule my-2" />
-                  <div class="num flex justify-between font-[780]"><span>Total</span><span>$44.000</span></div>
-                  <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-xs font-bold">Confirmar pedido</div>
+                  <p class="mt-2 font-[720]">Laura Vergara</p>
+                  <p class="flex items-center gap-1.5 text-muted"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-bike"></use></svg>Calle 23 #18-40, La Ford · casa de rejas blancas</p>
+                  <hr class="ticket-rule my-3" />
+                  <ul class="num grid gap-1">
+                    <li class="flex justify-between gap-3"><span><span class="font-[700]">1×</span> Salchipapa especial</span><span>$22.000</span></li>
+                    <li class="flex justify-between gap-3"><span><span class="font-[700]">1×</span> Hamburguesa especial</span><span>$18.000</span></li>
+                  </ul>
+                  <p class="mt-2 rounded-[8px] bg-mustard-soft px-2.5 py-1.5 text-[0.8125rem] text-mustard-deep">Nota: hamburguesa sin cebolla</p>
+                  <hr class="ticket-rule my-3" />
+                  <div class="num flex justify-between text-muted"><span>Nequi · domicilio $4.000</span><span class="text-[1.0625rem] font-[820] text-ink">$44.000</span></div>
+                  <div class="mt-3 rounded-[10px] bg-mustard py-2.5 text-center text-[0.875rem] font-bold">Aceptar y preparar</div>
                 </div>
+              </div>
+              <!-- Lo que ve el cliente en su celular -->
+              <div class="rotate-[2deg] rounded-[18px] bg-paper p-3.5 text-[0.8125rem] text-ink shadow-[0_30px_60px_-25px_rgb(0_0_0/0.8)]" aria-hidden="true">
+                <p class="text-[0.6875rem] font-[700] text-muted">Laura ve en su celular</p>
+                <p class="mt-1 text-[1.0625rem] leading-tight font-[820] [font-stretch:85%]">Lo están preparando</p>
+                <ol class="mt-2.5 grid gap-1.5">
+                  <li class="flex items-center gap-2 font-[650]"><span class="grid h-5 w-5 place-items-center rounded-full bg-ink text-mustard"><svg class="icon h-3 w-3"><use href="/assets/icons/sprite.svg#i-check"></use></svg></span>Recibido</li>
+                  <li class="flex items-center gap-2 font-[650]"><span class="bell-ring grid h-5 w-5 place-items-center rounded-full bg-ink text-mustard"><svg class="icon h-3 w-3"><use href="/assets/icons/sprite.svg#i-check"></use></svg></span>En preparación</li>
+                  <li class="flex items-center gap-2 text-muted"><span class="h-5 w-5 rounded-full border-2 border-line"></span>Listo</li>
+                  <li class="flex items-center gap-2 text-muted"><span class="h-5 w-5 rounded-full border-2 border-line"></span>En camino</li>
+                </ol>
               </div>
             </div>
             <ul class="relative mt-5 grid gap-2 text-[0.9375rem] font-[620] sm:grid-cols-3">
               <li class="flex items-center gap-2"><svg class="icon h-4 w-4 flex-none text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Total calculado</li>
-              <li class="flex items-center gap-2"><svg class="icon h-4 w-4 flex-none text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Dirección completa</li>
               <li class="flex items-center gap-2"><svg class="icon h-4 w-4 flex-none text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Suena en tu panel</li>
+              <li class="flex items-center gap-2"><svg class="icon h-4 w-4 flex-none text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-check"></use></svg>Tu cliente lo sigue en vivo</li>
             </ul>
           </figure>
         </div>
@@ -299,13 +319,13 @@
         </li>
         <li class="group relative overflow-hidden rounded-[24px] bg-paper p-6 shadow-[var(--shadow-lift)] transition-colors hover:bg-mustard" data-reveal>
           <span class="display text-outline-ink block text-[4.5rem] leading-none">04</span>
-          <h3 class="mt-4 text-[1.25rem] font-[780]">Lo envía por WhatsApp</h3>
-          <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Con el resumen listo y el total que calculó Pedify, no el cliente.</p>
+          <h3 class="mt-4 text-[1.25rem] font-[780]">Confirma con un toque</h3>
+          <p class="mt-2 text-[0.9375rem] leading-relaxed text-muted group-hover:text-ink/80">Sin abrir chats: el pedido sale con el total que calculó Pedify, no el cliente.</p>
         </li>
         <li class="group relative overflow-hidden rounded-[24px] bg-ink p-6 text-paper sm:col-span-2 lg:col-span-1" data-reveal>
           <span class="display text-outline block text-[4.5rem] leading-none">05</span>
           <h3 class="mt-4 text-[1.25rem] font-[780]">Suena en tu panel</h3>
-          <p class="mt-2 pr-10 text-[0.9375rem] leading-relaxed text-paper/70">Lo confirmas, lo preparas y lo despachas. Cada estado queda registrado.</p>
+          <p class="mt-2 pr-10 text-[0.9375rem] leading-relaxed text-paper/70">Lo aceptas, lo preparas y lo despachas. Tu cliente ve cada paso en vivo.</p>
           <svg class="icon absolute right-5 bottom-5 h-9 w-9 text-mustard" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-bell-ring"></use></svg>
         </li>
       </ol>
@@ -315,7 +335,7 @@
     <section class="px-4 pb-24 sm:px-8 lg:pb-32" aria-labelledby="kinds-title">
       <div class="mx-auto grid max-w-[80rem] gap-10">
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-end" data-reveal>
-          <h2 id="kinds-title" class="display text-[clamp(2.75rem,6vw,5.25rem)] leading-[0.88]">Para todo lo que se pide <span class="text-outline-ink">por WhatsApp</span></h2>
+          <h2 id="kinds-title" class="display text-[clamp(2.75rem,6vw,5.25rem)] leading-[0.88]">Para todo lo que se pide <span class="text-outline-ink">a domicilio</span></h2>
           <p class="max-w-[30rem] text-[1.0625rem] leading-relaxed text-muted lg:justify-self-end">
             Del puesto de perros del barrio a la pizzería con tres domiciliarios: tu menú con fotos, tus precios y tu propio enlace.
           </p>
@@ -544,7 +564,7 @@
               <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Hasta 40 productos con foto</li>
               <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>2 personas con acceso al panel</li>
               <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Tienda con tu enlace y código QR</li>
-              <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Pedidos por WhatsApp con el total calculado</li>
+              <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Pedidos directos a tu panel, con el total calculado</li>
               <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Pedidos en vivo, clientes y analíticas</li>
             </ul>
             <a href="/registro" class="btn btn-ghost mt-2 w-full">Empieza 14 días gratis</a>
@@ -561,7 +581,7 @@
               <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Hasta 300 productos con foto</li>
               <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>6 personas con acceso al panel</li>
               <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Tienda con tu enlace y código QR</li>
-              <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Pedidos por WhatsApp con el total calculado</li>
+              <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Pedidos directos a tu panel, con el total calculado</li>
               <li class="flex gap-2.5"><svg class="icon mt-0.5 text-leaf" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg>Pedidos en vivo, clientes y analíticas</li>
             </ul>
             <a href="/registro" class="btn btn-ink mt-2 w-full">Empieza 14 días gratis</a>
@@ -581,7 +601,7 @@
         </div>
         <h2 id="cta-title" class="display text-[clamp(3.5rem,12vw,11rem)] leading-[0.82]">Abre tu tienda <span class="text-outline-ink">hoy</span></h2>
         <p class="max-w-[38rem] text-[1.125rem] leading-relaxed text-ink/85">
-          Registra tu negocio y deja listos tu WhatsApp, tu horario y el valor del domicilio. Tu enlace queda reservado desde el primer
+          Registra tu negocio y deja listos tu menú, tu horario y el valor del domicilio. Tu enlace queda reservado desde el primer
           momento.
         </p>
         <a href="/registro" class="btn btn-ink min-h-15 px-8 text-[1.125rem]">

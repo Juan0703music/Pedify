@@ -92,6 +92,14 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - El menú de demostración (`npm run db:seed`) trae fotos y portada.
 - 134 pruebas en total.
 
+### Pedidos directos al panel (sin WhatsApp)
+
+- El cliente toca **«Hacer pedido»** y listo: el pedido llega al instante al panel del negocio, con sonido. Ya no tiene que enviar un mensaje de WhatsApp.
+- El negocio lo atiende con un toque por paso: **Aceptar y preparar → Pedido listo → Enviar con domiciliario → Marcar entregado** (para recoger: «Entregado al cliente»).
+- El cliente ve su **seguimiento en vivo** (Recibido, en preparación, listo, en camino, entregado o cancelado con el motivo), aunque cierre y vuelva a abrir la tienda en ese celular. Ruta `GET /api/v1/store/:slug/orders/:id`, protegida con la clave secreta del pedido.
+- El WhatsApp del negocio queda como contacto opcional en la tienda y en el seguimiento.
+- 136 pruebas en total.
+
 ## Requisitos
 
 - Node.js 22.12 o superior (probado con Node 24).

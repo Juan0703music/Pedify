@@ -1,4 +1,4 @@
-// Portada: demostración interactiva del teléfono, fotos que siguen al mouse y aparición de las
+// Portada: demostración interactiva del teléfono (pedido → seguimiento del cliente → comanda en el panel), fotos que siguen al mouse y aparición de las
 // secciones al bajar. Sin JavaScript la página se ve completa (con la
 // demostración ya terminada); con "reducir movimiento" no hay animaciones automáticas.
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -79,7 +79,7 @@ if (demo) {
     send.classList.toggle("is-sent", sent);
     demo.querySelector("[data-demo-count]").textContent = String(items);
     demo.querySelector("[data-demo-total]").textContent = money(total());
-    demo.querySelector("[data-demo-label]").textContent = sent ? "Pedido enviado" : items === 0 ? "Agrega productos" : "Enviar por WhatsApp";
+    demo.querySelector("[data-demo-label]").textContent = sent ? "Pedido enviado" : items === 0 ? "Agrega productos" : "Hacer pedido";
     hint.hidden = sent;
     resetButton.hidden = !sent;
   }

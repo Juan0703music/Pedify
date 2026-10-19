@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { prisma } from "../../config/database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { notifications } from "../../services/notification.service.js";
@@ -64,16 +65,16 @@ export const ordersService = {
     const business = await loadStore(slug);
     const { settings } = business;
 
+    // El pedido llega directo al panel. Si el negocio tiene WhatsApp, también se devuelve el mensaje
+    // listo por si el cliente quiere escribirle (no es necesario para que el negocio lo reciba).
+    const messageFor = async (order: StoredOrder) =>
+      settings.whatsappPhone ? whatsappFor(order, business.name, settings.whatsappPhone) : null;
+
     // Reintento del navegador: se devuelve el pedido ya creado.
     const existing = await ordersRepository.findByIdempotencyKey(business.id, input.idempotencyKey);
-    if (existing && settings.whatsappPhone) {
-      return { created: false, order: existing, whatsapp: await whatsappFor(existing, business.name, settings.whatsappPhone) };
-    }
+    if (existing) return { created: false, order: existing, whatsapp: await messageFor(existing) };
 
     // ─── Reglas del negocio ───
-    if (!settings.whatsappPhone) {
-      throw conflict("Este negocio todavía no recibe pedidos en línea. Escríbele o llámalo directamente.", "WHATSAPP_NOT_CONFIGURED");
-    }
     // Suscripción vencida (después de los días de gracia): la tienda no recibe pedidos en línea.
     if (!(await subscriptionsService.current(business.id)).state.canReceiveOrders) {
       throw conflict("Este negocio no está recibiendo pedidos en línea por ahora. Escríbele directamente.", "STORE_UNAVAILABLE");
@@ -202,12 +203,12 @@ export const ordersService = {
         createdAt: order.createdAt,
       });
 
-      return { created: true, order, whatsapp: await whatsappFor(order, business.name, settings.whatsappPhone) };
+      return { created: true, order, whatsapp: await messageFor(order) };
     } catch (error) {
       // Dos reintentos simultáneos con la misma clave: gana uno y el otro devuelve ese pedido.
       if (isUniqueError(error)) {
         const winner = await ordersRepository.findByIdempotencyKey(business.id, input.idempotencyKey);
-        if (winner) return { created: false, order: winner, whatsapp: await whatsappFor(winner, business.name, settings.whatsappPhone) };
+        if (winner) return { created: false, order: winner, whatsapp: await messageFor(winner) };
       }
       throw error;
     }
@@ -306,6 +307,27 @@ export const ordersService = {
       changedBy: userId,
     });
     return updated;
+  },
+
+  /**
+   * Seguimiento del pedido para el cliente (sin sesión). Solo lo ve quien tiene la clave secreta
+   * con la que se creó (la guarda su navegador). No incluye datos personales.
+   */
+  async trackFromStore(slug: string, orderId: string, key: string) {
+    const business = await loadStore(slug);
+    const order = await ordersRepository.findForTracking(orderId, business.id);
+    const expected = Buffer.from(order?.idempotencyKey ?? "");
+    const received = Buffer.from(key);
+    if (!order || expected.length !== received.length || !timingSafeEqual(expected, received)) {
+      throw notFound("No encontramos ese pedido.", "ORDER_NOT_FOUND");
+    }
+    const { idempotencyKey: _key, statusHistory, items, ...rest } = order;
+    return {
+      ...rest,
+      items: items.map((item) => ({ name: item.productName, quantity: item.quantity, subtotal: item.subtotal })),
+      history: statusHistory.map((entry) => ({ status: entry.toStatus, at: entry.createdAt })),
+      business: { name: business.name, phone: business.phone, whatsappPhone: business.settings.whatsappPhone },
+    };
   },
 
   /** El cliente tocó "Enviar por WhatsApp". No prueba que el mensaje se haya enviado. */

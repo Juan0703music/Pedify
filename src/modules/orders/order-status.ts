@@ -3,14 +3,16 @@ import type { DeliveryType, OrderStatus } from "../../generated/prisma/enums.js"
 /**
  * Estados del pedido (sección 7 del documento) y cambios permitidos.
  *
- *   PENDING → CONFIRMED → PREPARING → READY → OUT_FOR_DELIVERY → DELIVERED
+ *   PENDING → (CONFIRMED →) PREPARING → READY → OUT_FOR_DELIVERY → DELIVERED
  *
+ * - El panel acepta y manda a preparar con un toque (PENDING → PREPARING); CONFIRMED queda para
+ *   quien prefiera confirmar primero y preparar después.
  * - "En preparación" se puede saltar (CONFIRMED → READY) en cocinas pequeñas.
  * - OUT_FOR_DELIVERY solo aplica a domicilios.
  * - Se puede cancelar en cualquier estado no final. DELIVERED y CANCELLED son finales.
  */
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PENDING: ["CONFIRMED", "CANCELLED"],
+  PENDING: ["PREPARING", "CONFIRMED", "CANCELLED"],
   CONFIRMED: ["PREPARING", "READY", "CANCELLED"],
   PREPARING: ["READY", "CANCELLED"],
   READY: ["OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"],

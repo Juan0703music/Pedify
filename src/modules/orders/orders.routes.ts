@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
 import { requireBusiness } from "../../middlewares/authorize.js";
-import { orderLimiter } from "../../middlewares/rateLimiter.js";
+import { orderLimiter, trackingLimiter } from "../../middlewares/rateLimiter.js";
 import { validate } from "../../middlewares/validate.js";
 import { ordersController } from "./orders.controller.js";
 import {
@@ -10,6 +10,7 @@ import {
   listOrdersQuerySchema,
   orderParamsSchema,
   paymentSchema,
+  storeOrderIdParamsSchema,
   storeOrderParamsSchema,
   whatsappOpenedParamsSchema,
   whatsappOpenedSchema,
@@ -33,6 +34,7 @@ storeOrderRoutes.post(
   validate({ params: storeOrderParamsSchema, body: createOrderSchema }),
   ordersController.createFromStore,
 );
+storeOrderRoutes.get("/:id", trackingLimiter, validate({ params: storeOrderIdParamsSchema }), ordersController.track);
 storeOrderRoutes.post(
   "/:id/whatsapp",
   validate({ params: whatsappOpenedParamsSchema, body: whatsappOpenedSchema }),

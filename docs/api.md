@@ -20,7 +20,7 @@ Errores:
 | 401 | `UNAUTHORIZED`, `SESSION_EXPIRED`, `INVALID_CREDENTIALS` |
 | 403 | `FORBIDDEN` (otro origen), `NOT_A_MEMBER`, `ROLE_REQUIRED`, `NO_ACTIVE_BUSINESS`, `BUSINESS_SUSPENDED`, `INVALID_PASSWORD` |
 | 404 | `NOT_FOUND`, `PRODUCT_NOT_FOUND`, `CATEGORY_NOT_FOUND`, `STORE_NOT_FOUND`, `ORDER_NOT_FOUND`, `CUSTOMER_NOT_FOUND` |
-| 409 | `EMAIL_TAKEN`, `SLUG_TAKEN`, `ALREADY_MEMBER`, `LAST_OWNER`, `DUPLICATE`, `CATEGORY_EXISTS`, `ORDER_OUTDATED`, `PRODUCT_ARCHIVED`, `PRODUCT_LIMIT`, `CATEGORY_LIMIT`, `STORE_CLOSED`, `ORDERS_PAUSED`, `WHATSAPP_NOT_CONFIGURED`, `PRODUCTS_UNAVAILABLE`, `STATUS_CHANGED` |
+| 409 | `EMAIL_TAKEN`, `SLUG_TAKEN`, `ALREADY_MEMBER`, `LAST_OWNER`, `DUPLICATE`, `CATEGORY_EXISTS`, `ORDER_OUTDATED`, `PRODUCT_ARCHIVED`, `PRODUCT_LIMIT`, `CATEGORY_LIMIT`, `STORE_CLOSED`, `ORDERS_PAUSED`, `PRODUCTS_UNAVAILABLE`, `STATUS_CHANGED` |
 | 413 | `IMAGE_TOO_LARGE` (más de 8 MB), `PAYLOAD_TOO_LARGE` |
 | 415 | `UNSUPPORTED_IMAGE` |
 | 429 | `TOO_MANY_REQUESTS` |
@@ -219,7 +219,7 @@ Sin sesión (secciones 4, 8 y 9 del documento). Límite: 15 pedidos cada 10 minu
 - Solo se reciben productos y cantidades. Precios, subtotal, domicilio, descuento y total los calcula el servidor; cualquier valor monetario enviado se descarta.
 - `idempotencyKey`: la genera el navegador por intento de compra (16–80 caracteres `A-Z a-z 0-9 -`). Si llega de nuevo, se responde **200** con el pedido ya creado, sin duplicarlo.
 - `phone`: celular colombiano (se normaliza a `57XXXXXXXXXX`). `address` es obligatoria para `DELIVERY` y se ignora en `PICKUP`.
-- Reglas: el negocio debe estar abierto según su horario (`STORE_CLOSED`), sin pausa (`ORDERS_PAUSED`) y con WhatsApp (`WHATSAPP_NOT_CONFIGURED`); la modalidad y el método de pago deben estar habilitados; el subtotal debe cubrir el pedido mínimo (`MINIMUM_ORDER`); cada producto debe ser del negocio, visible, no archivado y disponible (`PRODUCTS_UNAVAILABLE`, con `details.products: [{ productId, name, reason: "sold_out" | "not_found" }]`).
+- Reglas: el negocio debe estar abierto según su horario (`STORE_CLOSED`) y sin pausa (`ORDERS_PAUSED`); no necesita WhatsApp: el pedido llega directo al panel; la modalidad y el método de pago deben estar habilitados; el subtotal debe cubrir el pedido mínimo (`MINIMUM_ORDER`); cada producto debe ser del negocio, visible, no archivado y disponible (`PRODUCTS_UNAVAILABLE`, con `details.products: [{ productId, name, reason: "sold_out" | "not_found" }]`).
 
 Respuesta **201**:
 
@@ -234,7 +234,7 @@ Respuesta **201**:
     "whatsappOpenedAt": null, "createdAt": "…",
     "items": [{ "productId": "…", "productName": "Hamburguesa especial", "unitPrice": 18000, "quantity": 1, "subtotal": 18000 }]
   },
-  "whatsapp": { "url": "https://wa.me/573001234567?text=…", "message": "¡Hola! Quiero realizar el siguiente pedido:…" }
+  "whatsapp": { "url": "https://wa.me/573001234567?text=…", "message": "¡Hola! Quiero realizar el siguiente pedido:…" } // o null si el negocio no tiene WhatsApp
 }
 ```
 
@@ -265,9 +265,26 @@ TOTAL: $45.000
 ¡Quedo atento a la confirmación!
 ```
 
+### `GET /store/:slug/orders/:id` — seguimiento del pedido
+
+Lo usa la pantalla de seguimiento del cliente (cada 8–20 s). Requiere la cabecera `X-Order-Key` con la clave secreta con la que se creó el pedido (`idempotencyKey`, que solo conoce el navegador del cliente); con otra clave, otro negocio o un pedido inexistente → 404 `ORDER_NOT_FOUND`. `Cache-Control: no-store`. Límite: 200 consultas cada 10 minutos por IP.
+
+```json
+{
+  "id": "…", "number": 129, "status": "PREPARING", "deliveryType": "DELIVERY",
+  "subtotal": 40000, "deliveryFee": 4000, "discount": 0, "total": 44000, "cancelReason": null,
+  "createdAt": "…", "updatedAt": "…",
+  "items": [{ "name": "Salchipapa especial", "quantity": 1, "subtotal": 22000 }],
+  "history": [{ "status": "PENDING", "at": "…" }, { "status": "PREPARING", "at": "…" }],
+  "business": { "name": "Sabores del Caribe", "phone": "573001234567", "whatsappPhone": "573001234567" }
+}
+```
+
+No incluye datos personales del cliente (nombre, celular, dirección ni notas).
+
 ### `POST /store/:slug/orders/:id/whatsapp`
 
-Cuerpo `{ "idempotencyKey": "…" }` (la misma del pedido). Registra `whatsappOpenedAt` la primera vez → 204; con otra clave → 404. **No** prueba que el mensaje se haya enviado ni cambia el estado: el pedido sigue `PENDING` hasta que el negocio lo acepte (fase 4).
+Opcional (la tienda ya no lo usa: los pedidos llegan directo al panel). Cuerpo `{ "idempotencyKey": "…" }` (la misma del pedido). Registra `whatsappOpenedAt` la primera vez → 204; con otra clave → 404. No cambia el estado.
 
 ## Pedidos en el panel — `/orders`
 
@@ -284,8 +301,9 @@ Sesión + miembro del negocio activo (propietario y empleados atienden pedidos).
 Cambios de estado permitidos (sección 7):
 
 ```
-PENDING → CONFIRMED → PREPARING → READY → OUT_FOR_DELIVERY → DELIVERED
-            └────────────────────→ READY (saltar "en preparación")
+PENDING → PREPARING → READY → OUT_FOR_DELIVERY → DELIVERED     («Aceptar y preparar» en un toque)
+PENDING → CONFIRMED → PREPARING                                (confirmar primero y preparar después)
+            └────────→ READY (saltar "en preparación")
 READY → DELIVERED (recoger)    ·    OUT_FOR_DELIVERY solo para domicilios
 Cualquier estado no final → CANCELLED (con motivo opcional)
 ```

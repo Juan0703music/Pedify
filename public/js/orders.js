@@ -19,7 +19,7 @@ import {
 import { html, icon, render, setBusy, toast } from "./ui.js";
 
 const COLUMNS = [
-  { id: "new", title: "Nuevos", statuses: ["PENDING"], empty: "No hay pedidos por confirmar." },
+  { id: "new", title: "Nuevos", statuses: ["PENDING"], empty: "No hay pedidos por aceptar." },
   { id: "kitchen", title: "En cocina", statuses: ["CONFIRMED", "PREPARING"], empty: "Nada en preparación." },
   { id: "ready", title: "Listos y en camino", statuses: ["READY", "OUT_FOR_DELIVERY"], empty: "Nada listo por entregar." },
 ];
@@ -81,12 +81,6 @@ function isLate(order) {
   return (order.status === "PENDING" && minutes >= 10) || minutes >= 60;
 }
 
-function whatsappHint(order) {
-  if (order.status !== "PENDING") return "";
-  return order.whatsappOpenedAt
-    ? html`<p class="mt-3 flex items-center gap-1.5 text-sm font-[620] text-leaf">${icon("circle-check", "h-4 w-4")} El cliente abrió WhatsApp</p>`
-    : html`<p class="mt-3 flex items-center gap-1.5 text-sm text-muted">${icon("info", "h-4 w-4")} El cliente aún no abre WhatsApp</p>`;
-}
 
 function orderCard(order) {
   const action = nextAction(order);
@@ -121,7 +115,6 @@ function orderCard(order) {
       </span>
       <span class="num text-lg font-[820]">${formatCOP(order.total)}</span>
     </div>
-    ${whatsappHint(order)}
     <div class="mt-3 flex gap-2">
       ${action
         ? html`<button
@@ -331,13 +324,6 @@ function detailView(order) {
                 <p class="text-sm text-muted">${dateTimeLabel(entry.createdAt)}${entry.changedBy ? ` · ${entry.changedBy.name}` : ""}</p>
               </li>`,
             )}
-            ${order.whatsappOpenedAt
-              ? html`<li class="relative">
-                  <span class="absolute top-1.5 -left-[1.4rem] h-2.5 w-2.5 rounded-full bg-leaf"></span>
-                  <p class="font-[650]">El cliente abrió WhatsApp con el pedido</p>
-                  <p class="text-sm text-muted">${dateTimeLabel(order.whatsappOpenedAt)} · no confirma que haya enviado el mensaje</p>
-                </li>`
-              : ""}
           </ol>
         </section>
       </div>

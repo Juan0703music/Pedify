@@ -258,8 +258,11 @@ describe("Validaciones del pedido", () => {
     expect((await placeOrder(slug, orderBody(item)).expect(409)).body.error.code).toBe("ORDERS_PAUSED");
 
     await agent.patch("/api/v1/businesses/current/settings").send({ acceptingOrders: true }).expect(200);
+    // Sin WhatsApp configurado el pedido igual llega directo al panel (el mensaje de WhatsApp es opcional).
     await prisma.businessSettings.update({ where: { businessId }, data: { whatsappPhone: null } });
-    expect((await placeOrder(slug, orderBody(item)).expect(409)).body.error.code).toBe("WHATSAPP_NOT_CONFIGURED");
+    const direct = (await placeOrder(slug, orderBody(item)).expect(201)).body.data;
+    expect(direct.order.status).toBe("PENDING");
+    expect(direct.whatsapp).toBeNull();
 
     await newAgent().post("/api/v1/store/no-existe/orders").send(orderBody(item)).expect(404);
   });
@@ -271,6 +274,51 @@ describe("Validaciones del pedido", () => {
       .set("Origin", "https://sitio-malicioso.com")
       .send(orderBody([{ productId: salchipapa.id, quantity: 1 }]))
       .expect(403);
+  });
+});
+
+describe("Seguimiento del pedido (sin WhatsApp)", () => {
+  it("el cliente ve el estado de su pedido con su clave; nadie más puede verlo", async () => {
+    const { slug, agent, salchipapa } = await setupStore();
+    const body = orderBody([{ productId: salchipapa.id, quantity: 2 }], { notes: "sin cebolla" });
+    const { order } = (await placeOrder(slug, body).expect(201)).body.data;
+    const track = (key: string, store = slug) => newAgent().get(`/api/v1/store/${store}/orders/${order.id}`).set("X-Order-Key", key);
+
+    const received = await track(body.idempotencyKey).expect(200);
+    expect(received.headers["cache-control"]).toBe("no-store");
+    expect(received.body.data).toMatchObject({
+      number: order.number,
+      status: "PENDING",
+      deliveryType: "DELIVERY",
+      total: 34000,
+      items: [{ name: "Salchipapa", quantity: 2, subtotal: 30000 }],
+      history: [{ status: "PENDING", at: expect.any(String) }],
+      business: { name: "Sabores del Caribe", phone: "573001234567" },
+    });
+    // Sin datos personales del cliente ni la clave.
+    expect(JSON.stringify(received.body.data)).not.toMatch(/Luis|3112223344|Calle 20|sin cebolla|idempotency/);
+
+    await track(randomUUID()).expect(404);
+    await newAgent().get(`/api/v1/store/${slug}/orders/${order.id}`).expect(404);
+    const other = await setupStore({ businessName: "Otro negocio", businessPhone: "300 999 8877" });
+    await track(body.idempotencyKey, other.slug).expect(404);
+
+    // El negocio acepta y manda a preparar con un toque; luego listo y en camino.
+    for (const status of ["PREPARING", "READY", "OUT_FOR_DELIVERY"]) {
+      await agent.patch(`/api/v1/orders/${order.id}/status`).send({ status }).expect(200);
+    }
+    const onTheWay = (await track(body.idempotencyKey).expect(200)).body.data;
+    expect(onTheWay.status).toBe("OUT_FOR_DELIVERY");
+    expect(onTheWay.history.map((entry: { status: string }) => entry.status)).toEqual(["PENDING", "PREPARING", "READY", "OUT_FOR_DELIVERY"]);
+  });
+
+  it("si el negocio cancela, el cliente ve el motivo", async () => {
+    const { slug, agent, salchipapa } = await setupStore();
+    const body = orderBody([{ productId: salchipapa.id, quantity: 1 }]);
+    const { order } = (await placeOrder(slug, body).expect(201)).body.data;
+    await agent.patch(`/api/v1/orders/${order.id}/status`).send({ status: "CANCELLED", reason: "Se nos acabó la papa" }).expect(200);
+    const res = await newAgent().get(`/api/v1/store/${slug}/orders/${order.id}`).set("X-Order-Key", body.idempotencyKey).expect(200);
+    expect(res.body.data).toMatchObject({ status: "CANCELLED", cancelReason: "Se nos acabó la papa" });
   });
 });
 
@@ -343,7 +391,7 @@ describe("Panel: atención de pedidos", () => {
     const detail = await agent.get(`/api/v1/orders/${order.id}`).expect(200);
     expect(detail.body.data).toMatchObject({
       status: "PENDING",
-      nextStatuses: ["CONFIRMED", "CANCELLED"],
+      nextStatuses: ["PREPARING", "CONFIRMED", "CANCELLED"],
       statusHistory: [{ fromStatus: null, toStatus: "PENDING", changedBy: null }],
     });
   });

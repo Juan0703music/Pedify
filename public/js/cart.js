@@ -1,6 +1,7 @@
 // Carrito y pedido de la tienda pública (secciones 8 y 9 del documento de arquitectura).
 // El navegador solo envía productos, cantidades y datos de entrega: el servidor recalcula precios,
-// domicilio y total, guarda la solicitud (PENDING) y devuelve el mensaje y el enlace de WhatsApp.
+// domicilio y total y guarda el pedido (PENDING): le llega directo al panel del negocio. Después,
+// el cliente sigue el estado de su pedido en vivo (recibido, en preparación, listo, en camino).
 import { formatCOP, formatPhone } from "./api.js";
 import { clearFieldErrors, formAlert, html, icon, render, setBusy, showErrors } from "./ui.js";
 
@@ -14,7 +15,9 @@ export const PAYMENT_LABEL = {
 
 const MAX_QUANTITY = 99;
 const CART_TTL_MS = 24 * 60 * 60 * 1000;
-const PENDING_TTL_MS = 3 * 60 * 60 * 1000;
+/** El seguimiento del último pedido se conserva en este dispositivo hasta 12 horas. */
+const ORDER_TTL_MS = 12 * 60 * 60 * 1000;
+const FINAL_STATUSES = new Set(["DELIVERED", "CANCELLED"]);
 
 // ───────────────────────────── Almacenamiento local ─────────────────────────────
 // Solo comodidades de este dispositivo: el carrito, los datos del cliente y el último pedido.
@@ -45,7 +48,8 @@ function newKey() {
 // ───────────────────────────── Carrito ─────────────────────────────
 
 export function initCart({ store, slug, root, orderable = true }) {
-  const keys = { cart: `pedify:cart:${slug}`, pending: `pedify:pending:${slug}`, customer: "pedify:customer" };
+  const keys = { cart: `pedify:cart:${slug}`, order: `pedify:order:${slug}`, customer: "pedify:customer" };
+  save(`pedify:pending:${slug}`, null); // aviso de "envíalo por WhatsApp" de versiones anteriores
   const products = new Map(store.categories.flatMap((category) => category.products).map((product) => [product.id, product]));
   const { settings, business } = store;
   const deliveryModes = [
@@ -80,8 +84,13 @@ export function initCart({ store, slug, root, orderable = true }) {
   customer.notes = "";
 
   const checkout = { key: null, signature: null };
-  let pending = load(keys.pending);
-  if (pending && Date.now() - pending.createdAt > PENDING_TTL_MS) pending = null;
+  /** Último pedido de este dispositivo: { id, key, number, createdAt } y su estado más reciente. */
+  let active = load(keys.order);
+  if (active && Date.now() - active.createdAt > ORDER_TTL_MS) {
+    active = null;
+    save(keys.order, null);
+  }
+  let tracked = null;
 
   // ─── Cálculos para mostrar (el servidor tiene la última palabra) ───
   const count = () => [...cart.values()].reduce((sum, quantity) => sum + quantity, 0);
@@ -163,18 +172,23 @@ export function initCart({ store, slug, root, orderable = true }) {
     </button>`;
   }
 
-  /** Pedido creado que el cliente aún no ha enviado por WhatsApp (se muestra en la barra inferior). */
-  function pendingBar() {
-    return html`<div class="cart-bar cursor-default gap-2.5 py-2 pr-2 hover:bg-ink" role="region" aria-label="Pedido sin enviar">
-      <span class="text-mustard">${icon("message-circle")}</span>
+  /** Barra inferior con el estado del último pedido (abre el seguimiento). */
+  function trackingBar() {
+    const status = tracked?.status ?? "PENDING";
+    const step = statusCopy(status, tracked?.deliveryType ?? "DELIVERY");
+    const done = FINAL_STATUSES.has(status);
+    return html`<div class="cart-bar cursor-default gap-2.5 py-2 pr-2 hover:bg-ink" role="region" aria-label="Tu pedido">
+      <span class="${status === "CANCELLED" ? "text-tomato" : "text-mustard"}">${icon(step.icon)}</span>
       <p class="min-w-0 flex-1 text-[0.875rem] leading-snug">
-        <span class="font-[700]">Pedido #${pending.number} sin enviar.</span>
-        <span class="text-ink-soft">El negocio lo recibe por WhatsApp.</span>
+        <span class="font-[700]">Pedido #${active.number}</span>
+        <span class="text-ink-soft"> · ${step.short}</span>
       </p>
-      <a class="btn btn-whatsapp btn-sm min-h-10 px-3" href="${pending.url}" target="_blank" rel="noopener" data-wa-open>Enviar</a>
-      <button type="button" class="btn btn-quiet btn-icon h-10 w-10 text-ink-soft hover:bg-ink-3 hover:text-paper" data-dismiss-pending aria-label="Ocultar aviso">
-        ${icon("x")}
-      </button>
+      <button type="button" class="btn btn-primary btn-sm min-h-10 px-3" data-open-tracking>Ver estado</button>
+      ${done
+        ? html`<button type="button" class="btn btn-quiet btn-icon h-10 w-10 text-ink-soft hover:bg-ink-3 hover:text-paper" data-dismiss-order aria-label="Ocultar">
+            ${icon("x")}
+          </button>`
+        : ""}
     </div>`;
   }
 
@@ -307,8 +321,8 @@ export function initCart({ store, slug, root, orderable = true }) {
             <p class="mb-2.5 text-center text-sm font-[620] text-mustard-deep ${missing > 0 ? "" : "hidden"}" data-minimum>
               El pedido mínimo es ${formatCOP(settings.minimumOrder)}. Te faltan <span class="num">${formatCOP(missing)}</span>.
             </p>
-            <button type="submit" class="btn btn-whatsapp w-full text-base" ${missing > 0 ? "disabled" : ""}>
-              ${icon("message-circle")} Continuar por WhatsApp
+            <button type="submit" class="btn btn-primary min-h-13 w-full text-base" ${missing > 0 ? "disabled" : ""}>
+              ${icon("check")} Hacer pedido · <span class="num">${formatCOP(subtotal() + deliveryFee())}</span>
             </button>
             <p class="mt-2 text-center text-xs leading-snug text-muted">
               Al continuar autorizas a ${business.name} a usar tus datos para gestionar tu pedido.
@@ -318,11 +332,64 @@ export function initCart({ store, slug, root, orderable = true }) {
     </form>`;
   }
 
-  function confirmationView(result) {
-    const { order, whatsapp } = result;
-    const isDelivery = order.deliveryType === "DELIVERY";
-    const time = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit", timeZone: settings.timezone }).format(new Date(order.createdAt));
-    const line = (label, value, strong = false) => html`<div class="flex items-baseline justify-between gap-4 ${strong ? "text-[1.125rem] font-[820]" : ""}">
+  /** Textos del seguimiento según el estado del pedido. */
+  function statusCopy(status, deliveryType) {
+    const name = business.name;
+    const delivery = deliveryType === "DELIVERY";
+    return (
+      {
+        PENDING: { icon: "bell-ring", short: "Enviado", title: "¡Pedido enviado!", text: `${name} ya lo recibió. Espera a que lo acepte.` },
+        CONFIRMED: { icon: "circle-check", short: "Aceptado", title: "Pedido aceptado", text: "En un momento empiezan a prepararlo." },
+        PREPARING: { icon: "chef-hat", short: "En preparación", title: "Lo están preparando", text: `${name} aceptó tu pedido y ya está en la cocina.` },
+        READY: delivery
+          ? { icon: "circle-check", short: "Listo", title: "¡Tu pedido está listo!", text: "En un momento sale con el domiciliario." }
+          : { icon: "circle-check", short: "Listo para recoger", title: "¡Tu pedido está listo!", text: "Ya puedes pasar a recogerlo." },
+        OUT_FOR_DELIVERY: { icon: "bike", short: "En camino", title: "Va en camino", text: "El domiciliario ya salió con tu pedido." },
+        DELIVERED: { icon: "utensils", short: "Entregado", title: "¡Buen provecho!", text: "Tu pedido fue entregado." },
+        CANCELLED: { icon: "circle-x", short: "Cancelado", title: "El negocio canceló el pedido", text: "Si tienes dudas, comunícate con el negocio." },
+      }[status] ?? { icon: "receipt", short: status, title: status, text: "" }
+    );
+  }
+
+  /** Pasos del pedido con la hora en que ocurrió cada uno. */
+  function trackingSteps(order) {
+    const delivery = order.deliveryType === "DELIVERY";
+    const at = (statuses) => order.history.find((entry) => statuses.includes(entry.status))?.at;
+    const steps = [
+      { label: "Recibido", at: at(["PENDING"]) },
+      { label: "Aceptado y en preparación", at: at(["CONFIRMED", "PREPARING"]) },
+      { label: delivery ? "Listo" : "Listo para recoger", at: at(["READY"]) },
+      ...(delivery ? [{ label: "En camino", at: at(["OUT_FOR_DELIVERY"]) }] : []),
+      { label: "Entregado", at: at(["DELIVERED"]) },
+    ];
+    const time = (value) => new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit", timeZone: settings.timezone }).format(new Date(value));
+    const current = steps.findLastIndex((step) => step.at);
+    return html`<ol class="grid gap-0">
+      ${steps.map((step, index) => {
+        const done = Boolean(step.at);
+        const isCurrent = index === current && order.status !== "DELIVERED";
+        return html`<li class="relative flex gap-3 pb-5 last:pb-0">
+          ${index < steps.length - 1
+            ? html`<span class="absolute top-7 bottom-0 left-[0.875rem] w-0.5 -translate-x-1/2 ${steps[index + 1].at ? "bg-ink" : "bg-line"}" aria-hidden="true"></span>`
+            : ""}
+          <span class="relative z-[1] grid h-7 w-7 flex-none place-items-center rounded-full ${done ? "bg-ink text-mustard" : "border-2 border-line bg-paper"} ${isCurrent ? "bell-ring" : ""}">
+            ${done ? icon("check", "h-3.5 w-3.5") : ""}
+          </span>
+          <span class="pt-0.5">
+            <span class="block ${done ? "font-[700]" : "text-muted"}">${step.label}</span>
+            ${step.at ? html`<span class="num block text-sm text-muted">${time(step.at)}</span>` : ""}
+          </span>
+        </li>`;
+      })}
+    </ol>`;
+  }
+
+  function trackingView() {
+    const order = tracked;
+    const copy = statusCopy(order.status, order.deliveryType);
+    const cancelled = order.status === "CANCELLED";
+    const contact = order.business ?? { phone: business.phone, whatsappPhone: settings.whatsappPhone };
+    const line = (label, value, strong = false) => html`<div class="flex items-baseline justify-between gap-4 ${strong ? "text-[1.0625rem] font-[820]" : ""}">
       <dt>${label}</dt><dd class="num">${value}</dd>
     </div>`;
     return html`<div class="flex min-h-0 flex-1 flex-col">
@@ -331,50 +398,56 @@ export function initCart({ store, slug, root, orderable = true }) {
         <button type="button" class="btn btn-quiet btn-icon" data-close-cart aria-label="Cerrar">${icon("x")}</button>
       </header>
       <div class="min-h-0 flex-1 overflow-y-auto bg-ground px-5 py-5">
-        <div class="mx-auto grid max-w-[24rem] gap-5">
-          <div class="flex items-start gap-3 rounded-[14px] border border-mustard-press bg-mustard-soft p-4">
-            <span class="mt-0.5 text-mustard-deep">${icon("message-circle")}</span>
-            <div class="grid gap-1">
-              <p class="font-[760]" data-step-title>Falta un paso: envíalo por WhatsApp</p>
-              <p class="text-[0.9375rem]" data-step-text>
-                Tu pedido quedó registrado, pero ${business.name} lo recibe cuando envías el mensaje desde tu WhatsApp.
-              </p>
+        <div class="mx-auto grid max-w-[26rem] gap-5">
+          <div class="relative overflow-hidden rounded-[18px] ${cancelled ? "bg-tomato text-paper" : "bg-ink text-paper"} p-5" aria-live="polite">
+            <div class="flex items-start gap-4">
+              <span class="grid h-12 w-12 flex-none place-items-center rounded-full ${cancelled ? "bg-paper text-tomato" : "bg-mustard text-ink"} ${order.status === "PENDING" ? "bell-ring" : ""}">
+                ${icon(copy.icon, "h-6 w-6")}
+              </span>
+              <div class="grid gap-1">
+                <p class="text-[1.375rem] leading-tight font-[820] [font-stretch:85%]">${copy.title}</p>
+                <p class="text-[0.9375rem] ${cancelled ? "text-paper/90" : "text-paper/75"}">${copy.text}</p>
+                ${cancelled && order.cancelReason ? html`<p class="mt-1 text-[0.9375rem] font-[650]">Motivo: ${order.cancelReason}</p>` : ""}
+              </div>
             </div>
           </div>
 
-          <figure class="ticket ticket-shadow print-in p-5" aria-label="Resumen del pedido">
-            <p class="display text-[1.6rem]">${business.name}</p>
-            <p class="mt-1 text-sm text-muted">Pedido #${order.number} · ${time}</p>
+          ${cancelled ? "" : html`<section class="rounded-[16px] bg-paper p-5" aria-label="Estado del pedido">${trackingSteps(order)}</section>`}
+
+          <figure class="ticket ticket-shadow p-5" aria-label="Resumen del pedido">
+            <p class="display text-[1.5rem]">${business.name}</p>
             <hr class="ticket-rule my-3" />
             <ul class="grid gap-1.5 text-[0.9375rem]">
               ${order.items.map(
                 (item) => html`<li class="flex justify-between gap-3">
-                  <span><span class="num font-[700]">${item.quantity}×</span> ${item.productName}</span>
+                  <span><span class="num font-[700]">${item.quantity}×</span> ${item.name}</span>
                   <span class="num">${formatCOP(item.subtotal)}</span>
                 </li>`,
               )}
             </ul>
             <hr class="ticket-rule my-3" />
             <dl class="grid gap-1 text-[0.9375rem]">
-              ${line("Subtotal", formatCOP(order.subtotal))}
               ${order.deliveryFee > 0 ? line("Domicilio", formatCOP(order.deliveryFee)) : ""}
-              ${order.discount > 0 ? line("Descuento", `-${formatCOP(order.discount)}`) : ""}
               ${line("TOTAL", formatCOP(order.total), true)}
             </dl>
-            <hr class="ticket-rule my-3" />
-            <p class="text-sm">
-              ${isDelivery ? html`<span class="font-[650]">Domicilio:</span> ${order.deliveryAddress}` : html`<span class="font-[650]">Recoger en el local</span>`}
-            </p>
-            <p class="text-sm"><span class="font-[650]">Pago:</span> ${PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}</p>
-            <p class="mt-1 text-sm text-muted">${order.customerName} · ${formatPhone(order.customerPhone)}</p>
           </figure>
+
+          <div class="grid gap-2 text-center">
+            <p class="text-sm text-muted">¿Dudas con tu pedido? Comunícate con ${business.name}.</p>
+            <div class="flex flex-wrap justify-center gap-2">
+              <a class="btn btn-ghost btn-sm" href="tel:+${contact.phone}">${icon("phone", "h-4 w-4")} Llamar</a>
+              ${contact.whatsappPhone
+                ? html`<a class="btn btn-ghost btn-sm" href="https://wa.me/${contact.whatsappPhone}?text=${encodeURIComponent(`Hola, ${business.name}. Les escribo por mi pedido #${order.number}.`)}" target="_blank" rel="noopener">
+                    ${icon("message-circle", "h-4 w-4 text-[#128c4b]")} Escribir por WhatsApp
+                  </a>`
+                : ""}
+            </div>
+          </div>
         </div>
       </div>
-      <footer class="grid gap-2 border-t border-line px-5 pt-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))]">
-        <a class="btn btn-whatsapp w-full text-base" href="${whatsapp.url}" target="_blank" rel="noopener" data-wa-open>
-          ${icon("message-circle")} Enviar pedido por WhatsApp
-        </a>
-        <button type="button" class="btn btn-quiet w-full" data-close-cart>Volver al menú</button>
+      <footer class="border-t border-line px-5 pt-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))]">
+        <p class="mb-2 text-center text-xs text-muted">${FINAL_STATUSES.has(order.status) ? "" : "Esta pantalla se actualiza sola."}</p>
+        <button type="button" class="btn btn-ink w-full" data-close-cart>Volver al menú</button>
       </footer>
     </div>`;
   }
@@ -391,7 +464,6 @@ export function initCart({ store, slug, root, orderable = true }) {
   document.body.append(dialog);
 
   let view = "checkout";
-  let lastResult = null;
 
   function refresh() {
     root.querySelectorAll("[data-qty]").forEach((slot) => {
@@ -399,7 +471,7 @@ export function initCart({ store, slug, root, orderable = true }) {
       if (product) render(slot, control(product, slot.dataset.qtySize));
     });
     if (orderable && count() > 0) render(bar, cartBar());
-    else if (pending && !pending.opened && !dialog.open) render(bar, pendingBar());
+    else if (active && !dialog.open) render(bar, trackingBar());
     else render(bar, "");
 
     if (dialog.open && view === "checkout") {
@@ -420,7 +492,7 @@ export function initCart({ store, slug, root, orderable = true }) {
   }
 
   function renderSheet() {
-    render(dialog, view === "confirmation" && lastResult ? confirmationView(lastResult) : checkoutView());
+    render(dialog, view === "tracking" && tracked ? trackingView() : checkoutView());
   }
 
   function openSheet() {
@@ -432,11 +504,64 @@ export function initCart({ store, slug, root, orderable = true }) {
 
   function closeSheet() {
     dialog.close();
-    if (view === "confirmation") {
-      view = "checkout";
-      lastResult = null;
-    }
+    view = "checkout";
   }
+
+  function openTracking() {
+    view = "tracking";
+    if (!tracked) tracked = { number: active.number, status: "PENDING", deliveryType: "DELIVERY", items: [], deliveryFee: 0, total: 0, history: [] };
+    renderSheet();
+    if (!dialog.open) dialog.showModal();
+    dialog.querySelector("#cart-title")?.focus();
+    poll();
+  }
+
+  // ─────────────────────────── Seguimiento en vivo ───────────────────────────
+
+  let pollTimer = 0;
+  /** Consulta el estado del pedido: cada 8 s con el seguimiento abierto, cada 20 s con la página a la vista. */
+  async function poll() {
+    clearTimeout(pollTimer);
+    if (!active) return;
+    try {
+      const response = await fetch(`/api/v1/store/${encodeURIComponent(slug)}/orders/${active.id}`, {
+        headers: { Accept: "application/json", "X-Order-Key": active.key },
+        cache: "no-store",
+      });
+      if (response.status === 404) {
+        active = null;
+        tracked = null;
+        save(keys.order, null);
+        if (dialog.open && view === "tracking") closeSheet();
+        refresh();
+        return;
+      }
+      if (response.ok) {
+        const next = (await response.json()).data;
+        const changed = tracked && tracked.status !== next.status && tracked.items.length > 0;
+        tracked = next;
+        if (changed) {
+          announce(`Pedido #${next.number}: ${statusCopy(next.status, next.deliveryType).title}`);
+          navigator.vibrate?.(180);
+        }
+        if (dialog.open && view === "tracking") {
+          const scroller = dialog.querySelector(".overflow-y-auto");
+          const top = scroller?.scrollTop ?? 0;
+          renderSheet();
+          const again = dialog.querySelector(".overflow-y-auto");
+          if (again) again.scrollTop = top;
+        }
+        refresh();
+      }
+    } catch {
+      // Sin conexión: se vuelve a intentar en el siguiente turno.
+    }
+    if (tracked && FINAL_STATUSES.has(tracked.status)) return;
+    if (!document.hidden) pollTimer = setTimeout(poll, dialog.open && view === "tracking" ? 8_000 : 20_000);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && active) poll();
+  });
 
   // ─────────────────────────── Envío del pedido ───────────────────────────
 
@@ -489,7 +614,7 @@ export function initCart({ store, slug, root, orderable = true }) {
       payload = await response.json().catch(() => null);
     } catch {
       setBusy(button, false);
-      showErrors(form, { message: "Sin conexión. Revisa tu internet y vuelve a tocar «Continuar por WhatsApp»." });
+      showErrors(form, { message: "Sin conexión. Revisa tu internet y vuelve a tocar «Hacer pedido»." });
       return;
     }
     setBusy(button, false);
@@ -513,33 +638,29 @@ export function initCart({ store, slug, root, orderable = true }) {
       return;
     }
 
-    const { order, whatsapp } = payload.data;
-    pending = { id: order.id, number: order.number, url: whatsapp.url, key: checkout.key, createdAt: Date.now(), opened: false };
-    save(keys.pending, pending);
+    const { order } = payload.data;
+    active = { id: order.id, number: order.number, key: checkout.key, createdAt: Date.now() };
+    save(keys.order, active);
+    tracked = {
+      number: order.number,
+      status: order.status,
+      deliveryType: order.deliveryType,
+      items: order.items.map((item) => ({ name: item.productName, quantity: item.quantity, subtotal: item.subtotal })),
+      deliveryFee: order.deliveryFee,
+      total: order.total,
+      history: [{ status: "PENDING", at: order.createdAt }],
+      business: { phone: business.phone, whatsappPhone: settings.whatsappPhone },
+    };
     cart.clear();
     persistCart();
     checkout.key = null;
     checkout.signature = null;
 
-    lastResult = { order, whatsapp };
-    view = "confirmation";
+    view = "tracking";
     renderSheet();
     refresh();
     dialog.querySelector("#cart-title")?.focus();
-  }
-
-  /** Avisa al servidor que el cliente abrió WhatsApp (no prueba que haya enviado el mensaje). */
-  function markOpened() {
-    if (!pending || pending.opened) return;
-    const { id, key } = pending;
-    pending = { ...pending, opened: true };
-    save(keys.pending, pending);
-    fetch(`/api/v1/store/${encodeURIComponent(slug)}/orders/${id}/whatsapp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idempotencyKey: key }),
-      keepalive: true,
-    }).catch(() => {});
+    poll();
   }
 
   // ─────────────────────────── Eventos ───────────────────────────
@@ -551,19 +672,11 @@ export function initCart({ store, slug, root, orderable = true }) {
     if (target.matches("[data-dec]")) setQuantity(target.dataset.dec, (cart.get(target.dataset.dec) ?? 0) - 1);
     if (target.matches("[data-open-cart]")) openSheet();
     if (target.matches("[data-close-cart]")) closeSheet();
-    if (target.matches("[data-wa-open]")) {
-      markOpened();
-      const title = dialog.querySelector("[data-step-title]");
-      if (title) {
-        title.textContent = "¿Se abrió WhatsApp?";
-        dialog.querySelector("[data-step-text]").textContent =
-          "Toca «Enviar» en el chat para que el negocio reciba tu pedido. Te confirmarán por ahí. Si no se abrió, toca el botón otra vez.";
-      }
-      refresh();
-    }
-    if (target.matches("[data-dismiss-pending]")) {
-      pending = { ...pending, opened: true };
-      save(keys.pending, pending);
+    if (target.matches("[data-open-tracking]")) openTracking();
+    if (target.matches("[data-dismiss-order]")) {
+      active = null;
+      tracked = null;
+      save(keys.order, null);
       refresh();
     }
   });
@@ -599,14 +712,12 @@ export function initCart({ store, slug, root, orderable = true }) {
     if (event.target === dialog) closeSheet();
   });
   dialog.addEventListener("close", () => {
-    if (view === "confirmation") {
-      view = "checkout";
-      lastResult = null;
-    }
+    view = "checkout";
     refresh();
   });
 
   refresh();
+  if (active) poll();
   if (removed.length > 0) {
     announce(`Quitamos de tu pedido lo que se agotó: ${removed.join(", ")}.`);
   }

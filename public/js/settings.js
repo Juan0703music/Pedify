@@ -37,7 +37,7 @@ const PAYMENT_METHODS = [
 
 const SECTIONS = [
   { id: "negocio", label: "Negocio" },
-  { id: "whatsapp", label: "WhatsApp" },
+  { id: "whatsapp", label: "Pedidos" },
   { id: "horario", label: "Horario" },
   { id: "entrega", label: "Entrega" },
   { id: "pagos", label: "Pagos" },
@@ -131,8 +131,8 @@ function whatsappSection() {
   const { settings, isOwner } = state;
   return section(
     "whatsapp",
-    "WhatsApp y pedidos",
-    "El número que recibe el resumen de cada pedido.",
+    "Pedidos y WhatsApp",
+    "Los pedidos llegan directo a tu panel. El WhatsApp es para que tus clientes te escriban.",
     html`<form data-form="whatsapp" novalidate>
       <fieldset class="grid gap-6" ${isOwner ? "" : "disabled"}>
         ${formAlert()}
@@ -142,7 +142,7 @@ function whatsappSection() {
             <span class="addon">${icon("message-circle")}</span>
             <input class="input" id="s-whatsapp" name="whatsappPhone" type="tel" inputmode="tel" value="${formatPhone(settings.whatsappPhone)}" placeholder="300 123 4567" />
           </div>
-          <p class="hint">El cliente revisa el mensaje y lo envía desde su propio WhatsApp a este número.</p>
+          <p class="hint">Opcional. Aparece en tu tienda como «Escribir por WhatsApp» y en el seguimiento del pedido.</p>
         </div>
         ${switchRow(
           "s-accepting",
@@ -484,7 +484,7 @@ const PAYLOADS = {
 
 const ENDPOINTS = {
   negocio: ["PATCH", "/businesses/current", "Datos del negocio guardados."],
-  whatsapp: ["PATCH", "/businesses/current/settings", "WhatsApp y pedidos actualizados."],
+  whatsapp: ["PATCH", "/businesses/current/settings", "Pedidos y WhatsApp actualizados."],
   horario: ["PATCH", "/businesses/current/settings", "Horario guardado."],
   entrega: ["PATCH", "/businesses/current/settings", "Opciones de entrega guardadas."],
   pagos: ["PATCH", "/businesses/current/settings", "Métodos de pago guardados."],

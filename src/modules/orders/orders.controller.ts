@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { getAuth } from "../../middlewares/authenticate.js";
 import { getTenant } from "../../middlewares/authorize.js";
+import { notFound } from "../../utils/errors.js";
+import { idempotencyKeySchema } from "./orders.schemas.js";
 import { ordersService } from "./orders.service.js";
 import type {
   ChangeStatusInput,
@@ -9,6 +11,7 @@ import type {
   OrderParams,
   PaymentInput,
   StoreOrderParams,
+  StoreOrderIdParams,
   WhatsappOpenedParams,
 } from "./orders.schemas.js";
 
@@ -41,6 +44,15 @@ export const ordersController = {
     const result = await ordersService.createFromStore(slug, req.body as CreateOrderInput);
     res.set("Cache-Control", "no-store");
     res.status(result.created ? 201 : 200).json({ data: { order: result.order, whatsapp: result.whatsapp } });
+  },
+
+  /** GET /api/v1/store/:slug/orders/:id — seguimiento del pedido (cabecera X-Order-Key). */
+  async track(req: Request, res: Response) {
+    const { slug, id } = req.params as StoreOrderIdParams;
+    const key = idempotencyKeySchema.safeParse(req.get("x-order-key") ?? "");
+    if (!key.success) throw notFound("No encontramos ese pedido.", "ORDER_NOT_FOUND");
+    res.set("Cache-Control", "no-store");
+    res.json({ data: await ordersService.trackFromStore(slug, id, key.data) });
   },
 
   /** POST /api/v1/store/:slug/orders/:id/whatsapp — el cliente abrió WhatsApp con el mensaje. */

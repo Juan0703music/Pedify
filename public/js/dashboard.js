@@ -607,8 +607,8 @@ function checklist(business, settings, catalog) {
   const items = [
     {
       done: Boolean(settings.whatsappPhone),
-      title: "Número de WhatsApp para pedidos",
-      text: "Es el número al que tus clientes enviarán el resumen de su pedido.",
+      title: "WhatsApp de contacto",
+      text: "Para que tus clientes te escriban si tienen dudas. Los pedidos llegan directo a tu panel.",
       href: "/panel/configuracion#whatsapp",
     },
     {

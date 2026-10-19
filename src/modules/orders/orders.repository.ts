@@ -160,6 +160,29 @@ export const ordersRepository = {
     });
   },
 
+  /** Pedido para la pantalla de seguimiento del cliente (incluye la clave para comprobarla). */
+  findForTracking(id: string, businessId: string) {
+    return prisma.order.findFirst({
+      where: { id, businessId },
+      select: {
+        id: true,
+        idempotencyKey: true,
+        number: true,
+        status: true,
+        deliveryType: true,
+        subtotal: true,
+        deliveryFee: true,
+        discount: true,
+        total: true,
+        cancelReason: true,
+        createdAt: true,
+        updatedAt: true,
+        items: { orderBy: { id: "asc" }, select: { productName: true, quantity: true, subtotal: true } },
+        statusHistory: { orderBy: { createdAt: "asc" }, select: { toStatus: true, createdAt: true } },
+      },
+    });
+  },
+
   /** Marca que el cliente abrió WhatsApp (solo la primera vez y con la clave del pedido). */
   async markWhatsappOpened(id: string, businessId: string, idempotencyKey: string) {
     const exists = await prisma.order.count({ where: { id, businessId, idempotencyKey } });

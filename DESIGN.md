@@ -84,6 +84,8 @@ Es la vitrina del comerciante, no de Pedify: manda la portada, el logo y el nomb
 
 - **Los más pedidos**: carrusel horizontal con fotos 4:3 grandes, número mostaza (1–3) y el botón de agregar sobre la foto. Si aún no hay ventas, «Para abrir el apetito» con los productos que tienen foto.
 - **Productos**: en el celular, filas con la foto a la derecha (patrón de las apps de domicilios); en escritorio, tarjetas en tres columnas con la foto arriba (o `.food-placeholder`). Toda la tarjeta abre la **ficha del producto**; el control de cantidad queda encima.
+- **Hacer pedido**: el botón del carrito es mostaza, «Hacer pedido · $total» (ya no lleva a WhatsApp).
+- **Seguimiento del pedido** (misma hoja del carrito): tarjeta tinta con el estado en grande y su ícono (campana que late mientras espera, gorro de cocina, moto…), pasos con hora (Recibido → Aceptado y en preparación → Listo → En camino → Entregado; los domicilios incluyen «En camino») y el resumen como tiquete. Cancelado: tarjeta tomate con el motivo. Debajo, «Llamar» y «Escribir por WhatsApp» al negocio. Con la hoja cerrada, la barra inferior tinta dice «Pedido #N · estado» con «Ver estado». Se actualiza sola.
 - **Ficha del producto** (`<dialog class="sheet">`): foto grande, nombre, precio y descripción completa; abajo, «Agregar a mi pedido · $precio» (mostaza) y, con el producto ya en el pedido, el contador y «Ver mi pedido».
 - Agotado: foto en gris, precio tachado e insignia tomate. El estado (Abierto / Cerrado · abre… / Pedidos en pausa) va en una pastilla de color bajo el nombre. En escritorio el detalle (domicilio, horario, pagos) pasa a una columna a la derecha.
 

@@ -60,25 +60,27 @@ Socket.IO (fase 4) usará la misma cookie para autenticar y unirse a la sala `bu
 - La tienda (`GET /store/:slug`) expone solo datos públicos y calcula si el negocio está abierto con su horario en `America/Bogota` (`modules/businesses/opening-hours.ts`).
 - La página `/tienda/:slug` es HTML estático; el servidor solo inserta el título y las etiquetas Open Graph (escapadas) para que el enlace se vea bien al compartirlo. El slug público no reemplaza al id interno.
 
-## Pedidos y WhatsApp (fase 3)
+## Pedidos (fase 3; directos al panel)
 
 ```
 Tienda (carrito) → POST /store/:slug/orders → orders.service
-   ├─ negocio activo, abierto (horario America/Bogota), sin pausa, con WhatsApp
+   ├─ negocio activo, abierto (horario America/Bogota), sin pausa
    ├─ ¿clave de idempotencia ya usada? → devuelve ese pedido
    └─ transacción:
         productos del negocio (visibles, no archivados, disponibles) → pricing.service
         → pedido mínimo → cliente por celular + dirección → consecutivo (UPDATE last_order_number)
         → order + order_items (copia de nombre y precio) + order_status_history (PENDING)
-   → notification.service ("nuevo pedido") → whatsapp.service (mensaje + wa.me)
+   → notification.service ("nuevo pedido") → Socket.IO → panel en vivo (con sonido)
+Cliente → GET /store/:slug/orders/:id (X-Order-Key) cada pocos segundos → pantalla de seguimiento
 ```
 
 - **Precios**: `services/pricing.service.ts` usa solo precios de la base; el esquema de entrada ni siquiera acepta valores monetarios. La base vuelve a verificar con `CHECK` que `total = subtotal + domicilio − descuento` y que cada línea cuadre.
 - **Aislamiento**: los productos se buscan con `business_id` del negocio de la tienda y las claves foráneas compuestas impiden guardar un producto ajeno aunque el código fallara.
 - **Consecutivo**: `businesses.last_order_number` se incrementa con un `UPDATE` dentro de la transacción (bloquea la fila); `(business_id, number)` es único.
 - **Idempotencia**: `(business_id, idempotency_key)` es único. Dos peticiones simultáneas con la misma clave: una crea el pedido y la otra recibe ese mismo pedido.
-- **Estados del flujo de WhatsApp** (sección 9): solicitud creada = `PENDING`; el cliente abrió WhatsApp = `whatsapp_opened_at` (no garantiza que haya enviado el mensaje); pedido aceptado = `CONFIRMED` (fase 4).
-- **Capa de WhatsApp** (sección 10): `WhatsAppChannel` con `sendOrderMessage`, `processIncomingMessage`, `verifyWebhook` y `handleDeliveryStatus`. Hoy está activo el modo enlace; el modo API oficial implementará la misma interfaz.
+- **Sin WhatsApp** (cambio pedido por el negocio sobre la sección 9 del documento): el pedido se guarda y llega al instante al panel; el cliente no tiene que enviar ningún mensaje. «Aceptar y preparar» lo pasa de `PENDING` a `PREPARING`; luego «Pedido listo» (`READY`), «Enviar con domiciliario» (`OUT_FOR_DELIVERY`) y «Marcar entregado» (`DELIVERED`).
+- **Seguimiento del cliente**: el navegador guarda el id y la clave secreta del pedido (`idempotency_key`, 128 bits aleatorios) y consulta su estado; el servidor compara la clave en tiempo constante y no devuelve datos personales. El WhatsApp del negocio queda como contacto opcional.
+- **Capa de WhatsApp** (sección 10): `WhatsAppChannel` con `sendOrderMessage`, `processIncomingMessage`, `verifyWebhook` y `handleDeliveryStatus`. Sigue disponible (la API devuelve el mensaje armado si el negocio tiene WhatsApp) para una futura copia por WhatsApp o la API oficial.
 - **Notificaciones**: `notification.service` publica el evento `order.created`; la fase 4 lo enviará por Socket.IO a la sala `business:<id>`.
 - **Horario**: `utils/clock.ts` centraliza la hora actual para que las pruebas puedan fijarla.
 

@@ -110,7 +110,7 @@ function page(plan, business) {
             <ul class="grid gap-1.5 text-[0.9375rem]">
               <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} Hasta ${option.maxProducts} productos con foto</li>
               <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} ${option.maxMembers} personas con acceso al panel</li>
-              <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} Tienda con enlace y código QR, pedidos por WhatsApp</li>
+              <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} Tienda con enlace y código QR, pedidos directos a tu panel</li>
               <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} Pedidos en vivo, clientes y analíticas</li>
             </ul>
             ${!current && changeUrl ? html`<a class="btn btn-ghost mt-1" href="${changeUrl}" target="_blank" rel="noopener">Cambiar a ${option.name}</a>` : ""}

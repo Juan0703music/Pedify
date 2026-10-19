@@ -24,14 +24,15 @@ export const PAYMENT_LABEL = {
 export function nextAction(order) {
   switch (order.status) {
     case "PENDING":
-      return { status: "CONFIRMED", label: "Confirmar pedido", icon: "check" };
+      // Aceptar y mandar a cocina en un solo toque.
+      return { status: "PREPARING", label: "Aceptar y preparar", icon: "chef-hat" };
     case "CONFIRMED":
       return { status: "PREPARING", label: "Empezar a preparar", icon: "chef-hat" };
     case "PREPARING":
-      return { status: "READY", label: "Marcar listo", icon: "circle-check" };
+      return { status: "READY", label: "Pedido listo", icon: "circle-check" };
     case "READY":
       return order.deliveryType === "DELIVERY"
-        ? { status: "OUT_FOR_DELIVERY", label: "Enviar domicilio", icon: "bike" }
+        ? { status: "OUT_FOR_DELIVERY", label: "Enviar con domiciliario", icon: "bike" }
         : { status: "DELIVERED", label: "Entregado al cliente", icon: "shopping-bag" };
     case "OUT_FOR_DELIVERY":
       return { status: "DELIVERED", label: "Marcar entregado", icon: "circle-check" };

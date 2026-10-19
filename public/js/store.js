@@ -56,20 +56,20 @@ function whatsappLink(phone, businessName) {
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
-/** Se puede pedir: abierto, sin pausa manual y con WhatsApp configurado. */
-const canOrder = (store) => store.status.canOrder && Boolean(store.settings.whatsappPhone);
+/** Se puede pedir: abierto según el horario, sin pausa manual y con la tienda en línea habilitada. */
+const canOrder = (store) => store.status.canOrder;
 
 /** Aviso sobre el menú cuando no se reciben pedidos en este momento. */
 function orderingNotice(store) {
   if (canOrder(store) || store.categories.length === 0) return "";
-  const { status, settings } = store;
+  const { status } = store;
   let title = "Por ahora no recibimos pedidos en línea";
   let text = "Puedes ver el menú y escribirle al negocio.";
-  if (settings.whatsappPhone && !status.isOpen) {
+  if (!status.isOpen) {
     const info = statusInfo(status);
     title = "Estamos cerrados";
     text = `Puedes ver el menú; ${info.detail}.`;
-  } else if (settings.whatsappPhone && !status.acceptingOrders) {
+  } else if (!status.acceptingOrders) {
     title = "Pedidos en pausa";
     text = "El negocio no está recibiendo pedidos en este momento. Vuelve a intentarlo más tarde.";
   }
@@ -366,7 +366,7 @@ function page(store) {
         </div>`;
   return html`<div class="mx-auto max-w-[64rem]">
       ${top}
-      <main id="menu" class="mt-10 ${store.settings.whatsappPhone ? "pb-20" : ""}">${menu(store)}</main>
+      <main id="menu" class="mt-10 pb-24">${menu(store)}</main>
     </div>
     ${footer(store)}
     <dialog id="product-detail" class="sheet" aria-labelledby="detail-title"></dialog>`;
@@ -448,8 +448,8 @@ try {
   const store = await loadStore();
   render(root, page(store));
   trackCategories();
-  // Con la tienda cerrada igual se inicia: muestra el aviso de un pedido que quedó sin enviar.
-  const cart = store.settings.whatsappPhone ? initCart({ store, slug, root, orderable: canOrder(store) }) : null;
+  // Con la tienda cerrada igual se inicia: muestra el seguimiento del último pedido.
+  const cart = initCart({ store, slug, root, orderable: canOrder(store) });
   bindDetail(store, cart);
 } catch (error) {
   const failure =
