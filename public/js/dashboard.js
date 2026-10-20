@@ -1,6 +1,6 @@
 // Panel del comerciante: estructura común (navegación, selector de negocio, sesión) y página de Inicio.
 import { api, formatCOP, redirectToLogin } from "./api.js";
-import { connectLive, disableSound, enableSound, onLive, soundReady, soundWanted } from "./notifications.js";
+import { connectLive, disableSound, enableSound, onLive, soundWaitingForTouch, soundWanted } from "./notifications.js";
 import { elapsedLabel, nextAction, statusBadge } from "./order-ui.js";
 import { disablePush, enablePush, PUSH_COPY, sendTestPush } from "./push.js";
 import { handlePushClick, pushView, safePushState } from "./push-ui.js";
@@ -59,6 +59,7 @@ function liveControl({ compact = false } = {}) {
         <button type="button" class="btn btn-sm w-full justify-start border-ink-3 bg-ink-3 text-paper hover:bg-ink" data-sound-toggle>
           <span data-sound-icon>${icon("bell-off")}</span><span data-sound-text>Activar sonido de pedidos</span>
         </button>
+        <p class="hidden px-1 text-xs leading-snug text-mustard" data-sound-hint>Toca cualquier parte de la página para que suene aquí.</p>
         ${pushButton()}
       </div>`;
 }
@@ -373,15 +374,19 @@ function paintLive(root, status) {
     dot.className = dot.className.replace(/bg-(leaf|ink-soft|mustard|tomato)/g, "") + " " + LIVE_DOT[status];
   });
   root.querySelectorAll("[data-live-text]").forEach((text) => (text.textContent = LIVE_TEXT[status]));
-  const on = soundReady();
-  const wanted = soundWanted();
+  // El botón muestra lo que la persona eligió (se guarda en el dispositivo para todas las secciones).
+  const on = soundWanted();
+  const waiting = soundWaitingForTouch();
   root.querySelectorAll("[data-sound-toggle]").forEach((button) => {
     button.setAttribute("aria-pressed", String(on));
-    button.title = on ? "Sonido de pedidos activado" : wanted ? "Toca para reactivar el sonido" : "Activar sonido de pedidos";
+    button.title = !on ? "Activar sonido de pedidos" : waiting ? "Sonido activado: toca la página una vez para que suene aquí" : "Sonido de pedidos activado";
     const iconSlot = button.querySelector("[data-sound-icon]");
     if (iconSlot) iconSlot.innerHTML = String(icon(on ? "bell-ring" : "bell-off", on ? "text-mustard" : ""));
     const text = button.querySelector("[data-sound-text]");
     if (text) text.textContent = on ? "Sonido de pedidos activado" : "Activar sonido de pedidos";
+  });
+  root.querySelectorAll("[data-sound-hint]").forEach((hint) => {
+    hint.classList.toggle("hidden", !waiting);
   });
 }
 
@@ -471,7 +476,8 @@ function startLive(root) {
   root.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-sound-toggle]");
     if (!button) return;
-    if (soundReady()) {
+    // Se decide por lo que eligió la persona, no por si el navegador ya dejó sonar esta página.
+    if (soundWanted()) {
       disableSound();
       toast("Sonido de pedidos desactivado.", "info");
     } else {

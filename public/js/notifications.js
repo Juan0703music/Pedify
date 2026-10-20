@@ -30,20 +30,36 @@ function savePreference(value) {
 }
 
 // ───────────────────────────── Sonido ─────────────────────────────
-// Los navegadores bloquean el audio automático: se activa con un clic del usuario.
+// La preferencia ("on"/"off") se guarda en el dispositivo y vale para todas las secciones del panel.
+// Cada sección es una página nueva y los navegadores no dejan sonar una página hasta que la persona
+// la toca: con el sonido activado, se reactiva solo en el primer toque (sin apagarlo nunca).
 
 export function soundReady() {
   return audio?.state === "running";
 }
 
+/** ¿La persona activó el sonido? (aunque en esta página aún espere su primer toque) */
 export function soundWanted() {
   return preference() === "on";
 }
 
+/** Activado pero esperando un toque en esta página para poder sonar. */
+export function soundWaitingForTouch() {
+  return soundWanted() && !soundReady();
+}
+
+function ensureAudio() {
+  if (!audio) {
+    audio = new AudioContext();
+    // Al reanudarse o suspenderse, el panel actualiza el botón.
+    audio.addEventListener("statechange", () => emit("status", connection));
+  }
+  return audio;
+}
+
 /** Activa el sonido (debe llamarse desde un clic) y pide permiso para avisos del sistema. */
 export async function enableSound() {
-  audio ??= new AudioContext();
-  await audio.resume();
+  await ensureAudio().resume();
   savePreference("on");
   playChime();
   if ("Notification" in window && Notification.permission === "default") {
@@ -79,15 +95,26 @@ export function playChime() {
   });
 }
 
-/** Si el comerciante ya había activado el sonido, se reanuda con su primera interacción en la página. */
+/**
+ * Si el sonido está activado, se reanuda en esta página: de una vez si el navegador lo permite
+ * (p. ej. Chrome, cuando ya se usó el sitio) y, si no, con el primer toque o tecla en cualquier parte.
+ */
 function resumeOnFirstGesture() {
   if (!soundWanted()) return;
+  ensureAudio()
+    .resume()
+    .catch(() => {})
+    .finally(() => emit("status", connection));
   const resume = () => {
-    audio ??= new AudioContext();
-    audio.resume().then(() => emit("status", connection));
+    if (!soundWanted() || soundReady()) return;
+    ensureAudio()
+      .resume()
+      .catch(() => {})
+      .finally(() => emit("status", connection));
   };
-  window.addEventListener("pointerdown", resume, { once: true, capture: true });
-  window.addEventListener("keydown", resume, { once: true, capture: true });
+  for (const type of ["pointerdown", "touchstart", "keydown"]) {
+    window.addEventListener(type, resume, { capture: true, passive: true });
+  }
 }
 
 // ───────────────────────────── Aviso visual ─────────────────────────────
