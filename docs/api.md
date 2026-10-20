@@ -426,7 +426,7 @@ Los eventos solo avisan: el panel vuelve a consultar la API (también al reconec
 
 ## Suscripción — `/subscription`
 
-`GET /subscription` (OWNER) → plan, `priceMonthly`, `priceYearly` (12 meses con el descuento ya aplicado), `annualDiscountPercent`, estado (`TRIAL`, `ACTIVE`, `PAST_DUE`, `EXPIRED`), `endsAt`, `daysLeft`, `graceEndsAt`, `usage { products, members }`, `limits`, catálogo `plans`, `payments` y `support { whatsapp, url }` (si `SUPPORT_WHATSAPP` está configurado).
+`GET /subscription` (OWNER) → plan, `priceMonthly`, `priceYearly` (12 meses con el descuento ya aplicado), `annualDiscountPercent`, estado (`TRIAL`, `ACTIVE`, `PAST_DUE`, `EXPIRED`), `endsAt`, `daysLeft`, `graceEndsAt`, `usage { products, members }`, `limits` (`null` = ilimitado, como en el plan Empresa), catálogo `plans`, `payments` y `support { whatsapp, url }` (si `SUPPORT_WHATSAPP` está configurado).
 
 Límites del plan: crear o restaurar productos y agregar personas al equipo responde 409 `PLAN_LIMIT` al llegar al tope. Con la suscripción vencida (después de 5 días de gracia), `POST /store/:slug/orders` responde 409 `STORE_UNAVAILABLE` y la tienda informa `status.onlineOrdering: false`.
 

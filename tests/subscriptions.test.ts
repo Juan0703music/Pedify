@@ -52,7 +52,7 @@ describe("Suscripción del negocio", () => {
         .send({ name: "Ana Pérez", email: uniqueEmail(), password: PASSWORD, businessName: "Pizzería Napoli", businessPhone: "300 123 4567", acceptPrivacy: true, plan });
     for (const [plan, limits] of [
       ["EMPRENDEDOR", { products: 5, members: 1 }],
-      ["EMPRESA", { products: 1000, members: 20 }],
+      ["EMPRESA", { products: null, members: null }],
     ] as const) {
       const agent = newAgent();
       await register(agent, plan).expect(201);
@@ -81,8 +81,16 @@ describe("Suscripción del negocio", () => {
     await prisma.product.createMany({ data: Array.from({ length: 25 }, (_, index) => ({ businessId, name: `Más ${index}`, price: 1000 })) });
     const negocio = await agent.post("/api/v1/products").send({ name: "Uno más", price: 5000 }).expect(409);
     expect(negocio.body.error.message).toBe("Tu plan Negocio permite hasta 30 productos. Pásate al plan Empresa para agregar más.");
+    // Empresa no tiene límites: ni de productos ni de personas.
     await prisma.subscription.update({ where: { businessId }, data: { plan: "EMPRESA" } });
     await agent.post("/api/v1/products").send({ name: "Uno más", price: 5000 }).expect(201);
+    const extra = await prisma.user.createManyAndReturn({
+      data: Array.from({ length: 8 }, (_, index) => ({ name: `Persona ${index}`, email: uniqueEmail(), passwordHash: "x" })),
+      select: { id: true },
+    });
+    await prisma.businessMembership.createMany({ data: extra.map((user) => ({ businessId, userId: user.id, role: "EMPLOYEE" as const })) });
+    await agent.post("/api/v1/businesses/current/members").send({ name: "Lina", email: uniqueEmail(), password: PASSWORD }).expect(201);
+    expect((await agent.get("/api/v1/subscription").expect(200)).body.data).toMatchObject({ usage: { members: 11 }, limits: { products: null, members: null } });
   });
 
   it("el precio anual es 12 meses con el descuento de cada plan ya aplicado", async () => {
@@ -219,8 +227,8 @@ describe("Portada", () => {
       expect(html).toContain(`${formatCOP(plan.priceMonthly)} <span`);
       expect(html).toContain(`${formatCOP(plan.priceYearly)} <span`);
       expect(html).toContain(`Ahorra ${plan.annualDiscountPercent} %`);
-      expect(html).toContain(`Hasta ${plan.maxProducts} productos`);
-      expect(html).toContain(`${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"} con acceso`);
+      expect(html).toContain(plan.maxProducts === null ? "Productos ilimitados con foto" : `Hasta ${plan.maxProducts} productos`);
+      expect(html).toContain(plan.maxMembers === null ? "Personas ilimitadas con acceso" : `${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"} con acceso`);
       expect(html).toContain(`href="/registro?plan=${plan.code}"`);
     }
     expect(html).not.toContain("14 días");
@@ -235,7 +243,9 @@ describe("Portada", () => {
       expect(html).toContain(`value="${plan.code}"${plan.code === DEFAULT_TRIAL_PLAN ? " checked" : ""} />`);
       expect(html).toContain(`>${plan.name}</span>`);
       expect(html).toContain(`${formatCOP(plan.priceMonthly)} / mes`);
-      expect(html).toContain(`${plan.maxProducts} productos · ${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"}<`);
+      expect(html).toContain(
+        plan.maxProducts === null ? "Productos y personas ilimitados<" : `${plan.maxProducts} productos · ${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"}<`,
+      );
     }
     expect(html).toContain("7 días gratis");
     expect(html).not.toContain("14 días");

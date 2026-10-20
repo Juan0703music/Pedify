@@ -61,8 +61,10 @@ export const subscriptionsService = {
 
   /** Verifica el límite del plan antes de agregar un producto o una persona al equipo. */
   async assertLimit(businessId: string, kind: "products" | "members", db: DbClient = prisma) {
-    const [{ plan }, usage] = await Promise.all([current(businessId, db), subscriptionsRepository.usage(businessId, db)]);
+    const { plan } = await current(businessId, db);
     const limit = kind === "products" ? plan.maxProducts : plan.maxMembers;
+    if (limit === null) return; // plan sin límite
+    const usage = await subscriptionsRepository.usage(businessId, db);
     if (usage[kind] >= limit) {
       const what = kind === "products" ? `${limit} productos` : `${limit} ${limit === 1 ? "persona" : "personas"} en el equipo`;
       const next = UPGRADE[plan.code];

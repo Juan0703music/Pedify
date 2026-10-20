@@ -14,9 +14,10 @@ export interface Plan {
   annualDiscountPercent: number;
   /** Valor del año completo con el descuento ya aplicado: 12 × mensual − descuento. */
   priceYearly: number;
-  maxProducts: number;
-  /** Personas con acceso al panel, incluido el propietario. */
-  maxMembers: number;
+  /** Productos en el menú; null = ilimitados. */
+  maxProducts: number | null;
+  /** Personas con acceso al panel, incluido el propietario; null = ilimitadas. */
+  maxMembers: number | null;
   summary: string;
 }
 
@@ -47,9 +48,9 @@ export const PLANS: Record<PlanCode, Plan> = {
     priceMonthly: 699_900,
     annualDiscountPercent: 5,
     priceYearly: 7_978_860,
-    maxProducts: 1000,
-    maxMembers: 20,
-    summary: "Para el negocio grande o con varias líneas de producto y un equipo amplio.",
+    maxProducts: null,
+    maxMembers: null,
+    summary: "Para el negocio grande: productos y equipo sin límite.",
   },
 };
 

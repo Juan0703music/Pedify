@@ -33,6 +33,13 @@ function supportLink(plan, text) {
 }
 
 function meter(label, used, limit) {
+  // Plan sin límite: solo el uso, sin barra.
+  if (limit === null) {
+    return html`<div class="flex items-baseline justify-between gap-3 text-[0.9375rem]">
+      <span class="font-[650]">${label}</span>
+      <span class="num"><span class="font-[760]">${used}</span> <span class="text-muted">· sin límite</span></span>
+    </div>`;
+  }
   const ratio = Math.min(1, used / limit);
   const near = ratio >= 0.9;
   return html`<div class="grid gap-1.5">
@@ -122,8 +129,8 @@ function page(plan, business) {
             </p>
             <p class="text-[0.9375rem] text-muted">${option.summary}</p>
             <ul class="grid gap-1.5 text-[0.9375rem]">
-              <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} Hasta ${option.maxProducts} productos con foto</li>
-              <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} ${option.maxMembers} ${option.maxMembers === 1 ? "persona" : "personas"} con acceso al panel</li>
+              <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} ${option.maxProducts === null ? "Productos ilimitados con foto" : `Hasta ${option.maxProducts} productos con foto`}</li>
+              <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} ${option.maxMembers === null ? "Personas ilimitadas" : `${option.maxMembers} ${option.maxMembers === 1 ? "persona" : "personas"}`} con acceso al panel</li>
               <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} Tienda con enlace y código QR, pedidos directos a tu panel</li>
               <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} Pedidos en vivo, clientes y analíticas</li>
             </ul>
