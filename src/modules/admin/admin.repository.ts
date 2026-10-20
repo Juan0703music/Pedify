@@ -25,7 +25,7 @@ export interface AdminBusinessRow {
   city: string | null;
   status: "ACTIVE" | "SUSPENDED";
   createdAt: Date;
-  plan: "EMPRENDEDOR" | "NEGOCIO";
+  plan: "EMPRENDEDOR" | "NEGOCIO" | "EMPRESA";
   trialEndsAt: Date;
   paidUntil: Date | null;
   subscriptionStatus: string;
@@ -77,6 +77,7 @@ export const adminRepository = {
         new30: number;
         activeEmprendedor: number;
         activeNegocio: number;
+        activeEmpresa: number;
       }[]
     >`
       SELECT COUNT(*)::int AS total,
@@ -88,7 +89,8 @@ export const adminRepository = {
              COUNT(*) FILTER (WHERE created_at > ${now}::timestamptz - interval '7 days')::int AS new7,
              COUNT(*) FILTER (WHERE created_at > ${now}::timestamptz - interval '30 days')::int AS new30,
              COUNT(*) FILTER (WHERE st = 'ACTIVE' AND plan = 'EMPRENDEDOR')::int AS "activeEmprendedor",
-             COUNT(*) FILTER (WHERE st = 'ACTIVE' AND plan = 'NEGOCIO')::int AS "activeNegocio"
+             COUNT(*) FILTER (WHERE st = 'ACTIVE' AND plan = 'NEGOCIO')::int AS "activeNegocio",
+             COUNT(*) FILTER (WHERE st = 'ACTIVE' AND plan = 'EMPRESA')::int AS "activeEmpresa"
       FROM (
         SELECT b.created_at, s.plan::text AS plan, ${subscriptionStatus(now)} AS st
         FROM businesses b JOIN subscriptions s ON s.business_id = b.id

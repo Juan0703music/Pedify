@@ -40,7 +40,8 @@ describe("Suscripción del negocio", () => {
       limits: { products: 300, members: 6 },
       support: { whatsapp: "573009998877" },
     });
-    expect(plan.body.data.plans.map((item: { code: string }) => item.code)).toEqual(["EMPRENDEDOR", "NEGOCIO"]);
+    expect(plan.body.data.plans.map((item: { code: string }) => item.code)).toEqual(["EMPRENDEDOR", "NEGOCIO", "EMPRESA"]);
+    expect(plan.body.data).toMatchObject({ priceMonthly: 299900, priceYearly: 3310896, annualDiscountPercent: 8 });
     expect(decodeURIComponent(plan.body.data.support.url)).toContain("quiero pagar el plan Negocio");
   });
 
@@ -55,6 +56,26 @@ describe("Suscripción del negocio", () => {
     await agent.post("/api/v1/businesses/current/members").send({ name: "Carlos", email: uniqueEmail(), password: PASSWORD }).expect(201);
     const member = await agent.post("/api/v1/businesses/current/members").send({ name: "Lina", email: uniqueEmail(), password: PASSWORD }).expect(409);
     expect(member.body.error.code).toBe("PLAN_LIMIT");
+
+    // En Negocio, el siguiente paso es Empresa; Empresa es el plan más alto.
+    await prisma.subscription.update({ where: { businessId }, data: { plan: "NEGOCIO" } });
+    await prisma.product.createMany({ data: Array.from({ length: 260 }, (_, index) => ({ businessId, name: `Más ${index}`, price: 1000 })) });
+    const negocio = await agent.post("/api/v1/products").send({ name: "Uno más", price: 5000 }).expect(409);
+    expect(negocio.body.error.message).toBe("Tu plan Negocio permite hasta 300 productos. Pásate al plan Empresa para agregar más.");
+    await prisma.subscription.update({ where: { businessId }, data: { plan: "EMPRESA" } });
+    await agent.post("/api/v1/products").send({ name: "Uno más", price: 5000 }).expect(201);
+  });
+
+  it("el precio anual es 12 meses con el descuento de cada plan ya aplicado", async () => {
+    const { PLANS } = await import("../src/modules/subscriptions/plans.js");
+    expect(Object.values(PLANS).map((plan) => [plan.code, plan.priceMonthly, plan.annualDiscountPercent, plan.priceYearly])).toEqual([
+      ["EMPRENDEDOR", 99900, 10, 1078920],
+      ["NEGOCIO", 299900, 8, 3310896],
+      ["EMPRESA", 699900, 5, 7978860],
+    ]);
+    for (const plan of Object.values(PLANS)) {
+      expect(plan.priceYearly).toBe(Math.round((plan.priceMonthly * 12 * (100 - plan.annualDiscountPercent)) / 100));
+    }
   });
 
   it("vencida la prueba hay días de gracia; después la tienda deja de recibir pedidos", async () => {
@@ -131,10 +152,24 @@ describe("Panel central de Pedify", () => {
       .expect(201);
     expect(res.body.data.subscription).toMatchObject({ plan: "EMPRENDEDOR", status: "ACTIVE" });
     expect(new Date(res.body.data.subscription.paidUntil).toISOString()).toBe(addMonths(trialEndsAt, 1).toISOString());
-    expect(res.body.data.payments).toMatchObject([{ amount: 39900, months: 1, method: "NEQUI", reference: "M123456", plan: "EMPRENDEDOR" }]);
+    expect(res.body.data.payments).toMatchObject([{ amount: 99900, months: 1, method: "NEQUI", reference: "M123456", plan: "EMPRENDEDOR" }]);
 
     const merchantView = await shop.agent.get("/api/v1/subscription").expect(200);
-    expect(merchantView.body.data).toMatchObject({ status: "ACTIVE", plan: "EMPRENDEDOR", payments: [{ amount: 39900 }] });
+    expect(merchantView.body.data).toMatchObject({ status: "ACTIVE", plan: "EMPRENDEDOR", payments: [{ amount: 99900 }] });
+  });
+
+  it("un pago de 12 meses se cobra al precio anual con descuento", async () => {
+    const { agent } = await admin();
+    const shop = await registerMerchant({ businessName: "Hamburguesas del Puerto" });
+    const res = await agent.post(`/api/v1/admin/businesses/${shop.businessId}/payments`).send({ months: 12, method: "TRANSFERENCIA", plan: "EMPRESA" }).expect(201);
+    expect(res.body.data.subscription).toMatchObject({ plan: "EMPRESA", planName: "Empresa", priceMonthly: 699900, priceYearly: 7978860 });
+    expect(res.body.data.payments).toMatchObject([{ amount: 7978860, months: 12, plan: "EMPRESA" }]);
+
+    // Varios meses sin completar el año se cobran mes a mes; el valor recibido se puede escribir a mano.
+    const three = await agent.post(`/api/v1/admin/businesses/${shop.businessId}/payments`).send({ months: 3, method: "NEQUI", plan: "NEGOCIO" }).expect(201);
+    expect(three.body.data.payments[0]).toMatchObject({ amount: 899700, months: 3, plan: "NEGOCIO" });
+    const manual = await agent.post(`/api/v1/admin/businesses/${shop.businessId}/payments`).send({ months: 12, method: "NEQUI", amount: 3000000 }).expect(201);
+    expect(manual.body.data.payments[0]).toMatchObject({ amount: 3000000, months: 12 });
   });
 
   it("suspende y reactiva un negocio; amplía la prueba", async () => {
@@ -163,6 +198,8 @@ describe("Portada", () => {
     for (const plan of Object.values(PLANS)) {
       expect(html).toContain(`>${plan.name}</h3>`);
       expect(html).toContain(`${formatCOP(plan.priceMonthly)} <span`);
+      expect(html).toContain(`${formatCOP(plan.priceYearly)} <span`);
+      expect(html).toContain(`Ahorra ${plan.annualDiscountPercent} %`);
       expect(html).toContain(`Hasta ${plan.maxProducts} productos`);
       expect(html).toContain(`${plan.maxMembers} personas con acceso`);
     }

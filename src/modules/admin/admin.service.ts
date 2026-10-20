@@ -7,7 +7,7 @@ import { notFound } from "../../utils/errors.js";
 import { logger } from "../../utils/logger.js";
 import { buildPage } from "../../utils/pagination.js";
 import { storeUrl } from "../businesses/businesses.controller.js";
-import { planOf, PLANS } from "../subscriptions/plans.js";
+import { planOf, PLANS, priceFor } from "../subscriptions/plans.js";
 import { addMonths, subscriptionState } from "../subscriptions/subscription-state.js";
 import { subscriptionsRepository } from "../subscriptions/subscriptions.repository.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
@@ -28,7 +28,10 @@ export const adminService = {
     await prisma.$queryRaw`SELECT 1`;
     const dbLatencyMs = Math.round(performance.now() - started);
     const [businesses, orders] = await Promise.all([adminRepository.businessMetrics(now), adminRepository.orderMetrics(now)]);
-    const mrr = (businesses?.activeEmprendedor ?? 0) * PLANS.EMPRENDEDOR.priceMonthly + (businesses?.activeNegocio ?? 0) * PLANS.NEGOCIO.priceMonthly;
+    const mrr =
+      (businesses?.activeEmprendedor ?? 0) * PLANS.EMPRENDEDOR.priceMonthly +
+      (businesses?.activeNegocio ?? 0) * PLANS.NEGOCIO.priceMonthly +
+      (businesses?.activeEmpresa ?? 0) * PLANS.EMPRESA.priceMonthly;
     return {
       businesses,
       orders,
@@ -69,7 +72,7 @@ export const adminService = {
     return {
       ...business,
       storeUrl: storeUrl(business.slug),
-      subscription: { ...subscription, planName: plan.name, priceMonthly: plan.priceMonthly, ...state },
+      subscription: { ...subscription, planName: plan.name, priceMonthly: plan.priceMonthly, priceYearly: plan.priceYearly, ...state },
       payments,
     };
   },
@@ -103,7 +106,7 @@ export const adminService = {
         {
           businessId: id,
           plan: plan.code,
-          amount: input.amount ?? plan.priceMonthly * input.months,
+          amount: input.amount ?? priceFor(plan, input.months),
           months: input.months,
           method: input.method,
           reference: input.reference || null,

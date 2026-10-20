@@ -29,7 +29,7 @@ export const PAYMENT_METHODS = ["NEQUI", "DAVIPLATA", "TRANSFERENCIA", "EFECTIVO
 export const recordPaymentSchema = z.object({
   plan: z.enum(PlanCode).optional(),
   months: z.number({ error: "Indica cuántos meses paga." }).int().min(1).max(12),
-  /** Valor recibido en pesos; por defecto, precio del plan × meses. */
+  /** Valor recibido en pesos; por defecto, el precio del plan × meses (12 meses: el precio anual con descuento). */
   amount: z.number().int().min(0).max(10_000_000).optional(),
   method: z.enum(PAYMENT_METHODS, { error: "Elige el medio de pago." }),
   reference: z.string().trim().max(80).optional(),

@@ -50,6 +50,10 @@ function meter(label, used, limit) {
 function page(plan, business) {
   const status = STATUS[plan.status];
   const payUrl = supportLink(plan, `Hola, quiero pagar el plan ${plan.planName} de Pedify para mi negocio ${business.name} (${business.storeUrl}).`);
+  const yearUrl = supportLink(
+    plan,
+    `Hola, quiero pagar el año completo del plan ${plan.planName} de Pedify (${formatCOP(plan.priceYearly)}, con ${plan.annualDiscountPercent} % de descuento) para mi negocio ${business.name} (${business.storeUrl}).`,
+  );
   return html`<div class="grid grid-cols-[minmax(0,1fr)] gap-6 lg:gap-8">
     <header>
       <h1 class="text-[1.875rem] leading-tight font-[780] sm:text-[2.375rem]">Mi plan</h1>
@@ -64,7 +68,10 @@ function page(plan, business) {
             <span class="badge ${status.badge}">${status.label}</span>
           </div>
           <p class="max-w-[54ch] text-[0.9375rem] text-ink-soft">${statusText(plan)}</p>
-          <p class="num text-[1.125rem] font-[760] text-mustard">${formatCOP(plan.priceMonthly)} <span class="text-sm font-[560] text-ink-soft">al mes</span></p>
+          <p class="num text-[1.125rem] font-[760] text-mustard">
+            ${formatCOP(plan.priceMonthly)} <span class="text-sm font-[560] text-ink-soft">al mes</span>
+            <span class="text-sm font-[560] text-ink-soft">· o ${formatCOP(plan.priceYearly)} al año (${plan.annualDiscountPercent} % de descuento)</span>
+          </p>
         </div>
         <div class="grid gap-5 p-5 sm:p-6">
           ${meter("Productos en el menú", plan.usage.products, plan.limits.products)}
@@ -72,6 +79,9 @@ function page(plan, business) {
           ${payUrl
             ? html`<a class="btn btn-whatsapp w-full" href="${payUrl}" target="_blank" rel="noopener">
                 ${icon("message-circle")} ${plan.status === "TRIAL" ? "Elegir mi plan por WhatsApp" : "Pagar o renovar por WhatsApp"}
+              </a>
+              <a class="btn btn-ghost w-full" href="${yearUrl}" target="_blank" rel="noopener">
+                Pagar el año completo · ahorra ${plan.annualDiscountPercent} %
               </a>`
             : html`<p class="rounded-[10px] bg-ground px-3.5 py-3 text-sm text-muted">Para pagar o cambiar de plan, comunícate con el equipo de Pedify.</p>`}
         </div>
@@ -81,7 +91,7 @@ function page(plan, business) {
         <h2 id="how-title" class="text-lg font-[740]">Cómo pagar</h2>
         <ol class="mt-4 grid gap-4">
           ${[
-            ["Escríbenos por WhatsApp", "Te contamos el valor y los datos de pago del plan que elijas."],
+            ["Escríbenos por WhatsApp", "Te contamos los datos de pago del plan que elijas: mes a mes o el año completo con descuento."],
             ["Paga por Nequi, Daviplata o transferencia", "Envíanos el comprobante por el mismo chat."],
             ["Activamos tu plan", "Lo verás aquí con la fecha hasta la que está pagado. Los días de prueba que te queden no se pierden."],
           ].map(
@@ -96,7 +106,7 @@ function page(plan, business) {
 
     <section aria-labelledby="plans-title" class="grid gap-4">
       <h2 id="plans-title" class="text-lg font-[740]">Planes</h2>
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         ${plan.plans.map((option) => {
           const current = option.code === plan.plan;
           const changeUrl = supportLink(plan, `Hola, quiero cambiarme al plan ${option.name} de Pedify para mi negocio ${business.name} (${business.storeUrl}).`);
@@ -106,6 +116,10 @@ function page(plan, business) {
               ${current ? html`<span class="badge bg-ink text-mustard">Tu plan</span>` : ""}
             </div>
             <p class="text-[1.75rem] leading-none font-[820] [font-stretch:80%]">${formatCOP(option.priceMonthly)} <span class="text-base font-[560] text-muted">/ mes</span></p>
+            <p class="flex flex-wrap items-center gap-2 text-[0.9375rem]">
+              <span><span class="num font-[720]">${formatCOP(option.priceYearly)}</span> al año</span>
+              <span class="badge bg-leaf-soft text-leaf">Ahorra ${option.annualDiscountPercent} %</span>
+            </p>
             <p class="text-[0.9375rem] text-muted">${option.summary}</p>
             <ul class="grid gap-1.5 text-[0.9375rem]">
               <li class="flex gap-2">${icon("check", "mt-0.5 h-4 w-4 text-leaf")} Hasta ${option.maxProducts} productos con foto</li>

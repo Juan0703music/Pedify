@@ -12,6 +12,7 @@ const STATUS = {
 };
 const FILTERS = [["", "Todos"], ["TRIAL", "Prueba"], ["ACTIVE", "Activos"], ["PAST_DUE", "En gracia"], ["EXPIRED", "Vencidos"], ["SUSPENDED", "Suspendidos"]];
 const METHODS = [["NEQUI", "Nequi"], ["DAVIPLATA", "Daviplata"], ["TRANSFERENCIA", "Transferencia"], ["EFECTIVO", "Efectivo"], ["OTRO", "Otro"]];
+const PLAN_NAME = { EMPRENDEDOR: "Emprendedor", NEGOCIO: "Negocio", EMPRESA: "Empresa" };
 
 const date = (value) => (value ? new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Bogota" }).format(new Date(value)).replace(".", "") : "—");
 
@@ -72,7 +73,7 @@ function businessRow(business) {
       <span class="block">${business.ownerName ?? "—"}</span>
       <span class="block text-sm text-muted">${business.ownerEmail ?? ""}</span>
     </td>
-    <td class="px-3 py-3">${business.plan === "NEGOCIO" ? "Negocio" : "Emprendedor"}</td>
+    <td class="px-3 py-3">${PLAN_NAME[business.plan] ?? business.plan}</td>
     <td class="px-3 py-3">
       ${statusBadge(business.subscriptionStatus)}
       <span class="mt-1 block text-xs text-muted">${business.paidUntil && new Date(business.paidUntil) > new Date(business.trialEndsAt) ? `Pagado: ${date(business.paidUntil)}` : `Prueba: ${date(business.trialEndsAt)}`}</span>
@@ -133,7 +134,7 @@ function detailView(business) {
         </section>
 
         <section class="grid gap-2 rounded-[12px] bg-ground p-4">
-          <p class="font-[740]">Plan ${sub.planName} · ${formatCOP(sub.priceMonthly)}/mes</p>
+          <p class="font-[740]">Plan ${sub.planName} · ${formatCOP(sub.priceMonthly)}/mes · ${formatCOP(sub.priceYearly)}/año</p>
           <p class="text-sm">Prueba hasta el ${date(sub.trialEndsAt)} · ${sub.paidUntil ? `pagado hasta el ${date(sub.paidUntil)}` : "sin pagos"}</p>
           ${sub.status === "PAST_DUE" ? html`<p class="text-sm text-mustard-deep">Vencido: recibe pedidos hasta el ${date(sub.graceEndsAt)}.</p>` : ""}
           ${sub.status === "EXPIRED" ? html`<p class="text-sm text-tomato">Vencido: la tienda no recibe pedidos en línea.</p>` : ""}
@@ -146,12 +147,13 @@ function detailView(business) {
             <div class="field">
               <label class="label" for="p-plan">Plan</label>
               <select class="input" id="p-plan" name="plan">
-                ${state.metrics.plans.map((plan) => html`<option value="${plan.code}" ${plan.code === sub.plan ? "selected" : ""}>${plan.name} · ${formatCOP(plan.priceMonthly)}</option>`)}
+                ${state.metrics.plans.map((plan) => html`<option value="${plan.code}" ${plan.code === sub.plan ? "selected" : ""}>${plan.name} · ${formatCOP(plan.priceMonthly)}/mes</option>`)}
               </select>
             </div>
             <div class="field">
               <label class="label" for="p-months">Meses</label>
               <input class="input num" id="p-months" name="months" type="number" min="1" max="12" value="1" required />
+              <p class="hint">12 meses = pago anual, con su descuento.</p>
             </div>
             <div class="field">
               <label class="label" for="p-amount">Valor recibido</label>

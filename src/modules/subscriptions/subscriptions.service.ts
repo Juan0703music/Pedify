@@ -3,7 +3,7 @@ import { env } from "../../config/env.js";
 import type { TenantContext } from "../../types/common.js";
 import { clock } from "../../utils/clock.js";
 import { conflict } from "../../utils/errors.js";
-import { planOf, PLANS, TRIAL_DAYS } from "./plans.js";
+import { planOf, PLANS, TRIAL_DAYS, UPGRADE } from "./plans.js";
 import { subscriptionState } from "./subscription-state.js";
 import { subscriptionsRepository } from "./subscriptions.repository.js";
 
@@ -44,6 +44,8 @@ export const subscriptionsService = {
       plan: subscription.plan,
       planName: plan.name,
       priceMonthly: plan.priceMonthly,
+      priceYearly: plan.priceYearly,
+      annualDiscountPercent: plan.annualDiscountPercent,
       trialEndsAt: subscription.trialEndsAt,
       paidUntil: subscription.paidUntil,
       ...state,
@@ -63,7 +65,8 @@ export const subscriptionsService = {
     const limit = kind === "products" ? plan.maxProducts : plan.maxMembers;
     if (usage[kind] >= limit) {
       const what = kind === "products" ? `${limit} productos` : `${limit} personas en el equipo`;
-      const upgrade = plan.code === "EMPRENDEDOR" ? " Pásate al plan Negocio para agregar más." : "";
+      const next = UPGRADE[plan.code];
+      const upgrade = next ? ` Pásate al plan ${planOf(next).name} para agregar más.` : "";
       throw conflict(`Tu plan ${plan.name} permite hasta ${what}.${upgrade}`, "PLAN_LIMIT");
     }
   },

@@ -426,7 +426,7 @@ Los eventos solo avisan: el panel vuelve a consultar la API (también al reconec
 
 ## Suscripción — `/subscription`
 
-`GET /subscription` (OWNER) → plan, estado (`TRIAL`, `ACTIVE`, `PAST_DUE`, `EXPIRED`), `endsAt`, `daysLeft`, `graceEndsAt`, `usage { products, members }`, `limits`, catálogo `plans`, `payments` y `support { whatsapp, url }` (si `SUPPORT_WHATSAPP` está configurado).
+`GET /subscription` (OWNER) → plan, `priceMonthly`, `priceYearly` (12 meses con el descuento ya aplicado), `annualDiscountPercent`, estado (`TRIAL`, `ACTIVE`, `PAST_DUE`, `EXPIRED`), `endsAt`, `daysLeft`, `graceEndsAt`, `usage { products, members }`, `limits`, catálogo `plans`, `payments` y `support { whatsapp, url }` (si `SUPPORT_WHATSAPP` está configurado).
 
 Límites del plan: crear o restaurar productos y agregar personas al equipo responde 409 `PLAN_LIMIT` al llegar al tope. Con la suscripción vencida (después de 5 días de gracia), `POST /store/:slug/orders` responde 409 `STORE_UNAVAILABLE` y la tienda informa `status.onlineOrdering: false`.
 
@@ -440,7 +440,7 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 | GET | `/admin/businesses?search&status&page&pageSize` | `status`: TRIAL, ACTIVE, PAST_DUE, EXPIRED, SUSPENDED | Negocios con propietario, plan, estado, productos, pedidos de 30 días |
 | GET | `/admin/businesses/:id` | — | Detalle, equipo, conteos, suscripción y pagos |
 | PATCH | `/admin/businesses/:id` | `status?` (ACTIVE/SUSPENDED), `plan?`, `extendTrialDays?` (1–90) | Detalle |
-| POST | `/admin/businesses/:id/payments` | `months` (1–12), `method` (NEQUI, DAVIPLATA, TRANSFERENCIA, EFECTIVO, OTRO), `plan?`, `amount?` (por defecto precio × meses), `reference?`, `note?` | 201 detalle con el periodo extendido |
+| POST | `/admin/businesses/:id/payments` | `months` (1–12), `method` (NEQUI, DAVIPLATA, TRANSFERENCIA, EFECTIVO, OTRO), `plan?`, `amount?` (por defecto precio mensual × meses; con 12 meses, el precio anual con descuento), `reference?`, `note?` | 201 detalle con el periodo extendido |
 
 ## Clientes: supresión de datos
 

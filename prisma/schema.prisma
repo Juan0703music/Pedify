@@ -45,6 +45,7 @@ enum DeliveryType {
 enum PlanCode {
   EMPRENDEDOR
   NEGOCIO
+  EMPRESA
 }
 
 // Qué pedidos cuentan como venta en las analíticas (sección 11 del documento).
