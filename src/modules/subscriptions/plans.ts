@@ -27,9 +27,9 @@ export const PLANS: Record<PlanCode, Plan> = {
     priceMonthly: 99_900,
     annualDiscountPercent: 10,
     priceYearly: 1_078_920,
-    maxProducts: 40,
-    maxMembers: 2,
-    summary: "Para empezar a vender por tu enlace: menú corto y una persona que te ayude.",
+    maxProducts: 5,
+    maxMembers: 1,
+    summary: "Para empezar a vender por tu enlace: un menú corto que manejas tú mismo.",
   },
   NEGOCIO: {
     code: "NEGOCIO",

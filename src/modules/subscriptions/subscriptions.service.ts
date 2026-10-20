@@ -64,7 +64,7 @@ export const subscriptionsService = {
     const [{ plan }, usage] = await Promise.all([current(businessId, db), subscriptionsRepository.usage(businessId, db)]);
     const limit = kind === "products" ? plan.maxProducts : plan.maxMembers;
     if (usage[kind] >= limit) {
-      const what = kind === "products" ? `${limit} productos` : `${limit} personas en el equipo`;
+      const what = kind === "products" ? `${limit} productos` : `${limit} ${limit === 1 ? "persona" : "personas"} en el equipo`;
       const next = UPGRADE[plan.code];
       const upgrade = next ? ` Pásate al plan ${planOf(next).name} para agregar más.` : "";
       throw conflict(`Tu plan ${plan.name} permite hasta ${what}.${upgrade}`, "PLAN_LIMIT");

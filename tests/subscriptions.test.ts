@@ -51,7 +51,7 @@ describe("Suscripción del negocio", () => {
         .post("/api/v1/auth/register")
         .send({ name: "Ana Pérez", email: uniqueEmail(), password: PASSWORD, businessName: "Pizzería Napoli", businessPhone: "300 123 4567", acceptPrivacy: true, plan });
     for (const [plan, limits] of [
-      ["EMPRENDEDOR", { products: 40, members: 2 }],
+      ["EMPRENDEDOR", { products: 5, members: 1 }],
       ["EMPRESA", { products: 1000, members: 20 }],
     ] as const) {
       const agent = newAgent();
@@ -65,18 +65,20 @@ describe("Suscripción del negocio", () => {
   it("aplica los límites del plan a productos y equipo", async () => {
     const { agent, businessId } = await registerMerchant();
     await prisma.subscription.update({ where: { businessId }, data: { plan: "EMPRENDEDOR" } });
-    await prisma.product.createMany({ data: Array.from({ length: 40 }, (_, index) => ({ businessId, name: `Producto ${index}`, price: 1000 })) });
+    await prisma.product.createMany({ data: Array.from({ length: 4 }, (_, index) => ({ businessId, name: `Producto ${index}`, price: 1000 })) });
+    await agent.post("/api/v1/products").send({ name: "El quinto", price: 5000 }).expect(201);
 
     const product = await agent.post("/api/v1/products").send({ name: "Uno más", price: 5000 }).expect(409);
-    expect(product.body.error).toMatchObject({ code: "PLAN_LIMIT", message: "Tu plan Emprendedor permite hasta 40 productos. Pásate al plan Negocio para agregar más." });
+    expect(product.body.error).toMatchObject({ code: "PLAN_LIMIT", message: "Tu plan Emprendedor permite hasta 5 productos. Pásate al plan Negocio para agregar más." });
 
-    await agent.post("/api/v1/businesses/current/members").send({ name: "Carlos", email: uniqueEmail(), password: PASSWORD }).expect(201);
-    const member = await agent.post("/api/v1/businesses/current/members").send({ name: "Lina", email: uniqueEmail(), password: PASSWORD }).expect(409);
-    expect(member.body.error.code).toBe("PLAN_LIMIT");
+    // Emprendedor es solo para el dueño: no admite empleados.
+    const member = await agent.post("/api/v1/businesses/current/members").send({ name: "Carlos", email: uniqueEmail(), password: PASSWORD }).expect(409);
+    expect(member.body.error).toMatchObject({ code: "PLAN_LIMIT", message: "Tu plan Emprendedor permite hasta 1 persona en el equipo. Pásate al plan Negocio para agregar más." });
 
     // En Negocio, el siguiente paso es Empresa; Empresa es el plan más alto.
     await prisma.subscription.update({ where: { businessId }, data: { plan: "NEGOCIO" } });
-    await prisma.product.createMany({ data: Array.from({ length: 260 }, (_, index) => ({ businessId, name: `Más ${index}`, price: 1000 })) });
+    await agent.post("/api/v1/businesses/current/members").send({ name: "Carlos", email: uniqueEmail(), password: PASSWORD }).expect(201);
+    await prisma.product.createMany({ data: Array.from({ length: 295 }, (_, index) => ({ businessId, name: `Más ${index}`, price: 1000 })) });
     const negocio = await agent.post("/api/v1/products").send({ name: "Uno más", price: 5000 }).expect(409);
     expect(negocio.body.error.message).toBe("Tu plan Negocio permite hasta 300 productos. Pásate al plan Empresa para agregar más.");
     await prisma.subscription.update({ where: { businessId }, data: { plan: "EMPRESA" } });
@@ -218,7 +220,7 @@ describe("Portada", () => {
       expect(html).toContain(`${formatCOP(plan.priceYearly)} <span`);
       expect(html).toContain(`Ahorra ${plan.annualDiscountPercent} %`);
       expect(html).toContain(`Hasta ${plan.maxProducts} productos`);
-      expect(html).toContain(`${plan.maxMembers} personas con acceso`);
+      expect(html).toContain(`${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"} con acceso`);
       expect(html).toContain(`href="/registro?plan=${plan.code}"`);
     }
     expect(html).not.toContain("14 días");
@@ -233,7 +235,7 @@ describe("Portada", () => {
       expect(html).toContain(`value="${plan.code}"${plan.code === DEFAULT_TRIAL_PLAN ? " checked" : ""} />`);
       expect(html).toContain(`>${plan.name}</span>`);
       expect(html).toContain(`${formatCOP(plan.priceMonthly)} / mes`);
-      expect(html).toContain(`${plan.maxProducts} productos · ${plan.maxMembers} personas`);
+      expect(html).toContain(`${plan.maxProducts} productos · ${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"}<`);
     }
     expect(html).toContain("7 días gratis");
     expect(html).not.toContain("14 días");
