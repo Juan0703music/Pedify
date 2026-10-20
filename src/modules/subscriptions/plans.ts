@@ -35,9 +35,9 @@ export const PLANS: Record<PlanCode, Plan> = {
   NEGOCIO: {
     code: "NEGOCIO",
     name: "Negocio",
-    priceMonthly: 299_900,
+    priceMonthly: 399_900,
     annualDiscountPercent: 8,
-    priceYearly: 3_310_896,
+    priceYearly: 4_414_896,
     maxProducts: 30,
     maxMembers: 6,
     summary: "Para el negocio con carta completa y equipo en el mostrador.",
@@ -45,9 +45,9 @@ export const PLANS: Record<PlanCode, Plan> = {
   EMPRESA: {
     code: "EMPRESA",
     name: "Empresa",
-    priceMonthly: 699_900,
+    priceMonthly: 799_900,
     annualDiscountPercent: 5,
-    priceYearly: 7_978_860,
+    priceYearly: 9_118_860,
     maxProducts: null,
     maxMembers: null,
     summary: "Para el negocio grande: productos y equipo sin límite.",

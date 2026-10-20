@@ -41,7 +41,7 @@ describe("Suscripción del negocio", () => {
       support: { whatsapp: "573009998877" },
     });
     expect(plan.body.data.plans.map((item: { code: string }) => item.code)).toEqual(["EMPRENDEDOR", "NEGOCIO", "EMPRESA"]);
-    expect(plan.body.data).toMatchObject({ priceMonthly: 299900, priceYearly: 3310896, annualDiscountPercent: 8 });
+    expect(plan.body.data).toMatchObject({ priceMonthly: 399900, priceYearly: 4414896, annualDiscountPercent: 8 });
     expect(decodeURIComponent(plan.body.data.support.url)).toContain("quiero pagar el plan Negocio");
   });
 
@@ -97,8 +97,8 @@ describe("Suscripción del negocio", () => {
     const { PLANS } = await import("../src/modules/subscriptions/plans.js");
     expect(Object.values(PLANS).map((plan) => [plan.code, plan.priceMonthly, plan.annualDiscountPercent, plan.priceYearly])).toEqual([
       ["EMPRENDEDOR", 99900, 10, 1078920],
-      ["NEGOCIO", 299900, 8, 3310896],
-      ["EMPRESA", 699900, 5, 7978860],
+      ["NEGOCIO", 399900, 8, 4414896],
+      ["EMPRESA", 799900, 5, 9118860],
     ]);
     for (const plan of Object.values(PLANS)) {
       expect(plan.priceYearly).toBe(Math.round((plan.priceMonthly * 12 * (100 - plan.annualDiscountPercent)) / 100));
@@ -189,12 +189,12 @@ describe("Panel central de Pedify", () => {
     const { agent } = await admin();
     const shop = await registerMerchant({ businessName: "Hamburguesas del Puerto" });
     const res = await agent.post(`/api/v1/admin/businesses/${shop.businessId}/payments`).send({ months: 12, method: "TRANSFERENCIA", plan: "EMPRESA" }).expect(201);
-    expect(res.body.data.subscription).toMatchObject({ plan: "EMPRESA", planName: "Empresa", priceMonthly: 699900, priceYearly: 7978860 });
-    expect(res.body.data.payments).toMatchObject([{ amount: 7978860, months: 12, plan: "EMPRESA" }]);
+    expect(res.body.data.subscription).toMatchObject({ plan: "EMPRESA", planName: "Empresa", priceMonthly: 799900, priceYearly: 9118860 });
+    expect(res.body.data.payments).toMatchObject([{ amount: 9118860, months: 12, plan: "EMPRESA" }]);
 
     // Varios meses sin completar el año se cobran mes a mes; el valor recibido se puede escribir a mano.
     const three = await agent.post(`/api/v1/admin/businesses/${shop.businessId}/payments`).send({ months: 3, method: "NEQUI", plan: "NEGOCIO" }).expect(201);
-    expect(three.body.data.payments[0]).toMatchObject({ amount: 899700, months: 3, plan: "NEGOCIO" });
+    expect(three.body.data.payments[0]).toMatchObject({ amount: 1199700, months: 3, plan: "NEGOCIO" });
     const manual = await agent.post(`/api/v1/admin/businesses/${shop.businessId}/payments`).send({ months: 12, method: "NEQUI", amount: 3000000 }).expect(201);
     expect(manual.body.data.payments[0]).toMatchObject({ amount: 3000000, months: 12 });
   });
