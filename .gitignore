@@ -25,3 +25,6 @@ backups/
 
 # Historial de despliegues en el servidor (scripts/deploy.sh)
 .deploy/
+
+# Scripts temporales de prueba
+scripts/.tmp-*
