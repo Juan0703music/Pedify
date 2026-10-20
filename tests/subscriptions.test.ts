@@ -37,7 +37,7 @@ describe("Suscripción del negocio", () => {
     expect(plan.body.data).toMatchObject({
       status: "TRIAL",
       usage: { products: 0, members: 1 },
-      limits: { products: 300, members: 6 },
+      limits: { products: 30, members: 6 },
       support: { whatsapp: "573009998877" },
     });
     expect(plan.body.data.plans.map((item: { code: string }) => item.code)).toEqual(["EMPRENDEDOR", "NEGOCIO", "EMPRESA"]);
@@ -78,9 +78,9 @@ describe("Suscripción del negocio", () => {
     // En Negocio, el siguiente paso es Empresa; Empresa es el plan más alto.
     await prisma.subscription.update({ where: { businessId }, data: { plan: "NEGOCIO" } });
     await agent.post("/api/v1/businesses/current/members").send({ name: "Carlos", email: uniqueEmail(), password: PASSWORD }).expect(201);
-    await prisma.product.createMany({ data: Array.from({ length: 295 }, (_, index) => ({ businessId, name: `Más ${index}`, price: 1000 })) });
+    await prisma.product.createMany({ data: Array.from({ length: 25 }, (_, index) => ({ businessId, name: `Más ${index}`, price: 1000 })) });
     const negocio = await agent.post("/api/v1/products").send({ name: "Uno más", price: 5000 }).expect(409);
-    expect(negocio.body.error.message).toBe("Tu plan Negocio permite hasta 300 productos. Pásate al plan Empresa para agregar más.");
+    expect(negocio.body.error.message).toBe("Tu plan Negocio permite hasta 30 productos. Pásate al plan Empresa para agregar más.");
     await prisma.subscription.update({ where: { businessId }, data: { plan: "EMPRESA" } });
     await agent.post("/api/v1/products").send({ name: "Uno más", price: 5000 }).expect(201);
   });
