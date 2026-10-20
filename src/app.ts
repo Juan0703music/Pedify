@@ -20,12 +20,14 @@ import { ordersRoutes, storeOrderRoutes } from "./modules/orders/orders.routes.j
 import { categoriesRoutes, productsRoutes } from "./modules/products/products.routes.js";
 import { storeController } from "./modules/products/store.controller.js";
 import { storeRoutes } from "./modules/products/store.routes.js";
+import { courierRoutes } from "./modules/courier/courier.routes.js";
 import { pushRoutes } from "./modules/push/push.routes.js";
 import { pushService } from "./modules/push/push.service.js";
 import { subscriptionRoutes } from "./modules/subscriptions/subscriptions.routes.js";
 import { metrics } from "./services/metrics.service.js";
 import { imageOrigin } from "./services/storage.service.js";
 import { publicDir, sendPage } from "./utils/pages.js";
+import { mapConfig, mapTileOrigin } from "./config/map.js";
 
 // Mensajes de validación de Zod en español por defecto.
 z.config(z.locales.es());
@@ -38,6 +40,8 @@ const PUBLIC_PAGES: Record<string, string> = {
   "/recuperar": "pages/auth/forgot.html",
   "/restablecer": "pages/auth/reset.html",
   "/privacidad": "pages/legal/privacy.html",
+  // Página del domiciliario (la clave del pedido va después de "#").
+  "/domicilio": "pages/courier/index.html",
 };
 
 /** Páginas del panel: requieren cookie de sesión (la API valida la sesión en cada llamada). */
@@ -98,6 +102,11 @@ function apiRouter(): Router {
     }
   });
 
+  // Teselas y atribución del mapa (seguimiento de domicilios). Es pública y casi nunca cambia.
+  api.get("/map-config", (_req, res) => {
+    res.set("Cache-Control", "public, max-age=3600").json({ data: mapConfig });
+  });
+
   api.use("/auth", authRoutes);
   api.use("/businesses", businessesRoutes);
   api.use("/products", productsRoutes);
@@ -107,6 +116,7 @@ function apiRouter(): Router {
   api.use("/analytics", analyticsRoutes);
   api.use("/subscription", subscriptionRoutes);
   api.use("/push", pushRoutes);
+  api.use("/courier", courierRoutes);
   api.use("/admin", adminRoutes);
   api.use("/store/:slug/orders", storeOrderRoutes);
   api.use("/store", storeRoutes);
@@ -126,7 +136,7 @@ export function createApp() {
     helmet({
       contentSecurityPolicy: {
         directives: {
-          "img-src": ["'self'", "data:", "blob:", ...(imageOrigin ? [imageOrigin] : [])],
+          "img-src": ["'self'", "data:", "blob:", mapTileOrigin, ...(imageOrigin ? [imageOrigin] : [])],
           "connect-src": ["'self'"],
           // En local (http) no se fuerza HTTPS.
           "upgrade-insecure-requests": env.COOKIE_SECURE ? [] : null,

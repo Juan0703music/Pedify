@@ -102,6 +102,7 @@ Completa `.env` (cada variable está explicada en el archivo):
 | `SMTP_URL` | p. ej. `smtp://usuario:clave@smtp-relay.brevo.com:587` | el mismo proveedor |
 | `SUPPORT_WHATSAPP`, `METRICS_TOKEN` | `57XXXXXXXXXX`, `openssl rand -hex 24` | igual |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | `npm run push:keys` | otras distintas |
+| `MAP_TILE_URL`, `MAP_TILE_ATTRIBUTION` | vacías (OpenStreetMap) o un proveedor de mapas con llave | igual |
 | `COMPOSE_PROFILES=offsite` y `OFFSITE_*` | bucket `pedifyai-copias` | bucket `pedifyai-copias-pruebas` |
 | `DEMO_PASSWORD` | (vacío) | una clave para la cuenta demo |
 
@@ -145,6 +146,12 @@ Con las llaves VAPID, cada persona del equipo activa los avisos en su celular o 
 - Android, Windows, Mac y Linux: Chrome, Edge, Firefox o Safari actualizados.
 - iPhone y iPad (iOS 16.4 o más): primero hay que **agregar Pedify a la pantalla de inicio** (Compartir → «Agregar a pantalla de inicio») y activar los avisos desde ese ícono. El panel lo explica.
 - Al cerrar sesión en un dispositivo, ese dispositivo deja de recibir avisos; «Cerrar sesión en todos» y el cambio de contraseña los quitan todos.
+
+### Mapa del domicilio
+
+- La ubicación del cliente y del domiciliario **solo funciona con HTTPS** (en el PC, en `http://localhost`); por eso hay que probarlo con el dominio publicado.
+- El domiciliario debe dejar la página abierta: si apaga la pantalla o cambia de aplicación, el celular deja de enviar la ubicación hasta que vuelva.
+- OpenStreetMap permite un uso moderado de sus mapas. Con muchos pedidos al día, crea una cuenta gratuita en un proveedor (MapTiler, Stadia Maps…) y pon su dirección de teselas con tu llave en `MAP_TILE_URL` y su atribución en `MAP_TILE_ATTRIBUTION`.
 
 ## 7. Entorno de pruebas
 

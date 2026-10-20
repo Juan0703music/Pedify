@@ -61,6 +61,19 @@ const EnvSchema = z
     // Contacto del responsable para los servicios de push: mailto:… o https://… (por defecto, el de MAIL_FROM).
     VAPID_SUBJECT: optional(z.string().regex(/^(mailto:|https:\/\/)/, "VAPID_SUBJECT debe empezar por mailto: o https://.")),
 
+    // Mapa del seguimiento de domicilios: teselas raster ({z}/{x}/{y}) y su atribución.
+    MAP_TILE_URL: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z
+        .string()
+        .regex(/^https:\/\/[^\s]+\{z\}[^\s]*\{x\}[^\s]*\{y\}/, "MAP_TILE_URL debe ser https:// con {z}, {x} y {y}.")
+        .default("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
+    ),
+    MAP_TILE_ATTRIBUTION: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().default('&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'),
+    ),
+
     // Métricas en formato Prometheus en /metrics (desactivadas si no hay token).
     METRICS_TOKEN: optional(z.string().min(16, "METRICS_TOKEN debe tener al menos 16 caracteres.")),
   })

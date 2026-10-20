@@ -54,7 +54,7 @@ export const customersRepository = {
       if (!customer) return false;
       await tx.order.updateMany({
         where: { customerId: id, businessId },
-        data: { customerName: "Cliente eliminado", customerPhone: "eliminado", addressReferences: null, notes: null },
+        data: { customerName: "Cliente eliminado", customerPhone: "eliminado", addressReferences: null, notes: null, deliveryLat: null, deliveryLng: null },
       });
       // Un domicilio debe conservar una dirección (restricción de la base): se reemplaza el texto.
       await tx.order.updateMany({ where: { customerId: id, businessId, deliveryType: "DELIVERY" }, data: { deliveryAddress: "Dirección eliminada" } });

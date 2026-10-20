@@ -17,6 +17,8 @@ import {
   timeLabel,
 } from "./order-ui.js";
 import { html, icon, render, setBusy, toast } from "./ui.js";
+import { openCourierLink } from "./courier-link.js";
+import { deliveryMap, distanceLabel, distanceMeters } from "./map.js";
 
 const COLUMNS = [
   { id: "new", title: "Nuevos", statuses: ["PENDING"], empty: "No hay pedidos por aceptar." },
@@ -230,8 +232,63 @@ function page() {
 // ───────────────────────────── Detalle ─────────────────────────────
 
 function mapsLink(order) {
+  // Con el punto que marcó el cliente, el mapa abre exacto; si no, se busca la dirección escrita.
+  if (order.deliveryLat !== null && order.deliveryLat !== undefined) {
+    return `https://www.google.com/maps/search/?api=1&query=${order.deliveryLat},${order.deliveryLng}`;
+  }
   const query = [order.deliveryAddress, state.business.city].filter(Boolean).join(", ");
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+const COURIER_STATUSES = new Set(["CONFIRMED", "PREPARING", "READY", "OUT_FOR_DELIVERY"]);
+
+/** Hace cuánto envió su posición el domiciliario ("hace 12 s", "hace 3 min"). */
+function agoLabel(date) {
+  const seconds = Math.max(0, Math.round((Date.now() - new Date(date).getTime()) / 1000));
+  return seconds < 60 ? `hace ${seconds} s` : `hace ${Math.round(seconds / 60)} min`;
+}
+
+/** Domicilio en camino: dónde va el domiciliario (si comparte su ubicación) y el enlace para él. */
+function courierSection(order) {
+  if (order.deliveryType !== "DELIVERY" || !COURIER_STATUSES.has(order.status)) return "";
+  const courier = order.courier?.lat !== null && order.courier?.lat !== undefined ? order.courier : null;
+  const destination = order.deliveryLat !== null && order.deliveryLat !== undefined ? { lat: order.deliveryLat, lng: order.deliveryLng } : null;
+  const onTheWay = order.status === "OUT_FOR_DELIVERY";
+  return html`<section aria-label="Domiciliario" class="grid gap-3 rounded-[12px] border border-line p-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <p class="flex items-center gap-2 font-[740]">${icon("bike", "h-5 w-5")} Domiciliario</p>
+      <button type="button" class="btn btn-ghost btn-sm" data-courier-link="${order.id}">${icon("qr-code", "h-4 w-4")} Enlace para el domiciliario</button>
+    </div>
+    ${onTheWay && courier
+      ? html`<div class="delivery-map h-56" data-detail-map aria-label="Ubicación del domiciliario"></div>
+          <p class="text-sm text-muted">
+            Ubicación ${agoLabel(courier.updatedAt)}${destination ? html` · a <span class="num font-[700] text-ink">${distanceLabel(distanceMeters(courier, destination))}</span> del cliente` : ""}
+          </p>`
+      : html`<p class="text-sm text-muted">
+          ${onTheWay
+            ? "Aún no comparte su ubicación. Envíale el enlace para que el cliente lo vea en el mapa."
+            : "Cuando lo despaches, envíale el enlace: verá la dirección y el cliente lo seguirá en el mapa."}
+        </p>`}
+  </section>`;
+}
+
+let detailMap = null;
+/** Dibuja (o actualiza) el mapa del domiciliario en el detalle abierto. */
+async function syncDetailMap(order) {
+  const container = document.querySelector("#order-detail [data-detail-map]");
+  if (!container) {
+    detailMap?.destroy();
+    detailMap = null;
+    return;
+  }
+  const destination = order.deliveryLat !== null && order.deliveryLat !== undefined ? { lat: order.deliveryLat, lng: order.deliveryLng } : null;
+  detailMap?.destroy();
+  detailMap = null;
+  try {
+    detailMap = await deliveryMap(container, { destination, courier: order.courier });
+  } catch {
+    // Sin mapa: queda el texto con la distancia.
+  }
 }
 
 function detailView(order) {
@@ -275,6 +332,8 @@ function detailView(order) {
                 </a>`
             : html`<p class="text-sm text-muted">El cliente recoge en el local.</p>`}
         </section>
+
+        ${courierSection(order)}
 
         <section aria-label="Productos">
           <ul class="divide-y divide-line">
@@ -372,6 +431,7 @@ async function openDetail(id) {
   render(dialog, detailView(state.detail));
   if (!dialog.open) dialog.showModal();
   dialog.querySelector("#detail-title")?.focus();
+  void syncDetailMap(state.detail);
 }
 
 async function refreshDetail() {
@@ -380,10 +440,32 @@ async function refreshDetail() {
   try {
     state.detail = await api(`/orders/${state.detail.id}`);
     render(dialog, detailView(state.detail));
+    void syncDetailMap(state.detail);
   } catch {
     // Se mantiene la versión en pantalla.
   }
 }
+
+// Con un domicilio en camino abierto, la posición del domiciliario se actualiza cada 10 s.
+setInterval(async () => {
+  const dialog = document.getElementById("order-detail");
+  if (!dialog?.open || state.detail?.status !== "OUT_FOR_DELIVERY" || document.hidden) return;
+  try {
+    const fresh = await api(`/orders/${state.detail.id}`);
+    const hadMap = Boolean(detailMap);
+    const hasCourier = fresh.courier?.lat !== null && fresh.courier?.lat !== undefined;
+    if (fresh.status !== state.detail.status || hadMap !== hasCourier) {
+      state.detail = fresh;
+      render(dialog, detailView(fresh));
+      void syncDetailMap(fresh);
+    } else if (hasCourier) {
+      state.detail = fresh;
+      detailMap?.update({ courier: fresh.courier });
+    }
+  } catch {
+    // Sin conexión: se intenta en el siguiente turno.
+  }
+}, 10_000);
 
 // ───────────────────────────── Acciones ─────────────────────────────
 
@@ -422,7 +504,10 @@ async function advance(button) {
     if (state.detail?.id === orderId) {
       state.detail = result;
       render(document.getElementById("order-detail"), detailView(result));
+      void syncDetailMap(result);
     }
+    // Al despachar un domicilio: el enlace para que el domiciliario comparta su ubicación.
+    if (to === "OUT_FOR_DELIVERY") void openCourierLink(result);
   } catch (error) {
     setBusy(button, false);
     toast(error.message, "error");
@@ -494,6 +579,7 @@ function bindPage() {
     if (!target) return;
     if (target.matches("[data-close-detail]")) dialog.close();
     if (target.matches("[data-advance]")) advance(target);
+    if (target.matches("[data-courier-link]") && state.detail) void openCourierLink(state.detail);
     if (target.matches("[data-ask-cancel]")) {
       dialog.querySelector("[data-detail-actions]").classList.add("hidden");
       const form = dialog.querySelector("[data-cancel-form]");
@@ -542,7 +628,11 @@ function bindPage() {
       toast(error.message, "error");
     }
   });
-  dialog.addEventListener("close", () => (state.detail = null));
+  dialog.addEventListener("close", () => {
+    state.detail = null;
+    detailMap?.destroy();
+    detailMap = null;
+  });
 
   // Tiempo transcurrido: se actualiza cada 30 segundos sin redibujar.
   setInterval(() => {

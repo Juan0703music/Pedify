@@ -144,6 +144,7 @@ model Business {
   settings          BusinessSettings?
   subscription      Subscription?
   pushSubscriptions PushSubscription[]
+  courierTrackings  CourierTracking[]
   payments          SubscriptionPayment[]
   categories        Category[]
   products          Product[]
@@ -343,6 +344,10 @@ model Order {
   whatsappOpenedAt  DateTime?      @map("whatsapp_opened_at") @db.Timestamptz(3)
   // Pago recibido (lo marca el negocio). Se distingue de aceptado y entregado.
   paidAt            DateTime?      @map("paid_at") @db.Timestamptz(3)
+  /// Punto exacto de entrega que marcó el cliente con su GPS (opcional, solo domicilios).
+  /// Se borra cuando el pedido se entrega o se cancela (minimización de datos personales).
+  deliveryLat       Float?         @map("delivery_lat")
+  deliveryLng       Float?         @map("delivery_lng")
   cancelReason      String?        @map("cancel_reason")
   createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -352,6 +357,7 @@ model Order {
   customer      Customer             @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
+  courier       CourierTracking?
 
   @@unique([businessId, number])
   @@unique([businessId, idempotencyKey])
@@ -418,4 +424,28 @@ model PushSubscription {
   @@index([businessId])
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+/// Seguimiento del domiciliario de un pedido a domicilio. El negocio genera un enlace secreto
+/// (solo se guarda su hash) y el domiciliario comparte desde él su ubicación sin cuenta.
+/// Solo se guarda la última posición, y la fila se borra al entregar o cancelar el pedido.
+model CourierTracking {
+  orderId    String    @id @map("order_id") @db.Uuid
+  businessId String    @map("business_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  lat        Float?
+  lng        Float?
+  /// Precisión del GPS en metros.
+  accuracy   Int?
+  heading    Float?
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+
+  order    Order    @relation(fields: [orderId, businessId], references: [id, businessId], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, businessId])
+  @@index([businessId])
+  @@map("courier_tracking")
 }

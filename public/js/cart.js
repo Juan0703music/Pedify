@@ -4,6 +4,7 @@
 // el cliente sigue el estado de su pedido en vivo (recibido, en preparación, listo, en camino).
 import { formatCOP, formatPhone } from "./api.js";
 import { clearFieldErrors, formAlert, html, icon, render, setBusy, showErrors } from "./ui.js";
+import { currentPosition, deliveryMap, distanceLabel, distanceMeters, pickerMap } from "./map.js";
 
 export const PAYMENT_LABEL = {
   CASH: "Efectivo",
@@ -76,6 +77,7 @@ export function initCart({ store, slug, root, orderable = true }) {
     references: "",
     paymentMethod: settings.paymentMethods.length === 1 ? settings.paymentMethods[0] : "",
     notes: "",
+    location: null,
     ...(load(keys.customer) ?? {}),
     deliveryType: "",
   };
@@ -103,8 +105,8 @@ export function initCart({ store, slug, root, orderable = true }) {
   }
 
   function persistCustomer() {
-    const { name, phone, address, references, paymentMethod, deliveryType } = customer;
-    save(keys.customer, { name, phone, address, references, paymentMethod, deliveryType });
+    const { name, phone, address, references, paymentMethod, deliveryType, location } = customer;
+    save(keys.customer, { name, phone, address, references, paymentMethod, deliveryType, location });
   }
 
   // ─── Live region para lectores de pantalla ───
@@ -236,6 +238,45 @@ export function initCart({ store, slug, root, orderable = true }) {
     </ul>`;
   }
 
+  /** Ubicación exacta (opcional): con ella el domiciliario llega directo y el cliente lo ve en el mapa. */
+  function locationField() {
+    if (customer.location) {
+      return html`<div class="flex items-center justify-between gap-3">
+          <p class="flex items-center gap-2 text-sm font-[700] text-leaf">${icon("circle-check", "h-4 w-4")} Ubicación marcada</p>
+          <button type="button" class="text-sm font-[650] text-muted underline" data-clear-location>Quitar</button>
+        </div>
+        <div class="delivery-map h-48" data-picker aria-label="Mapa: mueve el pin a tu puerta"></div>
+        <p class="hint">Si el pin no quedó en tu puerta, muévelo o toca el mapa.</p>`;
+    }
+    return html`<button type="button" class="btn btn-ghost w-full justify-start" data-locate>
+        ${icon("locate-fixed")} Marcar mi ubicación exacta <span class="font-normal text-muted">(opcional)</span>
+      </button>
+      <p class="hint">Así el domiciliario llega directo y puedes verlo acercarse en el mapa.</p>`;
+  }
+
+  let picker = null;
+  async function mountPicker() {
+    picker?.destroy();
+    picker = null;
+    const container = dialog.querySelector("[data-picker]");
+    if (!container || !customer.location) return;
+    try {
+      picker = await pickerMap(container, customer.location, (point) => {
+        customer.location = point;
+        persistCustomer();
+      });
+    } catch {
+      render(container, html`<p class="grid h-full place-items-center p-3 text-center text-sm text-muted">No se pudo cargar el mapa, pero tu ubicación quedó marcada.</p>`);
+    }
+  }
+
+  function drawLocationField() {
+    const slot = dialog.querySelector("[data-location-field]");
+    if (!slot) return;
+    render(slot, locationField());
+    void mountPicker();
+  }
+
   function checkoutView() {
     const isDelivery = customer.deliveryType === "DELIVERY";
     const missing = missingForMinimum();
@@ -289,7 +330,8 @@ export function initCart({ store, slug, root, orderable = true }) {
                         <div class="field">
                           <label class="label" for="c-references">Referencias <span class="font-normal text-muted">(opcional)</span></label>
                           <input class="input" id="c-references" name="references" value="${customer.references}" placeholder="Casa azul, frente al parque" maxlength="160" />
-                        </div>`
+                        </div>
+                        <div class="grid gap-2" data-location-field>${locationField()}</div>`
                     : html`<p class="hint">Recoges en: ${[business.address, business.city].filter(Boolean).join(", ") || "el local del negocio"}.</p>`}
                 </fieldset>
 
@@ -384,6 +426,51 @@ export function initCart({ store, slug, root, orderable = true }) {
     </ol>`;
   }
 
+  // ─── Mapa del domicilio en camino ───
+
+  const courierPoint = () => (tracked?.courier && tracked.courier.lat !== undefined ? tracked.courier : null);
+  const showsMap = () => tracked?.deliveryType === "DELIVERY" && tracked.status === "OUT_FOR_DELIVERY";
+
+  function courierLine() {
+    const courier = courierPoint();
+    if (!courier) return "Esperando la ubicación del domiciliario…";
+    const seconds = Math.max(0, Math.round((Date.now() - new Date(courier.updatedAt).getTime()) / 1000));
+    if (seconds > 120) return "No recibimos la ubicación del domiciliario hace un momento. Sigue en camino.";
+    if (tracked.destination) {
+      const meters = distanceMeters(courier, tracked.destination);
+      return meters < 80 ? "¡Tu domiciliario está llegando!" : `Tu domiciliario está a ${distanceLabel(meters)}`;
+    }
+    return "Tu domiciliario va en camino";
+  }
+
+  function mapSection() {
+    if (!showsMap()) return "";
+    return html`<section class="overflow-hidden rounded-[16px] bg-paper" aria-label="Mapa del domicilio">
+      <div class="delivery-map h-60 rounded-none sm:h-72" data-track-map></div>
+      <p class="flex items-center gap-2 px-4 py-3 text-[0.9375rem] font-[700]" aria-live="polite">
+        ${icon("bike", "h-5 w-5 flex-none text-mustard-deep")}<span data-courier-line>${courierLine()}</span>
+      </p>
+    </section>`;
+  }
+
+  let trackMap = null;
+  async function mountTrackingMap() {
+    const container = dialog.querySelector("[data-track-map]");
+    if (!container) return;
+    try {
+      trackMap = await deliveryMap(container, { destination: tracked.destination, courier: courierPoint(), config: tracked.map });
+    } catch {
+      render(container, html`<p class="grid h-full place-items-center p-4 text-center text-sm text-muted">No se pudo cargar el mapa.</p>`);
+    }
+  }
+
+  /** Nueva posición del domiciliario sin redibujar la hoja (el mapa no parpadea). */
+  function updateTrackingMap() {
+    trackMap?.update({ courier: courierPoint(), destination: tracked.destination });
+    const line = dialog.querySelector("[data-courier-line]");
+    if (line) line.textContent = courierLine();
+  }
+
   function trackingView() {
     const order = tracked;
     const copy = statusCopy(order.status, order.deliveryType);
@@ -411,6 +498,8 @@ export function initCart({ store, slug, root, orderable = true }) {
               </div>
             </div>
           </div>
+
+          ${mapSection()}
 
           ${cancelled ? "" : html`<section class="rounded-[16px] bg-paper p-5" aria-label="Estado del pedido">${trackingSteps(order)}</section>`}
 
@@ -492,7 +581,13 @@ export function initCart({ store, slug, root, orderable = true }) {
   }
 
   function renderSheet() {
+    picker?.destroy();
+    picker = null;
+    trackMap?.destroy();
+    trackMap = null;
     render(dialog, view === "tracking" && tracked ? trackingView() : checkoutView());
+    if (view === "tracking") void mountTrackingMap();
+    else void mountPicker();
   }
 
   function openSheet() {
@@ -539,12 +634,16 @@ export function initCart({ store, slug, root, orderable = true }) {
       if (response.ok) {
         const next = (await response.json()).data;
         const changed = tracked && tracked.status !== next.status && tracked.items.length > 0;
+        const sameView = tracked && tracked.status === next.status && tracked.items.length > 0;
         tracked = next;
         if (changed) {
           announce(`Pedido #${next.number}: ${statusCopy(next.status, next.deliveryType).title}`);
           navigator.vibrate?.(180);
         }
-        if (dialog.open && view === "tracking") {
+        if (dialog.open && view === "tracking" && sameView && trackMap) {
+          // Mismo estado: solo se mueve la moto en el mapa.
+          updateTrackingMap();
+        } else if (dialog.open && view === "tracking") {
           const scroller = dialog.querySelector(".overflow-y-auto");
           const top = scroller?.scrollTop ?? 0;
           renderSheet();
@@ -557,7 +656,9 @@ export function initCart({ store, slug, root, orderable = true }) {
       // Sin conexión: se vuelve a intentar en el siguiente turno.
     }
     if (tracked && FINAL_STATUSES.has(tracked.status)) return;
-    if (!document.hidden) pollTimer = setTimeout(poll, dialog.open && view === "tracking" ? 8_000 : 20_000);
+    // En camino y con el mapa a la vista se actualiza más seguido.
+    const delay = dialog.open && view === "tracking" ? (tracked?.status === "OUT_FOR_DELIVERY" ? 5_000 : 8_000) : 20_000;
+    if (!document.hidden) pollTimer = setTimeout(poll, delay);
   }
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && active) poll();
@@ -594,6 +695,7 @@ export function initCart({ store, slug, root, orderable = true }) {
       references: isDelivery ? customer.references : "",
       paymentMethod: customer.paymentMethod || undefined,
       notes: customer.notes,
+      location: isDelivery && customer.location ? { lat: customer.location.lat, lng: customer.location.lng } : undefined,
     };
     // Mismo contenido = misma clave: si la conexión falla y el cliente reintenta, no se duplica.
     const signature = JSON.stringify(body);
@@ -708,10 +810,33 @@ export function initCart({ store, slug, root, orderable = true }) {
     }
   });
 
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) closeSheet();
+  dialog.addEventListener("click", async (event) => {
+    if (event.target === dialog) return closeSheet();
+    const button = event.target.closest("button");
+    if (button?.matches("[data-locate]")) {
+      setBusy(button, true);
+      try {
+        const position = await currentPosition();
+        customer.location = { lat: position.lat, lng: position.lng };
+        persistCustomer();
+        drawLocationField();
+      } catch (error) {
+        setBusy(button, false);
+        const form = dialog.querySelector("[data-checkout]");
+        if (form) showErrors(form, { message: error.message });
+      }
+    }
+    if (button?.matches("[data-clear-location]")) {
+      customer.location = null;
+      persistCustomer();
+      drawLocationField();
+    }
   });
   dialog.addEventListener("close", () => {
+    picker?.destroy();
+    picker = null;
+    trackMap?.destroy();
+    trackMap = null;
     view = "checkout";
     refresh();
   });

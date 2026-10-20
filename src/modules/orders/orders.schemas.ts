@@ -5,6 +5,12 @@ import { mobilePhoneSchema } from "../../utils/phone.js";
 import { personNameSchema } from "../auth/auth.schemas.js";
 import { optionalText } from "../businesses/businesses.schemas.js";
 
+/** Coordenadas GPS (grados decimales). */
+export const geoPointSchema = z.object({
+  lat: z.number({ error: "Ubicación inválida." }).min(-90).max(90),
+  lng: z.number({ error: "Ubicación inválida." }).min(-180).max(180),
+});
+
 /** Clave que genera el navegador por cada intento de compra: un reintento no duplica el pedido. */
 export const idempotencyKeySchema = z
   .string({ error: "Falta la clave del pedido." })
@@ -40,6 +46,8 @@ export const createOrderSchema = z
     references: optionalText(160, "Las referencias"),
     paymentMethod: z.enum(PaymentMethod, { error: "Elige cómo vas a pagar." }),
     notes: optionalText(300, "Las notas"),
+    /** Punto exacto que el cliente marcó con su GPS (opcional; solo se guarda en domicilios). */
+    location: geoPointSchema.optional(),
   })
   .refine((order) => order.deliveryType !== "DELIVERY" || Boolean(order.address), {
     path: ["address"],

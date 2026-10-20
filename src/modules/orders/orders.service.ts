@@ -11,6 +11,8 @@ import { describeNextOpening, getOpeningStatus, parseOpeningHours } from "../bus
 import { customersService } from "../customers/customers.service.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { whatsapp, type OrderMessage } from "../whatsapp/whatsapp.service.js";
+import { courierService } from "../courier/courier.service.js";
+import { mapConfig } from "../../config/map.js";
 import type { TenantContext } from "../../types/common.js";
 import { addDays, startOfDay } from "../../utils/dates.js";
 import { buildPage } from "../../utils/pagination.js";
@@ -174,6 +176,8 @@ export const ordersService = {
             customerPhone: input.phone,
             deliveryAddress: isDelivery ? (input.address ?? null) : null,
             addressReferences: isDelivery ? (input.references ?? null) : null,
+            deliveryLat: isDelivery && input.location ? input.location.lat : null,
+            deliveryLng: isDelivery && input.location ? input.location.lng : null,
             paymentMethod: input.paymentMethod,
             notes: input.notes ?? null,
             subtotal: totals.subtotal,
@@ -321,9 +325,13 @@ export const ordersService = {
     if (!order || expected.length !== received.length || !timingSafeEqual(expected, received)) {
       throw notFound("No encontramos ese pedido.", "ORDER_NOT_FOUND");
     }
-    const { idempotencyKey: _key, statusHistory, items, ...rest } = order;
+    const { idempotencyKey: _key, statusHistory, items, deliveryLat, deliveryLng, ...rest } = order;
     return {
       ...rest,
+      // Su propio punto de entrega y, si va en camino, dónde está el domiciliario.
+      destination: deliveryLat !== null && deliveryLng !== null ? { lat: deliveryLat, lng: deliveryLng } : null,
+      courier: await courierService.positionFor(order.id, order.status),
+      map: mapConfig,
       items: items.map((item) => ({ name: item.productName, quantity: item.quantity, subtotal: item.subtotal })),
       history: statusHistory.map((entry) => ({ status: entry.toStatus, at: entry.createdAt })),
       business: { name: business.name, phone: business.phone, whatsappPhone: business.settings.whatsappPhone },

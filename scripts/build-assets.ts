@@ -14,7 +14,7 @@ const ICONS = [
   "arrow-down", "arrow-right", "arrow-up", "arrow-up-down", "archive", "archive-restore", "banknote", "bell", "bell-off", "bell-ring",
   "bike", "calendar", "camera", "chart-column", "check", "chef-hat", "chevron-down", "chevron-up", "chevrons-up-down",
   "circle-alert", "circle-check", "circle-x", "credit-card", "clock", "copy", "download", "ellipsis", "external-link", "eye", "eye-off",
-  "flame", "folder-plus", "history", "house", "image", "image-plus", "info", "key-round", "link", "list-checks", "loader-circle", "lock",
+  "flame", "folder-plus", "history", "house", "image", "image-plus", "info", "key-round", "link", "list-checks", "locate-fixed", "navigation-2", "loader-circle", "lock",
   "log-out", "map-pin", "menu", "minus", "message-circle", "navigation", "package", "pencil", "phone", "plus", "qr-code",
   "receipt", "search", "settings", "share-2", "shield", "shopping-bag", "smartphone", "store", "tag",
   "trash-2", "trending-down", "trending-up", "truck", "upload", "user-plus", "users", "utensils", "wallet", "wifi-off", "x",
@@ -45,4 +45,12 @@ writeFileSync(
   `<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\n<!-- Íconos de Lucide (https://lucide.dev), licencia ISC. Generado por scripts/build-assets.ts -->\n${symbols.join("\n")}\n</svg>\n`,
 );
 
-console.log(`Fuente copiada y ${ICONS.length} íconos en public/assets/icons/sprite.svg`);
+// Leaflet (mapas del seguimiento de domicilios, licencia BSD-2): se sirve desde el propio sitio.
+const leaflet = path.join(assets, "vendor/leaflet");
+mkdirSync(leaflet, { recursive: true });
+for (const file of ["leaflet.js", "leaflet.css"]) {
+  copyFileSync(path.join(root, "node_modules/leaflet/dist", file), path.join(leaflet, file));
+}
+copyFileSync(path.join(root, "node_modules/leaflet/LICENSE"), path.join(leaflet, "LICENSE"));
+
+console.log(`Fuente copiada, ${ICONS.length} íconos en public/assets/icons/sprite.svg y Leaflet en public/assets/vendor/leaflet`);

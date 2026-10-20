@@ -115,6 +115,14 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - Cuenta de ejemplo: `empleado@pedifyai.com` (misma contraseña del demo).
 - 149 pruebas en total.
 
+### Mapa en tiempo real del domicilio
+
+- Al pedir, el cliente puede tocar **«Marcar mi ubicación exacta»** (opcional) y ajustar el pin en un mapa.
+- Al tocar **«Enviar con domiciliario»**, el panel muestra un **enlace y un código QR** para el domiciliario (se puede enviar por WhatsApp). Él lo abre en su celular sin cuenta: ve la dirección, el celular del cliente, lo que debe cobrar y botones a Google Maps y Waze; toca **«Empezar entrega»** y comparte su ubicación (la pantalla no se apaga mientras tanto).
+- El cliente ve en su seguimiento un **mapa con la moto acercándose a su casa** y la distancia («Tu domiciliario está a 950 m»), actualizado cada 5 segundos. El negocio también lo ve en el detalle del pedido.
+- El domiciliario marca **«Entregado»** desde su celular. Al entregar o cancelar se borran las ubicaciones y el enlace deja de funcionar.
+- Mapas con Leaflet y OpenStreetMap (sin llave); el proveedor se cambia con `MAP_TILE_URL`. 154 pruebas en total.
+
 ## Requisitos
 
 - Node.js 22.12 o superior (probado con Node 24).

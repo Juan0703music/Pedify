@@ -4,6 +4,7 @@ import { getTenant } from "../../middlewares/authorize.js";
 import { notFound } from "../../utils/errors.js";
 import { idempotencyKeySchema } from "./orders.schemas.js";
 import { ordersService } from "./orders.service.js";
+import { courierService } from "../courier/courier.service.js";
 import type {
   ChangeStatusInput,
   CreateOrderInput,
@@ -44,6 +45,12 @@ export const ordersController = {
     const result = await ordersService.createFromStore(slug, req.body as CreateOrderInput);
     res.set("Cache-Control", "no-store");
     res.status(result.created ? 201 : 200).json({ data: { order: result.order, whatsapp: result.whatsapp } });
+  },
+
+  /** POST /api/v1/orders/:id/courier-link — enlace (y QR) para el domiciliario; cambia el anterior. */
+  async courierLink(req: Request, res: Response) {
+    const { id } = req.params as OrderParams;
+    res.status(201).json({ data: await courierService.createLink(getTenant(req), id) });
   },
 
   /** GET /api/v1/store/:slug/orders/:id — seguimiento del pedido (cabecera X-Order-Key). */

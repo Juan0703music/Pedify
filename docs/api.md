@@ -167,6 +167,21 @@ await fetch("/api/v1/products/<id>/image", { method: "POST", headers: { "Content
 - Cada versión recibe un nombre aleatorio nuevo y se sirve con caché de un año (`immutable`); la versión anterior se borra.
 - Límite: 60 subidas cada 15 minutos por IP.
 
+## Seguimiento del domiciliario en el mapa
+
+Para pedidos a domicilio. El cliente puede marcar su punto exacto al pedir (`location: { lat, lng }` en `POST /store/:slug/orders`); el negocio genera un enlace para el domiciliario, que lo abre en su celular **sin cuenta** y comparte su ubicación mientras el pedido va en camino. Solo se guarda la última posición; al entregar o cancelar se borran la del domiciliario y el punto del cliente, y el enlace deja de funcionar.
+
+| Método | Ruta | Quién | Respuesta |
+|---|---|---|---|
+| POST | `/orders/:id/courier-link` | equipo del negocio | 201 `{ url, expiresAt, qrSvg }`. URL `…/domicilio#<clave>`; vence en 12 h. Generar otro invalida el anterior. Solo domicilios (`NOT_DELIVERY`) no terminados (`ORDER_FINISHED`) |
+| GET | `/courier` | domiciliario (`X-Courier-Key`) | Número, negocio, cliente (nombre, celular, dirección, referencias, notas), `destination`, productos, total, método de pago, `paid`, `position`, `map` |
+| POST | `/courier/location` | domiciliario | `{ lat, lng, accuracy?, heading? }` → 204. Solo con el pedido «En camino» (409 `NOT_ON_THE_WAY`) |
+| POST | `/courier/delivered` | domiciliario | 204: el pedido pasa a «Entregado» (historial: «Entregado por el domiciliario») |
+| GET | `/map-config` | público | `{ tileUrl, attribution }` (`MAP_TILE_URL`, `MAP_TILE_ATTRIBUTION`) |
+
+- La clave viaja en la cabecera `X-Courier-Key` (en la página va después de `#`, así que no llega a los registros del servidor). Clave inválida, vencida o de un pedido terminado → 404 `COURIER_LINK_INVALID`. Límite: 400 peticiones cada 10 minutos por IP.
+- El seguimiento del cliente (`GET /store/:slug/orders/:id`) incluye `destination` (su punto) y `courier` (`{ lat, lng, accuracy, heading, updatedAt }` solo mientras va «En camino»). El detalle del panel incluye `deliveryLat`, `deliveryLng` y `courier`.
+
 ## Roles y permisos
 
 - **Propietario** (`OWNER`): puede todo.

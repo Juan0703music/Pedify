@@ -24,6 +24,8 @@ ordersRoutes.get("/", validate({ query: listOrdersQuerySchema }), ordersControll
 ordersRoutes.get("/:id", validate({ params: orderParamsSchema }), ordersController.get);
 ordersRoutes.patch("/:id/status", validate({ params: orderParamsSchema, body: changeStatusSchema }), ordersController.changeStatus);
 ordersRoutes.patch("/:id/payment", validate({ params: orderParamsSchema, body: paymentSchema }), ordersController.setPaid);
+// Enlace para que el domiciliario comparta su ubicación (cualquier persona del equipo lo despacha).
+ordersRoutes.post("/:id/courier-link", validate({ params: orderParamsSchema }), ordersController.courierLink);
 
 // ─── /api/v1/store/:slug/orders — pedidos desde la tienda pública, sin sesión ───
 export const storeOrderRoutes = Router({ mergeParams: true });

@@ -21,6 +21,8 @@ export const orderSelect = {
   total: true,
   whatsappOpenedAt: true,
   paidAt: true,
+  deliveryLat: true,
+  deliveryLng: true,
   createdAt: true,
   items: {
     orderBy: { id: "asc" },
@@ -38,6 +40,7 @@ export const orderDetailSelect = {
     orderBy: { createdAt: "asc" },
     select: { fromStatus: true, toStatus: true, note: true, createdAt: true, changedBy: { select: { name: true } } },
   },
+  courier: { select: { lat: true, lng: true, accuracy: true, updatedAt: true } },
 } as const;
 
 export interface HistoryFilters {
@@ -91,17 +94,33 @@ export const ordersRepository = {
    * y registra el cambio en el historial.
    */
   async transition(
-    data: { id: string; businessId: string; from: OrderStatus; to: OrderStatus; changedById: string; note: string | null; cancelReason: string | null },
+    data: {
+      id: string;
+      businessId: string;
+      from: OrderStatus;
+      to: OrderStatus;
+      changedById: string | null;
+      note: string | null;
+      cancelReason: string | null;
+    },
     db: DbClient,
   ) {
+    const final = data.to === "DELIVERED" || data.to === "CANCELLED";
     const { count } = await db.order.updateMany({
       where: { id: data.id, businessId: data.businessId, status: data.from },
-      data: { status: data.to, ...(data.to === "CANCELLED" ? { cancelReason: data.cancelReason } : {}) },
+      data: {
+        status: data.to,
+        ...(data.to === "CANCELLED" ? { cancelReason: data.cancelReason } : {}),
+        // Pedido terminado: ya no se necesita el punto GPS del cliente.
+        ...(final ? { deliveryLat: null, deliveryLng: null } : {}),
+      },
     });
     if (count === 0) return false;
     await db.orderStatusHistory.create({
       data: { orderId: data.id, fromStatus: data.from, toStatus: data.to, changedById: data.changedById, note: data.note },
     });
+    // ...y el domiciliario deja de compartir su ubicación (el enlace deja de funcionar).
+    if (final) await db.courierTracking.deleteMany({ where: { orderId: data.id, businessId: data.businessId } });
     return true;
   },
 
@@ -137,6 +156,8 @@ export const ordersRepository = {
       customerPhone: string;
       deliveryAddress: string | null;
       addressReferences: string | null;
+      deliveryLat: number | null;
+      deliveryLng: number | null;
       paymentMethod: PaymentMethod;
       notes: string | null;
       subtotal: number;
@@ -175,6 +196,8 @@ export const ordersRepository = {
         discount: true,
         total: true,
         cancelReason: true,
+        deliveryLat: true,
+        deliveryLng: true,
         createdAt: true,
         updatedAt: true,
         items: { orderBy: { id: "asc" }, select: { productName: true, quantity: true, subtotal: true } },

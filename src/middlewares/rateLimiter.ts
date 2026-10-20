@@ -34,8 +34,11 @@ export const uploadLimiter = rateLimit({ ...common, windowMs: 15 * 60_000, limit
 /** Pedidos desde la tienda pública (evita llenar el panel de solicitudes falsas). */
 export const orderLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 15 });
 
+/** Página del domiciliario: envía su posición cada pocos segundos mientras va en camino. */
+export const courierLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 400 });
+
 /** Seguimiento de un pedido desde la tienda: la pantalla consulta el estado cada pocos segundos. */
-export const trackingLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 200 });
+export const trackingLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 300 });
 
 /** Recuperación de contraseña: pocas solicitudes por IP (evita usarla para enviar correos masivos). */
 export const passwordResetLimiter = rateLimit({ ...common, windowMs: 15 * 60_000, limit: 5 });

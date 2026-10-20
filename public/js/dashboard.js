@@ -4,6 +4,7 @@ import { connectLive, disableSound, enableSound, onLive, soundReady, soundWanted
 import { elapsedLabel, nextAction, statusBadge } from "./order-ui.js";
 import { disablePush, enablePush, PUSH_COPY, sendTestPush } from "./push.js";
 import { handlePushClick, pushView, safePushState } from "./push-ui.js";
+import { openCourierLink } from "./courier-link.js";
 import { brand, copyText, formAlert, html, icon, initials, raw, readForm, render, setBusy, showErrors, toast } from "./ui.js";
 
 /**
@@ -866,11 +867,13 @@ async function renderHome(context) {
     if (advance) {
       setBusy(advance, true);
       try {
-        await api(`/orders/${advance.dataset.advance}/status`, {
+        const updated = await api(`/orders/${advance.dataset.advance}/status`, {
           method: "PATCH",
           body: { status: advance.dataset.to, from: advance.dataset.from },
         });
         refresh();
+        // Al despachar un domicilio: el enlace para que el domiciliario comparta su ubicación.
+        if (advance.dataset.to === "OUT_FOR_DELIVERY") void openCourierLink(updated);
       } catch (error) {
         setBusy(advance, false);
         toast(error.message, "error");

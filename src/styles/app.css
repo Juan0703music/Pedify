@@ -888,6 +888,50 @@
     outline-offset: 2px;
   }
 
+  /* ─── Mapas del seguimiento de domicilios (Leaflet) ─── */
+  .delivery-map {
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--color-ground);
+  }
+  .delivery-map .leaflet-control-attribution {
+    font-size: 10px;
+    background: rgb(255 255 255 / 0.8);
+  }
+  .map-pin {
+    background: none;
+    border: 0;
+  }
+  .map-pin-courier {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: var(--color-mustard);
+    color: var(--color-ink);
+    border: 3px solid var(--color-ink);
+    box-shadow: 0 0 0 6px rgb(255 199 44 / 0.35), 0 6px 14px rgb(23 22 28 / 0.35);
+    animation: courier-pulse 2s ease-out infinite;
+  }
+  .map-pin-home {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px 999px 999px 4px;
+    rotate: -45deg;
+    background: var(--color-ink);
+    color: var(--color-mustard);
+    border: 3px solid var(--color-paper);
+    box-shadow: 0 6px 14px rgb(23 22 28 / 0.35);
+  }
+  .map-pin-home svg {
+    rotate: 45deg;
+  }
+
   /* Fila con casilla para elegir productos (Mi menú → «Elegir productos» de una categoría). */
   .pick {
     position: relative;
@@ -1263,6 +1307,15 @@
   inset: 0 0 auto;
   height: 4px;
   background: repeating-linear-gradient(-45deg, var(--color-mustard) 0 8px, var(--color-ink) 8px 16px);
+}
+
+@keyframes courier-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(255 199 44 / 0.6), 0 6px 14px rgb(23 22 28 / 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgb(255 199 44 / 0), 0 6px 14px rgb(23 22 28 / 0.35);
+  }
 }
 
 @keyframes float {
