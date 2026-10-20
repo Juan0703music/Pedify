@@ -12,6 +12,7 @@ import { customersService } from "../customers/customers.service.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { whatsapp, type OrderMessage } from "../whatsapp/whatsapp.service.js";
 import { courierService } from "../courier/courier.service.js";
+import { paymentProofsService } from "../payment-accounts/payment-proofs.service.js";
 import { mapConfig } from "../../config/map.js";
 import type { TenantContext } from "../../types/common.js";
 import { addDays, startOfDay } from "../../utils/dates.js";
@@ -104,6 +105,8 @@ export const ordersService = {
         fields: { paymentMethod: "Elige uno de los métodos de pago del negocio." },
       });
     }
+    // Nequi, Daviplata o transferencia con cuenta configurada: se paga antes y se adjunta el comprobante.
+    const proofId = await paymentProofsService.requireFor(business.id, settings.paymentMethods, input.paymentMethod, input.paymentProofId);
 
     // Cantidades del mismo producto se suman.
     const quantities = new Map<string, number>();
@@ -166,7 +169,7 @@ export const ordersService = {
         );
         const number = await ordersRepository.nextNumber(business.id, tx);
 
-        return ordersRepository.create(
+        const created = await ordersRepository.create(
           {
             businessId: business.id,
             customerId,
@@ -195,6 +198,8 @@ export const ordersService = {
           },
           tx,
         );
+        if (!proofId) return created;
+        return { ...created, paymentProof: await paymentProofsService.claim(tx, business.id, proofId, created.id) };
       });
 
       notifications.orderCreated({
@@ -325,9 +330,12 @@ export const ordersService = {
     if (!order || expected.length !== received.length || !timingSafeEqual(expected, received)) {
       throw notFound("No encontramos ese pedido.", "ORDER_NOT_FOUND");
     }
-    const { idempotencyKey: _key, statusHistory, items, deliveryLat, deliveryLng, ...rest } = order;
+    const { idempotencyKey: _key, statusHistory, items, deliveryLat, deliveryLng, paidAt, paymentProof, ...rest } = order;
     return {
       ...rest,
+      paid: Boolean(paidAt),
+      /** Subió comprobante al pedir: el negocio lo revisa y lo marca como pagado. */
+      paymentProofSent: Boolean(paymentProof),
       // Su propio punto de entrega y, si va en camino, dónde está el domiciliario.
       destination: deliveryLat !== null && deliveryLng !== null ? { lat: deliveryLat, lng: deliveryLng } : null,
       courier: await courierService.positionFor(order.id, order.status),

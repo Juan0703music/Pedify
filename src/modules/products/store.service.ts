@@ -2,6 +2,7 @@ import { clock } from "../../utils/clock.js";
 import { notFound } from "../../utils/errors.js";
 import { businessesRepository } from "../businesses/businesses.repository.js";
 import { getOpeningStatus, parseOpeningHours } from "../businesses/opening-hours.js";
+import { paymentAccountsService } from "../payment-accounts/payment-accounts.service.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { categoriesRepository } from "./categories.repository.js";
 import { productsRepository } from "./products.repository.js";
@@ -26,11 +27,12 @@ export const storeService = {
     const business = await businessesRepository.findStoreBySlug(slug);
     if (!business || business.status !== "ACTIVE" || !business.settings) throw storeNotFound();
 
-    const [categories, products, subscription, topSelling] = await Promise.all([
+    const [categories, products, subscription, topSelling, payments] = await Promise.all([
       categoriesRepository.listNames(business.id),
       productsRepository.listForStore(business.id),
       subscriptionsService.current(business.id),
       productsRepository.topSelling(business.id, new Date(now.getTime() - FEATURED_DAYS * 86_400_000), FEATURED_LIMIT * 2),
+      paymentAccountsService.forStore(business.id, business.settings.paymentMethods),
     ]);
     // Si la suscripción venció, la tienda se sigue viendo pero no recibe pedidos en línea.
     const onlineOrdering = subscription.state.canReceiveOrders;
@@ -95,6 +97,8 @@ export const storeService = {
       },
       categories: sections,
       featured,
+      /** Pago por adelantado: por cada método (Nequi, Daviplata, transferencia), las cuentas con QR o llave. */
+      payments,
     };
   },
 };

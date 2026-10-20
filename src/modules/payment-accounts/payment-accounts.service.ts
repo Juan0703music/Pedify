@@ -11,8 +11,9 @@ import { PAYMENT_ACCOUNT_LABEL, type UpdatePaymentAccountInput } from "./payment
 /**
  * Cuentas para cobrar por transferencia (Nequi, Bre-B de cualquier banco, Daviplata). El negocio sube
  * el QR que le da su app; Pedify lee el código de la imagen (aunque sea un pantallazo) y lo vuelve a
- * dibujar nítido en la pantalla del domiciliario. Pedify no genera códigos de pago propios: usa
- * exactamente el que emitió el banco, así que lo leen Nequi y las apps de los bancos.
+ * dibujar nítido: el cliente lo ve al pedir (paga antes de enviar el pedido) y el domiciliario puede
+ * mostrarlo al entregar. Pedify no genera códigos de pago propios: usa exactamente el que emitió el
+ * banco, así que lo leen Nequi y las apps de los bancos.
  */
 const ORDER: PaymentAccountKind[] = ["NEQUI", "BRE_B", "DAVIPLATA"];
 
@@ -22,6 +23,9 @@ export const ACCOUNT_FOR_METHOD: Partial<Record<PaymentMethod, PaymentAccountKin
   DAVIPLATA: "DAVIPLATA",
   BANK_TRANSFER: "BRE_B",
 };
+
+/** Métodos de pago que, si el negocio tiene cuenta para recibirlos, se pagan antes de enviar el pedido. */
+const TRANSFER_METHODS: PaymentMethod[] = ["NEQUI", "DAVIPLATA", "BANK_TRANSFER"];
 
 const select = { kind: true, accountKey: true, holderName: true, qrPayload: true, qrImageUrl: true, updatedAt: true } as const;
 type Stored = { kind: PaymentAccountKind; accountKey: string | null; holderName: string | null; qrPayload: string | null; qrImageUrl: string | null };
@@ -66,11 +70,56 @@ export async function readQr(input: Buffer): Promise<string | null> {
   return null;
 }
 
+/**
+ * Para cada método por transferencia que acepta el negocio, las cuentas que se le muestran al cliente
+ * (la propia del método y la llave Bre-B, que se paga desde cualquier banco o billetera). Un método con
+ * cuentas se paga antes de enviar el pedido; sin cuentas, se paga al recibir como antes.
+ */
+export function prepayPlan(accounts: Pick<Stored, "kind" | "accountKey" | "qrPayload">[], methods: PaymentMethod[]) {
+  const usable = new Set(accounts.filter((account) => account.qrPayload || account.accountKey).map((account) => account.kind));
+  const plan: Partial<Record<PaymentMethod, PaymentAccountKind[]>> = {};
+  for (const method of TRANSFER_METHODS) {
+    if (!methods.includes(method)) continue;
+    const kinds = [...new Set([ACCOUNT_FOR_METHOD[method]!, "BRE_B" as const])].filter((kind) => usable.has(kind));
+    if (kinds.length > 0) plan[method] = kinds;
+  }
+  return plan;
+}
+
 export const paymentAccountsService = {
   async list(businessId: string) {
     const accounts = await prisma.paymentAccount.findMany({ where: { businessId }, select });
     accounts.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
     return Promise.all(accounts.map(present));
+  },
+
+  /** Lo que ve el cliente en la tienda: cuentas para pagar antes de enviar el pedido, por método. */
+  async forStore(businessId: string, methods: PaymentMethod[]) {
+    const stored = await prisma.paymentAccount.findMany({ where: { businessId }, select });
+    const prepay = prepayPlan(stored, methods);
+    const shown = new Set(Object.values(prepay).flat());
+    const accounts = stored.filter((account) => shown.has(account.kind));
+    accounts.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
+    return {
+      prepay,
+      accounts: (await Promise.all(accounts.map(present))).map(({ qrImageUrl: _image, ...account }) => account),
+    };
+  },
+
+  /** QR en PNG para que el cliente lo guarde y lo suba en su app (cuando pide desde el mismo celular). */
+  async qrPngForStore(businessId: string, methods: PaymentMethod[], kind: PaymentAccountKind) {
+    const stored = await prisma.paymentAccount.findMany({ where: { businessId }, select: { kind: true, accountKey: true, qrPayload: true } });
+    const shown = new Set(Object.values(prepayPlan(stored, methods)).flat());
+    const payload = shown.has(kind) ? stored.find((account) => account.kind === kind)?.qrPayload : null;
+    if (!payload) throw notFound("Este negocio no tiene ese QR de pago.", "PAYMENT_QR_NOT_FOUND");
+    return QRCode.toBuffer(payload, { type: "png", width: 900, margin: 4, errorCorrectionLevel: "M" });
+  },
+
+  /** Cuentas para pagar por adelantado con `method` (vacío: ese método se paga al recibir). */
+  async prepayKindsFor(businessId: string, methods: PaymentMethod[], method: PaymentMethod) {
+    if (!TRANSFER_METHODS.includes(method)) return [];
+    const stored = await prisma.paymentAccount.findMany({ where: { businessId }, select: { kind: true, accountKey: true, qrPayload: true } });
+    return prepayPlan(stored, methods)[method] ?? [];
   },
 
   /** Número o llave y titular (crea la cuenta si no existía). */

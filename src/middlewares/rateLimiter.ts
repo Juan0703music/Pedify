@@ -31,6 +31,9 @@ export const registerLimiter = rateLimit({ ...common, windowMs: 60 * 60_000, lim
 /** Subida de imágenes (procesarlas consume CPU). */
 export const uploadLimiter = rateLimit({ ...common, windowMs: 15 * 60_000, limit: 60 });
 
+/** Comprobantes de pago desde la tienda pública (imágenes sin sesión: pocas por IP). */
+export const proofLimiter = rateLimit({ ...common, windowMs: 15 * 60_000, limit: 20 });
+
 /** Pedidos desde la tienda pública (evita llenar el panel de solicitudes falsas). */
 export const orderLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 15 });
 

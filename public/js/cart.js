@@ -2,8 +2,10 @@
 // El navegador solo envía productos, cantidades y datos de entrega: el servidor recalcula precios,
 // domicilio y total y guarda el pedido (PENDING): le llega directo al panel del negocio. Después,
 // el cliente sigue el estado de su pedido en vivo (recibido, en preparación, listo, en camino).
+// Si paga por Nequi, Daviplata o transferencia y el negocio configuró su QR o llave, paga antes de
+// enviar el pedido y sube el pantallazo del comprobante (el negocio lo revisa en el panel).
 import { formatCOP, formatPhone } from "./api.js";
-import { clearFieldErrors, formAlert, html, icon, render, setBusy, showErrors } from "./ui.js";
+import { checkImageFile, clearFieldErrors, copyText, formAlert, html, icon, raw, render, setBusy, showErrors } from "./ui.js";
 import { currentPosition, deliveryMap, distanceLabel, distanceMeters, pickerMap } from "./map.js";
 
 export const PAYMENT_LABEL = {
@@ -53,6 +55,8 @@ export function initCart({ store, slug, root, orderable = true }) {
   save(`pedify:pending:${slug}`, null); // aviso de "envíalo por WhatsApp" de versiones anteriores
   const products = new Map(store.categories.flatMap((category) => category.products).map((product) => [product.id, product]));
   const { settings, business } = store;
+  /** Pago por adelantado: método → cuentas (Nequi, Bre-B, Daviplata) con QR o llave. */
+  const payments = store.payments ?? { prepay: {}, accounts: [] };
   const deliveryModes = [
     settings.deliveryEnabled && { value: "DELIVERY", label: "Domicilio", detail: settings.deliveryFee > 0 ? `+ ${formatCOP(settings.deliveryFee)}` : "Gratis" },
     settings.pickupEnabled && { value: "PICKUP", label: "Recoger en el local", detail: "Sin costo" },
@@ -86,6 +90,10 @@ export function initCart({ store, slug, root, orderable = true }) {
   customer.notes = "";
 
   const checkout = { key: null, signature: null };
+  /** Comprobante ya subido para este pedido: { id, url (vista previa local), total }. */
+  let proof = null;
+  /** Cuenta elegida en las pestañas del pago por adelantado. */
+  let payKind = null;
   /** Último pedido de este dispositivo: { id, key, number, createdAt } y su estado más reciente. */
   let active = load(keys.order);
   if (active && Date.now() - active.createdAt > ORDER_TTL_MS) {
@@ -277,6 +285,153 @@ export function initCart({ store, slug, root, orderable = true }) {
     void mountPicker();
   }
 
+  // ─── Pago por adelantado (QR o llave + comprobante) ───
+
+  /** Valor con el que se dibujó el pago por adelantado (se redibuja solo si cambia). */
+  let prepayDrawnFor = null;
+  const prepayAccounts = () =>
+    (payments.prepay[customer.paymentMethod] ?? []).map((kind) => payments.accounts.find((account) => account.kind === kind)).filter(Boolean);
+
+  function prepaySection() {
+    const accounts = prepayAccounts();
+    if (accounts.length === 0) return "";
+    const account = accounts.find((item) => item.kind === payKind) ?? accounts.find((item) => item.qrSvg) ?? accounts[0];
+    const total = subtotal() + deliveryFee();
+    prepayDrawnFor = total;
+    const keyName = account.kind === "BRE_B" ? "Llave Bre-B" : `Número de ${account.label}`;
+    return html`<section class="grid gap-4 rounded-[16px] border-2 border-ink bg-paper p-4" aria-labelledby="prepay-title">
+      <div class="flex items-start gap-3">
+        <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-mustard">${icon("qr-code", "h-5 w-5")}</span>
+        <div>
+          <h3 id="prepay-title" class="text-[1.0625rem] leading-snug font-[800]">Paga ahora y envía tu pedido</h3>
+          <p class="text-sm text-muted">${business.name} recibe tu pedido junto con el comprobante.</p>
+        </div>
+      </div>
+
+      ${accounts.length > 1
+        ? html`<div class="flex gap-1 rounded-full bg-ground p-1" role="group" aria-label="Cuenta para pagar">
+            ${accounts.map(
+              (item) => html`<button
+                type="button"
+                class="min-h-9 flex-1 rounded-full px-3 text-sm font-[720] text-muted aria-pressed:bg-ink aria-pressed:text-paper"
+                aria-pressed="${item.kind === account.kind ? "true" : "false"}"
+                data-prepay-kind="${item.kind}"
+              >
+                ${item.label}
+              </button>`,
+            )}
+          </div>`
+        : ""}
+
+      <div class="grid items-center gap-4 ${account.qrSvg ? "sm:grid-cols-[11rem_minmax(0,1fr)]" : ""}">
+        ${account.qrSvg
+          ? html`<div
+              class="mx-auto w-44 rounded-[14px] border-2 border-ink bg-[#fff] p-1.5 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full"
+              role="img"
+              aria-label="Código QR de ${account.label} para pagar"
+            >
+              ${raw(account.qrSvg)}
+            </div>`
+          : ""}
+        <div class="grid justify-items-center gap-2 text-center ${account.qrSvg ? "sm:justify-items-start sm:text-left" : ""}">
+          <div>
+            <p class="text-sm font-[620] text-muted">Valor a pagar</p>
+            <p class="num text-[2rem] leading-none font-[860] [font-stretch:80%]">${formatCOP(total)}</p>
+          </div>
+          ${account.accountKey
+            ? html`<button type="button" class="inline-flex min-h-10 max-w-full items-center gap-2 rounded-full bg-ground px-3.5 text-[0.9375rem] font-[700]" data-copy-account="${account.accountKey.replace(/\s+/g, "")}">
+                <span class="font-[620] text-muted">${keyName}</span>
+                <span class="num [overflow-wrap:anywhere]">${account.accountKey}</span>
+                <span class="text-muted" data-copy-label>${icon("copy", "h-4 w-4")}</span>
+              </button>`
+            : ""}
+          ${account.holderName ? html`<p class="text-sm">A nombre de <strong class="font-[720]">${account.holderName}</strong></p>` : ""}
+          ${account.qrSvg
+            ? html`<a class="inline-flex items-center gap-1.5 text-sm font-[650] text-ink underline" href="/api/v1/store/${encodeURIComponent(slug)}/payment-qr/${account.kind}.png" download>
+                ${icon("download", "h-4 w-4")} Guardar imagen del QR
+              </a>`
+            : ""}
+        </div>
+      </div>
+
+      <ol class="grid gap-1.5 rounded-[12px] bg-ground px-4 py-3 text-sm">
+        <li><strong class="font-[720]">1.</strong> ${account.qrSvg
+          ? "Escanea el QR desde la app de Nequi o de tu banco. Si pides desde este celular, guarda la imagen y súbela en tu app, o copia el número."
+          : account.kind === "BRE_B"
+            ? "Copia la llave y envía el pago desde la app de tu banco o billetera (Bre-B funciona entre todos los bancos)."
+            : `Copia el número y envía el pago desde tu app de ${account.label}.`}</li>
+        <li><strong class="font-[720]">2.</strong> Paga exactamente <span class="num font-[720]">${formatCOP(total)}</span>.</li>
+        <li><strong class="font-[720]">3.</strong> Toma un pantallazo del comprobante y súbelo aquí.</li>
+      </ol>
+
+      <div class="grid gap-2" data-error-anchor="paymentProof">
+        ${proof
+          ? html`<div class="flex items-center gap-3 rounded-[12px] border border-leaf/30 bg-leaf-soft p-2.5">
+              <img src="${proof.url}" alt="Tu comprobante" class="h-16 w-12 flex-none rounded-[6px] border border-line bg-paper object-cover object-top" />
+              <div class="min-w-0 flex-1">
+                <p class="flex items-center gap-1.5 font-[720] text-leaf">${icon("circle-check", "h-4 w-4")} Comprobante listo</p>
+                <p class="text-sm text-muted">Se envía con tu pedido.</p>
+              </div>
+              <label class="btn btn-ghost btn-sm relative flex-none cursor-pointer">
+                <input type="file" accept="image/*" class="sr-only" name="paymentProof" data-proof-file aria-label="Cambiar el comprobante" />
+                Cambiar
+              </label>
+            </div>
+            ${proof.total !== total
+              ? html`<p class="rounded-[10px] bg-mustard-soft px-3 py-2 text-sm font-[620] text-mustard-deep">
+                  Tu pedido cambió después de subir el comprobante (era ${formatCOP(proof.total)}). Si no pagaste ${formatCOP(total)}, paga la diferencia y
+                  sube el nuevo comprobante.
+                </p>`
+              : ""}`
+          : html`<label class="btn btn-ink relative min-h-12 w-full cursor-pointer" data-proof-pick>
+              <input type="file" accept="image/*" class="sr-only" name="paymentProof" data-proof-file aria-label="Subir el comprobante de pago" />
+              ${icon("upload")} Subir comprobante de pago
+            </label>`}
+      </div>
+    </section>`;
+  }
+
+  function drawPrepay({ reveal = false } = {}) {
+    const slot = dialog.querySelector("[data-prepay]");
+    if (!slot) return;
+    render(slot, prepaySection());
+    if (reveal && slot.firstElementChild) slot.firstElementChild.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  async function uploadProof(input) {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    const form = dialog.querySelector("[data-checkout]");
+    const problem = checkImageFile(file);
+    if (problem) {
+      showErrors(form, { message: problem, fields: { paymentProof: problem } });
+      return;
+    }
+    const zone = input.closest("label");
+    zone?.setAttribute("aria-busy", "true");
+    zone?.classList.add("opacity-60", "pointer-events-none");
+    try {
+      const response = await fetch(`/api/v1/store/${encodeURIComponent(slug)}/payment-proofs`, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error?.message ?? "No pudimos subir el comprobante. Intenta de nuevo.");
+      if (proof) URL.revokeObjectURL(proof.url);
+      proof = { id: payload.data.id, url: URL.createObjectURL(file), total: subtotal() + deliveryFee() };
+      clearFieldErrors(form);
+      drawPrepay();
+      announce("Comprobante listo. Ya puedes hacer tu pedido.");
+    } catch (error) {
+      zone?.removeAttribute("aria-busy");
+      zone?.classList.remove("opacity-60", "pointer-events-none");
+      const message = error instanceof TypeError ? "Sin conexión. Revisa tu internet y vuelve a subir el comprobante." : error.message;
+      showErrors(form, { message, fields: { paymentProof: message } });
+    }
+  }
+
   function checkoutView() {
     const isDelivery = customer.deliveryType === "DELIVERY";
     const missing = missingForMinimum();
@@ -346,6 +501,8 @@ export function initCart({ store, slug, root, orderable = true }) {
                     )}
                   </div>
                 </fieldset>
+
+                <div data-prepay>${prepaySection()}</div>
 
                 <div class="field">
                   <label class="label" for="c-notes">Notas para el negocio <span class="font-normal text-muted">(opcional)</span></label>
@@ -471,6 +628,21 @@ export function initCart({ store, slug, root, orderable = true }) {
     if (line) line.textContent = courierLine();
   }
 
+  /** Estado del pago por adelantado: comprobante en revisión o pago confirmado. */
+  function paymentNote(order) {
+    if (!order.paymentProofSent) return "";
+    const cancelled = order.status === "CANCELLED";
+    const tone = order.paid && !cancelled ? "bg-leaf-soft text-leaf" : "bg-mustard-soft text-mustard-deep";
+    const text = cancelled
+      ? "Si ya pagaste, comunícate con el negocio para la devolución."
+      : order.paid
+        ? "Pago confirmado por el negocio."
+        : "Comprobante enviado. El negocio está revisando tu pago.";
+    return html`<p class="flex items-center gap-2.5 rounded-[14px] ${tone} px-4 py-3 text-[0.9375rem] font-[680]">
+      ${icon(order.paid && !cancelled ? "circle-check" : "receipt", "h-5 w-5 flex-none")} ${text}
+    </p>`;
+  }
+
   function trackingView() {
     const order = tracked;
     const copy = statusCopy(order.status, order.deliveryType);
@@ -498,6 +670,8 @@ export function initCart({ store, slug, root, orderable = true }) {
               </div>
             </div>
           </div>
+
+          ${paymentNote(order)}
 
           ${mapSection()}
 
@@ -571,6 +745,8 @@ export function initCart({ store, slug, root, orderable = true }) {
       } else {
         render(form.querySelector("[data-cart-items]"), itemsList());
         render(form.querySelector("[data-summary]"), summaryRows());
+        // El valor a pagar cambia con el carrito (solo entonces se redibuja el QR).
+        if (prepayDrawnFor !== subtotal() + deliveryFee()) drawPrepay();
         const missing = missingForMinimum();
         const note = form.querySelector("[data-minimum]");
         note.classList.toggle("hidden", missing === 0);
@@ -686,6 +862,15 @@ export function initCart({ store, slug, root, orderable = true }) {
     clearFieldErrors(form);
 
     const isDelivery = customer.deliveryType === "DELIVERY";
+    const prepaid = prepayAccounts().length > 0;
+    if (prepaid && !proof) {
+      showErrors(form, {
+        message: "Paga con el QR o la llave y sube el comprobante para enviar tu pedido.",
+        fields: { paymentProof: "Paga y sube el pantallazo del comprobante para enviar tu pedido." },
+      });
+      form.querySelector("[data-error-for='paymentProof']")?.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
     const body = {
       items: [...cart].map(([productId, quantity]) => ({ productId, quantity })),
       name: customer.name,
@@ -696,6 +881,7 @@ export function initCart({ store, slug, root, orderable = true }) {
       paymentMethod: customer.paymentMethod || undefined,
       notes: customer.notes,
       location: isDelivery && customer.location ? { lat: customer.location.lat, lng: customer.location.lng } : undefined,
+      paymentProofId: prepaid ? proof.id : undefined,
     };
     // Mismo contenido = misma clave: si la conexión falla y el cliente reintenta, no se duplica.
     const signature = JSON.stringify(body);
@@ -733,6 +919,12 @@ export function initCart({ store, slug, root, orderable = true }) {
         checkout.signature = null;
         refresh();
       }
+      if (error.code === "PAYMENT_PROOF_INVALID" || error.code === "PAYMENT_PROOF_REQUIRED") {
+        if (proof) URL.revokeObjectURL(proof.url);
+        proof = null;
+        checkout.signature = null;
+        drawPrepay();
+      }
       showErrors(dialog.querySelector("[data-checkout]") ?? form, {
         message: error.message ?? "No pudimos registrar tu pedido. Intenta de nuevo.",
         fields: error.fields ?? error.details?.fields ?? {},
@@ -752,7 +944,12 @@ export function initCart({ store, slug, root, orderable = true }) {
       total: order.total,
       history: [{ status: "PENDING", at: order.createdAt }],
       business: { phone: business.phone, whatsappPhone: settings.whatsappPhone },
+      paid: false,
+      paymentProofSent: Boolean(order.paymentProof),
     };
+    if (proof) URL.revokeObjectURL(proof.url);
+    proof = null;
+    payKind = null;
     cart.clear();
     persistCart();
     checkout.key = null;
@@ -793,12 +990,21 @@ export function initCart({ store, slug, root, orderable = true }) {
   dialog.addEventListener("change", (event) => {
     const form = event.target.closest("[data-checkout]");
     if (!form) return;
+    if (event.target.matches("[data-proof-file]")) {
+      void uploadProof(event.target);
+      return;
+    }
     readCheckout(form);
     persistCustomer();
     if (event.target.name === "deliveryType") {
       // Cambia los campos de dirección y el resumen; conserva lo escrito.
       renderSheet();
       dialog.querySelector(`[name="deliveryType"][value="${customer.deliveryType}"]`)?.focus();
+    }
+    if (event.target.name === "paymentMethod") {
+      // Nequi, Daviplata o transferencia: aparece el QR para pagar antes de enviar.
+      payKind = null;
+      drawPrepay({ reveal: true });
     }
   });
 
@@ -825,6 +1031,17 @@ export function initCart({ store, slug, root, orderable = true }) {
         const form = dialog.querySelector("[data-checkout]");
         if (form) showErrors(form, { message: error.message });
       }
+    }
+    if (button?.matches("[data-prepay-kind]")) {
+      payKind = button.dataset.prepayKind;
+      drawPrepay();
+      dialog.querySelector(`[data-prepay-kind="${payKind}"]`)?.focus();
+    }
+    if (button?.matches("[data-copy-account]")) {
+      const ok = await copyText(button.dataset.copyAccount);
+      const label = button.querySelector("[data-copy-label]");
+      if (label) label.textContent = ok ? "Copiado" : "";
+      if (ok) announce("Copiado. Pégalo en tu app para pagar.");
     }
     if (button?.matches("[data-clear-location]")) {
       customer.location = null;

@@ -22,11 +22,12 @@ import { storeController } from "./modules/products/store.controller.js";
 import { storeRoutes } from "./modules/products/store.routes.js";
 import { courierRoutes } from "./modules/courier/courier.routes.js";
 import { paymentAccountsRoutes } from "./modules/payment-accounts/payment-accounts.routes.js";
+import { storePaymentProofRoutes, storePaymentQrRoutes } from "./modules/payment-accounts/payment-proofs.routes.js";
 import { pushRoutes } from "./modules/push/push.routes.js";
 import { pushService } from "./modules/push/push.service.js";
 import { subscriptionRoutes } from "./modules/subscriptions/subscriptions.routes.js";
 import { metrics } from "./services/metrics.service.js";
-import { imageOrigin } from "./services/storage.service.js";
+import { imageOrigin, PRIVATE_PREFIX } from "./services/storage.service.js";
 import { publicDir, sendPage } from "./utils/pages.js";
 import { mapConfig, mapTileOrigin } from "./config/map.js";
 
@@ -121,6 +122,8 @@ function apiRouter(): Router {
   api.use("/courier", courierRoutes);
   api.use("/admin", adminRoutes);
   api.use("/store/:slug/orders", storeOrderRoutes);
+  api.use("/store/:slug/payment-proofs", storePaymentProofRoutes);
+  api.use("/store/:slug/payment-qr", storePaymentQrRoutes);
   api.use("/store", storeRoutes);
 
   return api;
@@ -200,6 +203,8 @@ export function createApp() {
 
   // Imágenes subidas con STORAGE_DRIVER=local. Cada versión tiene un nombre nuevo: caché de un año.
   if (env.STORAGE_DRIVER === "local") {
+    // Los comprobantes de pago son privados: solo se leen por la API del panel.
+    app.use(`/uploads/${PRIVATE_PREFIX}`, (_req, res) => res.status(404).end());
     app.use("/uploads", express.static(path.resolve(env.UPLOADS_DIR), { index: false, immutable: true, maxAge: "365d" }));
     app.use("/uploads", (_req, res) => res.status(404).end());
   }

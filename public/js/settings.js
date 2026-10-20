@@ -275,7 +275,7 @@ function paymentsSection() {
   return section(
     "pagos",
     "Métodos de pago",
-    "Se muestran en tu tienda para que el cliente elija cómo pagar. Abajo configuras tus QR para cobrar al entregar.",
+    "Se muestran en tu tienda para que el cliente elija cómo pagar. Abajo configuras tus QR: con ellos, Nequi, Daviplata y transferencia se pagan antes de enviar el pedido.",
     html`<form data-form="pagos" novalidate>
       <fieldset ${isOwner ? "" : "disabled"}>
         <legend class="sr-only">Métodos de pago aceptados</legend>

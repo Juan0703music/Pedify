@@ -174,7 +174,7 @@ Para pedidos a domicilio. El cliente puede marcar su punto exacto al pedir (`loc
 | Método | Ruta | Quién | Respuesta |
 |---|---|---|---|
 | POST | `/orders/:id/courier-link` | equipo del negocio | 201 `{ url, expiresAt, qrSvg }`. URL `…/domicilio#<clave>`; vence en 12 h. Generar otro invalida el anterior. Solo domicilios (`NOT_DELIVERY`) no terminados (`ORDER_FINISHED`) |
-| GET | `/courier` | domiciliario (`X-Courier-Key`) | Número, negocio, cliente (nombre, celular, dirección, referencias, notas), `destination`, productos, total, método de pago, `paid`, `position`, `map`, `paymentAccounts` (QR y llaves de cobro del negocio) y `suggestedAccount` (`NEQUI`, `DAVIPLATA` o `BRE_B` según cómo dijo el cliente que pagaría; `null` en efectivo o datáfono) |
+| GET | `/courier` | domiciliario (`X-Courier-Key`) | Número, negocio, cliente (nombre, celular, dirección, referencias, notas), `destination`, productos, total, método de pago, `paid`, `paymentProofSent` (pagó por adelantado), `position`, `map`, `paymentAccounts` (QR y llaves de cobro del negocio) y `suggestedAccount` (`NEQUI`, `DAVIPLATA` o `BRE_B` según cómo dijo el cliente que pagaría; `null` en efectivo o datáfono) |
 | POST | `/courier/location` | domiciliario | `{ lat, lng, accuracy?, heading? }` → 204. Solo con el pedido «En camino» (409 `NOT_ON_THE_WAY`) |
 | POST | `/courier/delivered` | domiciliario | 204: el pedido pasa a «Entregado» (historial: «Entregado por el domiciliario») |
 | GET | `/map-config` | público | `{ tileUrl, attribution }` (`MAP_TILE_URL`, `MAP_TILE_ATTRIBUTION`) |
@@ -182,9 +182,11 @@ Para pedidos a domicilio. El cliente puede marcar su punto exacto al pedir (`loc
 - La clave viaja en la cabecera `X-Courier-Key` (en la página va después de `#`, así que no llega a los registros del servidor). Clave inválida, vencida o de un pedido terminado → 404 `COURIER_LINK_INVALID`. Límite: 400 peticiones cada 10 minutos por IP.
 - El seguimiento del cliente (`GET /store/:slug/orders/:id`) incluye `destination` (su punto) y `courier` (`{ lat, lng, accuracy, heading, updatedAt }` solo mientras va «En camino»). El detalle del panel incluye `deliveryLat`, `deliveryLng` y `courier`.
 
-## Cobrar con QR al entregar — `/businesses/current/payment-accounts`
+## Cobrar con QR — `/businesses/current/payment-accounts`
 
-El negocio sube el QR para recibir pagos que le da su app (Nequi, la llave **Bre-B** de cualquier banco o Daviplata); un pantallazo sirve. El servidor lee el código de la imagen y lo devuelve dibujado de nuevo (`qrSvg`), así se ve nítido en la pantalla del domiciliario. Pedify no genera códigos de pago propios: usa exactamente el que emitió el banco. Ese QR no lleva el valor: el cliente escribe el total al pagar.
+El negocio sube el QR para recibir pagos que le da su app (Nequi, la llave **Bre-B** de cualquier banco o Daviplata); un pantallazo sirve. El servidor lee el código de la imagen y lo devuelve dibujado de nuevo (`qrSvg`), así se ve nítido en la tienda y en la pantalla del domiciliario. Pedify no genera códigos de pago propios: usa exactamente el que emitió el banco. Ese QR no lleva el valor: el cliente escribe el total al pagar.
+
+Con cuentas configuradas, **Nequi, Daviplata y transferencia se pagan antes de enviar el pedido** (ver «Pago por adelantado» más abajo). Efectivo y datáfono se siguen pagando al recibir.
 
 | Método | Ruta | Quién | Cuerpo / respuesta |
 |---|---|---|---|
@@ -194,6 +196,20 @@ El negocio sube el QR para recibir pagos que le da su app (Nequi, la llave **Bre
 | DELETE | `/businesses/current/payment-accounts/:kind` | OWNER | 204 (borra el QR y la llave). 404 `PAYMENT_ACCOUNT_NOT_FOUND` |
 
 `:kind` es `NEQUI`, `BRE_B` o `DAVIPLATA`. El contenido leído del QR no se expone tal cual (solo su dibujo en SVG) y la clave de la imagen nunca sale en la API.
+
+## Pago por adelantado con comprobante
+
+Para cada método por transferencia que acepta el negocio, la tienda (`GET /store/:slug`) trae en `payments.prepay` las cuentas que se le muestran al cliente: la del método y la llave Bre-B, que se paga desde cualquier banco o billetera (por ejemplo `{ "NEQUI": ["NEQUI", "BRE_B"], "BANK_TRANSFER": ["BRE_B"] }`), y en `payments.accounts` sus datos (`kind, label, accountKey, holderName, qrSvg`). Un método que aparece en `prepay` exige comprobante; uno que no aparece se paga al recibir.
+
+| Método | Ruta | Quién | Respuesta |
+|---|---|---|---|
+| POST | `/store/:slug/payment-proofs` | público | Imagen en binario (pantallazo del comprobante, máx. 8 MB) → 201 `{ id, createdAt }`. 409 `PREPAY_NOT_AVAILABLE` si el negocio no cobra por adelantado. Límite: 20 cada 15 minutos por IP |
+| GET | `/store/:slug/payment-qr/:kind.png` | público | El QR de esa cuenta en PNG (descarga), para subirlo en la app del banco cuando se pide desde el mismo celular. 404 `PAYMENT_QR_NOT_FOUND` |
+| GET | `/orders/:id/payment-proof` | equipo del negocio | La imagen del comprobante (`image/webp`, `Cache-Control: private, no-store`). 404 `PAYMENT_PROOF_NOT_FOUND` |
+
+- Al crear el pedido se envía `paymentProofId`. Sin él → 400 `PAYMENT_PROOF_REQUIRED` (`details.fields.paymentProof`); si es de otro negocio, ya se usó o tiene más de 24 horas → 400 `PAYMENT_PROOF_INVALID`. El comprobante queda unido al pedido: `paymentProof: { createdAt }` en el pedido del panel (lista y detalle) y en la respuesta de creación.
+- El negocio compara el comprobante con su app y marca el pedido como pagado (`PATCH /orders/:id/payment`). El seguimiento del cliente muestra `paymentProofSent` y `paid`; la vista del domiciliario, `paymentProofSent` (no cobra).
+- Las imágenes son privadas: se guardan en `private/…` del almacenamiento, nunca en `/uploads` (404) y solo se leen por la API. Los comprobantes que no se usan en un pedido se borran al día siguiente; al suprimir los datos de un cliente se borran los de sus pedidos.
 
 ## Roles y permisos
 
@@ -248,7 +264,8 @@ Sin sesión.
     ] },
     { "id": null, "name": "Otros productos", "products": [ … ] }
   ],
-  "featured": { "kind": "popular", "productIds": ["…", "…", "…"] }
+  "featured": { "kind": "popular", "productIds": ["…", "…", "…"] },
+  "payments": { "prepay": { "NEQUI": ["NEQUI", "BRE_B"] }, "accounts": [{ "kind": "NEQUI", "label": "Nequi", "accountKey": "300 123 4567", "holderName": "Ana Pérez", "qrSvg": "<svg…" }, …] }
 }
 ```
 
@@ -275,6 +292,8 @@ Sin sesión (secciones 4, 8 y 9 del documento). Límite: 15 pedidos cada 10 minu
   "notes": "Sin cebolla"
 }
 ```
+
+Con Nequi, Daviplata o transferencia y cuentas configuradas, además `"paymentProofId": "…"` (ver «Pago por adelantado con comprobante»).
 
 - Solo se reciben productos y cantidades. Precios, subtotal, domicilio, descuento y total los calcula el servidor; cualquier valor monetario enviado se descarta.
 - `idempotencyKey`: la genera el navegador por intento de compra (16–80 caracteres `A-Z a-z 0-9 -`). Si llega de nuevo, se responde **200** con el pedido ya creado, sin duplicarlo.

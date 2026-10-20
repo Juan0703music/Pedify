@@ -48,6 +48,8 @@ export const createOrderSchema = z
     notes: optionalText(300, "Las notas"),
     /** Punto exacto que el cliente marcó con su GPS (opcional; solo se guarda en domicilios). */
     location: geoPointSchema.optional(),
+    /** Comprobante que subió el cliente (obligatorio si el negocio cobra ese método por adelantado). */
+    paymentProofId: z.uuid("Vuelve a subir el comprobante.").optional(),
   })
   .refine((order) => order.deliveryType !== "DELIVERY" || Boolean(order.address), {
     path: ["address"],

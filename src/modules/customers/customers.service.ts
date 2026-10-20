@@ -2,6 +2,7 @@ import type { DbClient } from "../../config/database.js";
 import type { TenantContext } from "../../types/common.js";
 import { notFound } from "../../utils/errors.js";
 import { buildPage } from "../../utils/pagination.js";
+import { paymentProofsService } from "../payment-accounts/payment-proofs.service.js";
 import { customersRepository } from "./customers.repository.js";
 import type { ListCustomersQuery } from "./customers.schemas.js";
 
@@ -19,6 +20,7 @@ export const customersService = {
 
   async erase(tenant: TenantContext, id: string) {
     if (!(await customersRepository.erase(id, tenant.businessId))) throw notFound("No encontramos ese cliente.", "CUSTOMER_NOT_FOUND");
+    await paymentProofsService.eraseForCustomer(tenant.businessId, id);
   },
 
   /** Información del cliente, sus direcciones y su historial de pedidos (sección 6). */

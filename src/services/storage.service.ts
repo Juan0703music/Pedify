@@ -1,14 +1,15 @@
 import { randomBytes } from "node:crypto";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, NoSuchKey, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
 
 /**
- * Almacenamiento de imágenes (fotos de productos, logos y portadas).
+ * Almacenamiento de imágenes (fotos de productos, logos y portadas; y, en privado, los
+ * comprobantes de pago que suben los clientes).
  *
  * - `local`: archivos en UPLOADS_DIR servidos por Express en /uploads.
  * - `s3`: cualquier servicio compatible con S3 (AWS, Cloudflare R2, DigitalOcean Spaces, MinIO).
@@ -18,10 +19,15 @@ import { logger } from "../utils/logger.js";
  * (incluida la ubicación GPS que guardan las fotos del celular).
  */
 export interface StorageDriver {
-  put(key: string, body: Buffer, contentType: string): Promise<void>;
+  put(key: string, body: Buffer, contentType: string, cacheControl?: string): Promise<void>;
+  /** Lee un archivo (los privados se sirven a través de la API). `null` si no existe. */
+  get(key: string): Promise<Buffer | null>;
   delete(key: string): Promise<void>;
   publicUrl(key: string): string;
 }
+
+/** Carpeta de archivos privados: nunca se sirven en /uploads. */
+export const PRIVATE_PREFIX = "private";
 
 /** Las imágenes nunca cambian de contenido (cada versión tiene una clave nueva). */
 const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
@@ -39,6 +45,15 @@ export class LocalStorage implements StorageDriver {
     const file = this.resolve(key);
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, body);
+  }
+
+  async get(key: string): Promise<Buffer | null> {
+    try {
+      return await readFile(this.resolve(key));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
   }
 
   async delete(key: string): Promise<void> {
@@ -68,10 +83,20 @@ export class S3Storage implements StorageDriver {
     this.publicBase = publicBase.replace(/\/+$/, "");
   }
 
-  async put(key: string, body: Buffer, contentType: string): Promise<void> {
+  async put(key: string, body: Buffer, contentType: string, cacheControl = IMMUTABLE_CACHE): Promise<void> {
     await this.client.send(
-      new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType, CacheControl: IMMUTABLE_CACHE }),
+      new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType, CacheControl: cacheControl }),
     );
+  }
+
+  async get(key: string): Promise<Buffer | null> {
+    try {
+      const result = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+      return result.Body ? Buffer.from(await result.Body.transformToByteArray()) : null;
+    } catch (error) {
+      if (error instanceof NoSuchKey) return null;
+      throw error;
+    }
   }
 
   async delete(key: string): Promise<void> {
@@ -122,6 +147,8 @@ export const IMAGE_PRESETS = {
   banner: { width: 1600, height: 1000, fit: "inside", quality: 80 },
   // QR de cobro (pantallazo de Nequi o del banco): alta calidad para que siga siendo legible.
   qr: { width: 1200, height: 2000, fit: "inside", quality: 92 },
+  // Comprobante de pago (pantallazo largo del celular): legible para revisar valor y referencia.
+  proof: { width: 1100, height: 2600, fit: "inside", quality: 82 },
 } satisfies Record<string, ImagePreset>;
 
 export type ImageKind = keyof typeof IMAGE_PRESETS;
@@ -159,6 +186,17 @@ export async function saveImage(input: Buffer, kind: ImageKind, folder: string):
   const key = `${folder}/${randomBytes(12).toString("base64url")}.webp`;
   await storage.put(key, data, "image/webp");
   return { key, url: storage.publicUrl(key) };
+}
+
+/**
+ * Guarda una imagen privada (comprobantes de pago) bajo `private/<folder>`: no tiene URL pública y
+ * solo se lee con `storage.get` desde una ruta que verifica permisos. Devuelve la clave.
+ */
+export async function savePrivateImage(input: Buffer, kind: ImageKind, folder: string): Promise<string> {
+  const data = await processImage(input, kind);
+  const key = `${PRIVATE_PREFIX}/${folder}/${randomBytes(16).toString("base64url")}.webp`;
+  await storage.put(key, data, "image/webp", "private, no-store");
+  return key;
 }
 
 /** Borra una imagen sin interrumpir la operación si falla (queda registrado). */

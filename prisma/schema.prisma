@@ -146,6 +146,7 @@ model Business {
   pushSubscriptions PushSubscription[]
   courierTrackings  CourierTracking[]
   paymentAccounts   PaymentAccount[]
+  paymentProofs     PaymentProof[]
   payments          SubscriptionPayment[]
   categories        Category[]
   products          Product[]
@@ -359,6 +360,7 @@ model Order {
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
   courier       CourierTracking?
+  paymentProof  PaymentProof?
 
   @@unique([businessId, number])
   @@unique([businessId, idempotencyKey])
@@ -458,7 +460,8 @@ enum PaymentAccountKind {
 }
 
 /// Cuentas para cobrar por transferencia: el QR que el negocio sacó de su app (Nequi, Bre-B de su
-/// banco o Daviplata) y su número o llave. El domiciliario las muestra al entregar el pedido.
+/// banco o Daviplata) y su número o llave. El cliente las ve al pedir (paga antes de enviar el
+/// pedido) y el domiciliario las muestra al entregar.
 model PaymentAccount {
   id         String             @id @default(uuid(7)) @db.Uuid
   businessId String             @map("business_id") @db.Uuid
@@ -477,4 +480,22 @@ model PaymentAccount {
 
   @@unique([businessId, kind])
   @@map("payment_accounts")
+}
+
+/// Comprobante del pago por transferencia que el cliente sube antes de enviar su pedido. Se sube
+/// primero (sin pedido) y queda unido al pedido al crearlo; los que nunca se usan se borran al día.
+/// La imagen es privada: solo el equipo del negocio la ve, a través de la API.
+model PaymentProof {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  orderId    String?  @map("order_id") @db.Uuid
+  imageKey   String   @map("image_key")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  order    Order?   @relation(fields: [orderId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([orderId, businessId])
+  @@index([businessId, createdAt])
+  @@map("payment_proofs")
 }

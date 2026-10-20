@@ -93,11 +93,12 @@ function card(config) {
 function view() {
   return html`<div class="grid gap-4">
     <div class="grid gap-1">
-      <h3 class="flex items-center gap-2 text-[1.0625rem] font-[740]">${icon("qr-code")} Cobrar con QR al entregar</h3>
+      <h3 class="flex items-center gap-2 text-[1.0625rem] font-[740]">${icon("qr-code")} Cobrar por adelantado con QR</h3>
       <p class="text-sm text-muted">
-        Cuando el cliente paga por transferencia, el domiciliario le muestra tu QR en su celular y el cliente lo escanea con Nequi, Daviplata o la
-        app de su banco. Sube el QR para recibir pagos que te da tu app: Pedify lo lee y lo muestra nítido. Ese QR no trae el valor, así que el
-        cliente escribe el total que le aparece al domiciliario.
+        Cuando el cliente elige Nequi, Daviplata o transferencia, ve tu QR y tu llave al hacer el pedido, paga y sube el comprobante antes de
+        enviarlo: tú lo revisas en el pedido y lo marcas como pagado. Si paga en efectivo y cambia de idea, el domiciliario también puede mostrarle
+        el QR. Sube el QR para recibir pagos que te da tu app (Pedify lo lee y lo muestra nítido). Ese QR no trae el valor: el cliente escribe el
+        total que le mostramos.
       </p>
     </div>
     ${KINDS.map(card)}

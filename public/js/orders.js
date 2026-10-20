@@ -113,7 +113,11 @@ function orderCard(order) {
     <hr class="ticket-rule my-3" />
     <div class="flex items-center justify-between gap-3">
       <span class="text-sm text-muted">
-        ${PAYMENT_LABEL[order.paymentMethod] ?? "Pago"}${order.paidAt ? html` · <span class="font-[650] text-leaf">Pagado</span>` : ""}
+        ${PAYMENT_LABEL[order.paymentMethod] ?? "Pago"}${order.paidAt
+          ? html` · <span class="font-[650] text-leaf">Pagado</span>`
+          : order.paymentProof
+            ? html` · <span class="font-[700] text-mustard-deep">Revisar comprobante</span>`
+            : ""}
       </span>
       <span class="num text-lg font-[820]">${formatCOP(order.total)}</span>
     </div>
@@ -358,15 +362,38 @@ function detailView(order) {
 
         ${order.notes ? html`<p class="rounded-[10px] bg-mustard-soft px-3.5 py-3"><span class="font-[700]">Nota del cliente:</span> ${order.notes}</p>` : ""}
 
-        <section aria-label="Pago" class="flex items-center justify-between gap-4 rounded-[12px] border border-line p-4">
-          <span>
-            <span class="block font-[650]">Pago: ${PAYMENT_LABEL[order.paymentMethod] ?? "—"}</span>
-            <span class="block text-sm text-muted">${order.paidAt ? `Pagado · ${dateTimeLabel(order.paidAt)}` : "Marca cuando recibas el pago."}</span>
-          </span>
-          <label class="flex items-center gap-2.5">
-            <span class="text-sm font-[620]">Pagado</span>
-            <input type="checkbox" role="switch" class="switch" data-paid="${order.id}" ${order.paidAt ? "checked" : ""} ${order.status === "CANCELLED" ? "disabled" : ""} />
-          </label>
+        <section aria-label="Pago" class="grid gap-4 rounded-[12px] border ${order.paymentProof && !order.paidAt ? "border-mustard-deep/40 bg-mustard-soft/40" : "border-line"} p-4">
+          <div class="flex items-center justify-between gap-4">
+            <span>
+              <span class="block font-[650]">Pago: ${PAYMENT_LABEL[order.paymentMethod] ?? "—"}${order.paymentProof ? " · por adelantado" : ""}</span>
+              <span class="block text-sm text-muted">
+                ${order.paidAt
+                  ? `Pagado · ${dateTimeLabel(order.paidAt)}`
+                  : order.paymentProof
+                    ? "Revisa en tu app que llegó el valor y márcalo como pagado."
+                    : "Marca cuando recibas el pago."}
+              </span>
+            </span>
+            <label class="flex items-center gap-2.5">
+              <span class="text-sm font-[620]">Pagado</span>
+              <input type="checkbox" role="switch" class="switch" data-paid="${order.id}" ${order.paidAt ? "checked" : ""} ${order.status === "CANCELLED" ? "disabled" : ""} />
+            </label>
+          </div>
+          ${order.paymentProof
+            ? html`<a
+                class="group flex items-center gap-3 rounded-[10px] border border-line bg-paper p-2.5 no-underline hover:border-ink"
+                href="/api/v1/orders/${order.id}/payment-proof"
+                target="_blank"
+                rel="noopener"
+              >
+                <img src="/api/v1/orders/${order.id}/payment-proof" alt="Comprobante de pago del pedido #${order.number}" class="h-20 w-14 flex-none rounded-[6px] border border-line object-cover object-top" loading="lazy" />
+                <span class="min-w-0 flex-1">
+                  <span class="block font-[700]">Comprobante del cliente</span>
+                  <span class="block text-sm text-muted">Subido ${dateTimeLabel(order.paymentProof.createdAt)} · debe ser de <span class="num font-[650] text-ink">${formatCOP(order.total)}</span></span>
+                </span>
+                <span class="flex flex-none items-center gap-1 text-sm font-[650] text-ink">Ver ${icon("external-link", "h-4 w-4")}</span>
+              </a>`
+            : ""}
         </section>
 
         ${order.status === "CANCELLED" && order.cancelReason

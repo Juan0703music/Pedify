@@ -108,6 +108,13 @@ function chargeCard(order) {
       <p class="flex items-center gap-2 font-[760]">${icon("circle-check")} Ya está pagado: no cobres.</p>
     </section>`;
   }
+  if (order.paymentProofSent) {
+    // Pagó al pedir y envió el comprobante: el negocio lo revisa antes de despacharlo.
+    return html`<section class="rounded-[20px] bg-leaf-soft p-4 text-leaf">
+      <p class="flex items-center gap-2 font-[760]">${icon("circle-check")} Pagó por adelantado: no cobres.</p>
+      <p class="mt-1 text-sm">El cliente pagó ${PAYMENT[order.paymentMethod] ?? ""} al pedir y envió el comprobante. Si el negocio te dice otra cosa, cobra <span class="num font-[700]">${formatCOP(order.total)}</span>.</p>
+    </section>`;
+  }
   const accounts = order.paymentAccounts ?? [];
   // El cliente eligió Nequi, Daviplata o transferencia: el QR es lo principal.
   const byTransfer = Boolean(order.suggestedAccount);
@@ -181,7 +188,7 @@ function payView() {
         ? html`<div class="grid justify-items-center gap-2">
             ${account.holderName ? html`<p class="text-[0.9375rem]">${account.label} a nombre de <strong class="font-[760]">${account.holderName}</strong></p>` : ""}
             ${account.accountKey
-              ? html`<button type="button" class="inline-flex min-h-11 items-center gap-2 rounded-full bg-ground px-4 text-[1rem] font-[720]" data-copy-key="${account.accountKey}">
+              ? html`<button type="button" class="inline-flex min-h-11 items-center gap-2 rounded-full bg-ground px-4 text-[1rem] font-[720]" data-copy-key="${account.accountKey.replace(/\s+/g, "")}">
                   <span class="text-muted">${account.kind === "BRE_B" ? "Llave" : "Número"}</span>
                   <span class="num [overflow-wrap:anywhere]">${account.accountKey}</span>
                   <span class="text-muted" data-copy-label>${icon("copy", "h-4 w-4")}</span>

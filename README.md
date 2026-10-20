@@ -123,11 +123,13 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - El domiciliario marca **«Entregado»** desde su celular. Al entregar o cancelar se borran las ubicaciones y el enlace deja de funcionar.
 - Mapas con Leaflet y OpenStreetMap (sin llave); el proveedor se cambia con `MAP_TILE_URL`.
 
-### Cobrar con QR al entregar (Nequi, Bre-B, Daviplata)
+### Pago por adelantado con QR (Nequi, Bre-B, Daviplata)
 
 - En **Configuración → Pagos** el dueño sube el QR para recibir pagos que le da su app (un pantallazo sirve) y escribe su número o llave y el titular. Pedify lee el código y lo muestra nítido; si la imagen no tiene un QR legible, lo avisa.
-- En la página del domiciliario, la tarjeta «Cobrar» tiene **«Mostrar QR para pagar»**: abre una pantalla blanca con el QR grande, el valor a pagar, el titular y la llave (con botón para copiarla). Si hay varias cuentas se cambia entre ellas con pestañas; primero sale la que eligió el cliente.
-- El QR de la llave Bre-B se paga desde cualquier banco o billetera. Como es el QR fijo del negocio, no trae el valor: el cliente escribe el total que le muestra el domiciliario. 159 pruebas en total.
+- Cuando el cliente elige **Nequi, Daviplata o transferencia**, en el carrito aparece **«Paga ahora y envía tu pedido»**: el QR, el valor exacto, el número o la llave Bre-B (para copiar) y «Guardar imagen del QR» (para subirla en la app si pide desde el mismo celular). Paga, **sube el pantallazo del comprobante** y solo entonces puede enviar el pedido.
+- En el panel, el pedido llega con **«Revisar comprobante»**: el negocio abre la imagen, confirma en su app que llegó el valor y lo marca como **Pagado**. El cliente ve «Comprobante enviado» y luego «Pago confirmado»; el domiciliario ve «Pagó por adelantado: no cobres».
+- Los comprobantes son privados (solo los ve el equipo del negocio). Efectivo y datáfono siguen pagándose al recibir; si el negocio solo quiere pedidos pagados, desmarca esos métodos. Para pedidos en efectivo, el domiciliario también puede mostrar el QR al entregar («Mostrar QR para pagar»).
+- El QR de la llave Bre-B se paga desde cualquier banco o billetera. Como es el QR fijo del negocio, no trae el valor: el cliente escribe el total que le mostramos. 165 pruebas en total.
 
 ## Requisitos
 

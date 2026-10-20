@@ -24,6 +24,8 @@ export const orderSelect = {
   deliveryLat: true,
   deliveryLng: true,
   createdAt: true,
+  /** Comprobante del pago por adelantado (la imagen se pide aparte). */
+  paymentProof: { select: { createdAt: true } },
   items: {
     orderBy: { id: "asc" },
     select: { productId: true, productName: true, unitPrice: true, quantity: true, subtotal: true },
@@ -198,6 +200,8 @@ export const ordersRepository = {
         cancelReason: true,
         deliveryLat: true,
         deliveryLng: true,
+        paidAt: true,
+        paymentProof: { select: { createdAt: true } },
         createdAt: true,
         updatedAt: true,
         items: { orderBy: { id: "asc" }, select: { productName: true, quantity: true, subtotal: true } },

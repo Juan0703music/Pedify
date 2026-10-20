@@ -102,8 +102,13 @@ describe("Cuentas para cobrar con QR (Nequi, Bre-B, Daviplata)", () => {
 
     const product = (await agent.post("/api/v1/products").send({ name: "Salchipapa", price: 15000 }).expect(201)).body.data;
     const slug = (await agent.get("/api/v1/businesses/current")).body.data.slug as string;
-    const order = async (paymentMethod: string) =>
-      (
+    const order = async (paymentMethod: string) => {
+      // Por transferencia se paga antes de pedir: el cliente sube el comprobante.
+      const paymentProofId =
+        paymentMethod === "BANK_TRANSFER"
+          ? (await newAgent().post(`/api/v1/store/${slug}/payment-proofs`).set("Content-Type", "image/png").send(await screenshot("comprobante")).expect(201)).body.data.id
+          : undefined;
+      return (
         await newAgent()
           .post(`/api/v1/store/${slug}/orders`)
           .send({
@@ -114,9 +119,11 @@ describe("Cuentas para cobrar con QR (Nequi, Bre-B, Daviplata)", () => {
             deliveryType: "DELIVERY",
             address: "Calle 23 #18-40",
             paymentMethod,
+            paymentProofId,
           })
           .expect(201)
       ).body.data.order as { id: string };
+    };
     const riderView = async (orderId: string) => {
       await agent.patch(`/api/v1/orders/${orderId}/status`).send({ status: "PREPARING" }).expect(200);
       const url = (await agent.post(`/api/v1/orders/${orderId}/courier-link`).expect(201)).body.data.url as string;
@@ -124,7 +131,7 @@ describe("Cuentas para cobrar con QR (Nequi, Bre-B, Daviplata)", () => {
     };
 
     const transfer = await riderView((await order("BANK_TRANSFER")).id);
-    expect(transfer.suggestedAccount).toBe("BRE_B");
+    expect(transfer).toMatchObject({ suggestedAccount: "BRE_B", paymentProofSent: true, paid: false });
     expect(transfer.paymentAccounts).toEqual([
       expect.objectContaining({ kind: "NEQUI", accountKey: "3001234567", qrSvg: null }),
       expect.objectContaining({ kind: "BRE_B", accountKey: "@sabores2024", holderName: "Sabores del Caribe", qrSvg: expect.stringContaining("<svg") }),
@@ -132,7 +139,7 @@ describe("Cuentas para cobrar con QR (Nequi, Bre-B, Daviplata)", () => {
     expect(JSON.stringify(transfer)).not.toContain("qrImageKey");
 
     const cash = await riderView((await order("CASH")).id);
-    expect(cash.suggestedAccount).toBeNull();
+    expect(cash).toMatchObject({ suggestedAccount: null, paymentProofSent: false });
     expect(cash.paymentAccounts).toHaveLength(2);
   });
 });

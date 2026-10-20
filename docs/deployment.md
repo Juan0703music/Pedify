@@ -73,6 +73,7 @@ Si usas Cloudflare como DNS, deja la nube en gris (solo DNS) para que Caddy obte
 
 1. En Cloudflare → R2, crea dos buckets: **`pedifyai-fotos`** y **`pedifyai-copias`**. En pruebas usa otros dos (`pedifyai-fotos-pruebas`, `pedifyai-copias-pruebas`).
 2. Fotos públicas: en `pedifyai-fotos` → Settings → Custom Domains, conecta `fotos.pedifyai.com`. Esa es tu `S3_PUBLIC_URL`. La dirección `r2.dev` tiene límites de uso y solo sirve para probar.
+   Los comprobantes de pago de los clientes se guardan en la carpeta `private/` del mismo bucket y Pedify los entrega solo al equipo del negocio. Si el dominio público sirve todo el bucket, bloquea esa carpeta: en Cloudflare → Security → WAF, una regla que bloquee `http.host eq "fotos.pedifyai.com" and starts_with(http.request.uri.path, "/private/")`.
 3. `pedifyai-copias` **no** debe ser público. En Settings → Object lifecycle rules, agrega una regla que borre los objetos después de 90 días.
 4. Crea dos tokens de API (R2 → Manage API tokens), cada uno con permiso *Object Read & Write* limitado a **un** bucket: uno para las fotos (`S3_*`) y otro para las copias (`OFFSITE_*`).
 5. El endpoint es `https://<ID-de-cuenta>.r2.cloudflarestorage.com` (aparece en la página de R2).
