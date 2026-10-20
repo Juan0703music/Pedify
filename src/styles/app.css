@@ -619,9 +619,15 @@
     color: var(--color-ink);
     box-shadow: var(--shadow-pop);
   }
+  /*
+   * La hoja toma el alto de su contenido (hasta max-height). Sus hijos usan flex: 1 1 auto (flex-auto),
+   * no flex-1: Safari calculaba en 0 px el alto de una hoja cuyos hijos parten de flex-basis 0%,
+   * y la hoja se abría invisible. min-height es un respaldo por si algún navegador vuelve a hacerlo.
+   */
   .sheet[open] {
     display: flex;
     flex-direction: column;
+    min-height: min(24rem, 94dvh);
     animation: sheet-in 320ms var(--ease-out-expo);
   }
   .sheet::backdrop {

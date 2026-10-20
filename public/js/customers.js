@@ -88,12 +88,12 @@ function detailView(customer) {
     <dt class="text-xs font-[620] text-muted">${label}</dt>
     <dd class="num mt-1 text-lg font-[800]">${value}</dd>
   </div>`;
-  return html`<div class="flex min-h-0 flex-1 flex-col">
+  return html`<div class="flex min-h-0 flex-auto flex-col">
     <header class="flex items-center gap-3 border-b border-line py-3 pr-3 pl-5">
       <h2 id="customer-title" class="min-w-0 truncate text-lg font-[780] outline-none" tabindex="-1">${customer.name}</h2>
       <button type="button" class="btn btn-quiet btn-icon ml-auto" data-close aria-label="Cerrar">${icon("x")}</button>
     </header>
-    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+    <div class="min-h-0 flex-auto overflow-y-auto px-5 py-5">
       <div class="grid gap-6">
         <div class="grid gap-2">
           <p class="num text-muted">${formatPhone(customer.phone)} · cliente desde ${dateTimeLabel(customer.createdAt).split(" · ")[0]}</p>

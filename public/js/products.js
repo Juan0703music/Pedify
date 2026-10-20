@@ -297,13 +297,13 @@ function switchRow(id, name, title, text) {
 
 function editorDialog() {
   return html`<dialog id="product-editor" class="sheet" aria-labelledby="editor-title">
-    <form class="flex min-h-0 flex-1 flex-col" data-product-form novalidate>
+    <form class="flex min-h-0 flex-auto flex-col" data-product-form novalidate>
       <header class="flex items-center justify-between gap-3 border-b border-line py-3 pr-3 pl-5">
         <h2 id="editor-title" class="text-lg font-[760] outline-none" tabindex="-1">Nuevo producto</h2>
         <button type="button" class="btn btn-quiet btn-icon" data-close-editor aria-label="Cerrar">${icon("x")}</button>
       </header>
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+      <div class="min-h-0 flex-auto overflow-y-auto px-5 py-5">
         <div class="grid gap-5">
           ${formAlert()}
           <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
@@ -375,7 +375,7 @@ function editorDialog() {
 
 function pickerDialog() {
   return html`<dialog id="category-picker" class="sheet" aria-labelledby="picker-title">
-    <div class="flex min-h-0 flex-1 flex-col">
+    <div class="flex min-h-0 flex-auto flex-col">
       <header class="border-b border-line py-3 pr-3 pl-5">
         <div class="flex items-center justify-between gap-3">
           <h2 id="picker-title" class="min-w-0 text-lg leading-snug font-[760] outline-none" tabindex="-1" data-picker-title></h2>
@@ -393,7 +393,7 @@ function pickerDialog() {
           <button type="button" class="btn btn-ghost btn-sm" data-pick-none>${icon("x", "h-4 w-4")} Quitar selección</button>
         </div>
       </div>
-      <div class="min-h-0 flex-1 overflow-y-auto" data-picker-list></div>
+      <div class="min-h-0 flex-auto overflow-y-auto" data-picker-list></div>
       <footer class="flex flex-wrap items-center gap-x-2 gap-y-2.5 border-t border-line px-5 pt-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))]">
         <p class="w-full text-sm sm:mr-auto sm:w-auto" aria-live="polite" data-picker-summary></p>
         <div class="flex w-full gap-2 sm:w-auto">

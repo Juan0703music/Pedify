@@ -117,13 +117,13 @@ function listView() {
 function detailView(business) {
   const sub = business.subscription;
   const owner = business.memberships.find((member) => member.role === "OWNER")?.user;
-  return html`<div class="flex min-h-0 flex-1 flex-col">
+  return html`<div class="flex min-h-0 flex-auto flex-col">
     <header class="flex items-center gap-3 border-b border-line py-3 pr-3 pl-5">
       <h2 id="detail-title" class="min-w-0 truncate text-lg font-[780] outline-none" tabindex="-1">${business.name}</h2>
       ${statusBadge(business.status === "SUSPENDED" ? "SUSPENDED" : sub.status)}
       <button type="button" class="btn btn-quiet btn-icon ml-auto" data-close aria-label="Cerrar">${icon("x")}</button>
     </header>
-    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+    <div class="min-h-0 flex-auto overflow-y-auto px-5 py-5">
       <div class="grid gap-6">
         <section class="grid gap-1 text-[0.9375rem]">
           <a class="font-[650]" href="${business.storeUrl}" target="_blank" rel="noopener">${business.storeUrl} ${icon("external-link", "inline h-4 w-4 align-[-3px]")}</a>

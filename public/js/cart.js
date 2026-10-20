@@ -436,13 +436,13 @@ export function initCart({ store, slug, root, orderable = true }) {
     const isDelivery = customer.deliveryType === "DELIVERY";
     const missing = missingForMinimum();
     const empty = cart.size === 0;
-    return html`<form class="flex min-h-0 flex-1 flex-col" data-checkout novalidate>
+    return html`<form class="flex min-h-0 flex-auto flex-col" data-checkout novalidate>
       <header class="flex items-center justify-between gap-3 border-b border-line py-3 pr-3 pl-5">
         <h2 id="cart-title" class="text-lg font-[780] outline-none" tabindex="-1">Tu pedido</h2>
         <button type="button" class="btn btn-quiet btn-icon" data-close-cart aria-label="Cerrar">${icon("x")}</button>
       </header>
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
+      <div class="min-h-0 flex-auto overflow-y-auto px-5 pb-6">
         <section aria-label="Productos" data-cart-items>${itemsList()}</section>
         ${empty
           ? ""
@@ -651,12 +651,12 @@ export function initCart({ store, slug, root, orderable = true }) {
     const line = (label, value, strong = false) => html`<div class="flex items-baseline justify-between gap-4 ${strong ? "text-[1.0625rem] font-[820]" : ""}">
       <dt>${label}</dt><dd class="num">${value}</dd>
     </div>`;
-    return html`<div class="flex min-h-0 flex-1 flex-col">
+    return html`<div class="flex min-h-0 flex-auto flex-col">
       <header class="flex items-center justify-between gap-3 border-b border-line py-3 pr-3 pl-5">
         <h2 id="cart-title" class="text-lg font-[780] outline-none" tabindex="-1">Pedido #${order.number}</h2>
         <button type="button" class="btn btn-quiet btn-icon" data-close-cart aria-label="Cerrar">${icon("x")}</button>
       </header>
-      <div class="min-h-0 flex-1 overflow-y-auto bg-ground px-5 py-5">
+      <div class="min-h-0 flex-auto overflow-y-auto bg-ground px-5 py-5">
         <div class="mx-auto grid max-w-[26rem] gap-5">
           <div class="relative overflow-hidden rounded-[18px] ${cancelled ? "bg-tomato text-paper" : "bg-ink text-paper"} p-5" aria-live="polite">
             <div class="flex items-start gap-4">

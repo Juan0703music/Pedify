@@ -271,8 +271,8 @@ function featured(store, orderable) {
 /** Ficha del producto con la foto en grande (se abre al tocar un producto). */
 function detailView(product, orderable) {
   const soldOut = !product.isAvailable;
-  return html`<div class="relative flex min-h-0 flex-1 flex-col">
-    <div class="min-h-0 flex-1 overflow-y-auto">
+  return html`<div class="relative flex min-h-0 flex-auto flex-col">
+    <div class="min-h-0 flex-auto overflow-y-auto">
       ${product.imageUrl
         ? html`<div class="photo aspect-[4/3] w-full sm:aspect-[16/10]">
             <img src="${product.imageUrl}" alt="${product.name}" class="${soldOut ? "opacity-70 grayscale" : ""}" />

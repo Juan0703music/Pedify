@@ -118,3 +118,7 @@ Es la vitrina del comerciante, no de Pedify: manda la portada, el logo y el nomb
 - Sin texto en gradiente, sin vidrio/desenfoque decorativo, sin rótulos pequeños sobre los títulos.
 - Los datos de demostración se marcan como "Ejemplo ilustrativo".
 - Textos en español de Colombia; los errores dicen qué pasó y cómo resolverlo.
+
+## Hojas (`.sheet`) en Safari
+
+Las hojas (carrito, seguimiento, ficha de producto y ventanas del panel) toman el alto de su contenido hasta `max-height`. Sus contenedores internos usan `flex-auto` (`flex: 1 1 auto`), nunca `flex-1`: Safari en iPhone calculaba en 0 px una hoja cuyos hijos parten de `flex-basis: 0%` y la hoja se abría invisible. `.sheet[open]` tiene además `min-height` de respaldo.

@@ -304,14 +304,14 @@ function detailView(order) {
     <dt>${label}</dt><dd class="num">${value}</dd>
   </div>`;
 
-  return html`<div class="flex min-h-0 flex-1 flex-col">
+  return html`<div class="flex min-h-0 flex-auto flex-col">
     <header class="flex items-center gap-3 border-b border-line py-3 pr-3 pl-5">
       <h2 id="detail-title" class="text-lg font-[780] outline-none" tabindex="-1">Pedido #${order.number}</h2>
       ${statusBadge(order.status)}
       <button type="button" class="btn btn-quiet btn-icon ml-auto" data-close-detail aria-label="Cerrar">${icon("x")}</button>
     </header>
 
-    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+    <div class="min-h-0 flex-auto overflow-y-auto px-5 py-5">
       <div class="grid gap-6">
         <section aria-label="Cliente" class="grid gap-2">
           <p class="text-lg font-[740]">${order.customerName}</p>

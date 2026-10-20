@@ -24,12 +24,12 @@ function ensureDialog() {
 
 function view(order, link) {
   const message = `Hola. Te comparto la entrega del pedido #${order.number}. Abre este enlace en tu celular, toca «Empezar entrega» y déjalo abierto mientras vas: ${link.url}`;
-  return html`<div class="flex min-h-0 flex-1 flex-col">
+  return html`<div class="flex min-h-0 flex-auto flex-col">
     <header class="flex items-center gap-3 border-b border-line py-3 pr-3 pl-5">
       <h2 id="courier-link-title" class="text-lg font-[780] outline-none" tabindex="-1">Domiciliario del pedido #${order.number}</h2>
       <button type="button" class="btn btn-quiet btn-icon ml-auto" data-close-courier aria-label="Cerrar">${icon("x")}</button>
     </header>
-    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+    <div class="min-h-0 flex-auto overflow-y-auto px-5 py-5">
       <div class="grid gap-5">
         <p class="text-[0.9375rem] text-muted">
           Con este enlace el domiciliario ve la dirección y lo que debe cobrar, y comparte su ubicación: el cliente lo ve acercarse en un
