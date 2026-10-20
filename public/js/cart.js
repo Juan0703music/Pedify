@@ -193,7 +193,9 @@ export function initCart({ store, slug, root, orderable = true }) {
         <span class="font-[700]">Pedido #${active.number}</span>
         <span class="text-ink-soft"> · ${step.short}</span>
       </p>
-      <button type="button" class="btn btn-primary btn-sm min-h-10 px-3" data-open-tracking>Ver estado</button>
+      <button type="button" class="btn btn-primary btn-sm min-h-10 px-3" data-open-tracking>
+        ${status === "OUT_FOR_DELIVERY" && tracked?.deliveryType === "DELIVERY" ? html`${icon("map-pin", "h-4 w-4")} Ver en el mapa` : "Ver estado"}
+      </button>
       ${done
         ? html`<button type="button" class="btn btn-quiet btn-icon h-10 w-10 text-ink-soft hover:bg-ink-3 hover:text-paper" data-dismiss-order aria-label="Ocultar">
             ${icon("x")}
