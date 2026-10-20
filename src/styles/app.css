@@ -48,6 +48,9 @@
   --color-sky: #1d5bb8;
   --color-sky-soft: #e5eefb;
   --color-whatsapp: #25d366;
+  /* Estados sobre la tienda de noche (fondo tinta): versiones claras para que se lean. */
+  --color-leaf-glow: #4cd987;
+  --color-tomato-glow: #ff8a7a;
 
   /* Gráficas: una serie por gráfica, mostaza oscuro validado (contraste ≥ 3:1, croma y luminosidad). */
   --color-chart: #b07d00;
@@ -1257,6 +1260,486 @@
   }
   .drawer[open] {
     animation: drawer-in 280ms var(--ease-out-expo);
+  }
+}
+
+/* ─────────────── Tienda pública: «Noche de neón» ───────────────
+ * La vitrina del negocio es de noche: fondo tinta, la comida a toda luz y el mostaza como neón.
+ * El carrito y el seguimiento (hoja clara) siguen siendo la comanda de papel sobre la noche.
+ */
+@layer components {
+  /* La página entera es de noche (también el rebote al estirar la página en el iPhone). */
+  html:has(> body.store-night) {
+    background: var(--color-ink);
+    scrollbar-color: var(--color-ink-3) var(--color-ink);
+  }
+  .store-night {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    color-scheme: dark;
+    caret-color: var(--color-mustard);
+    scrollbar-color: var(--color-ink-3) var(--color-ink);
+  }
+  /* La hoja clara del carrito vuelve a los controles claros del navegador. */
+  .store-night .sheet:not(.sheet-night) {
+    color-scheme: light;
+    caret-color: var(--color-ink);
+  }
+  #store :focus-visible,
+  .sheet-night :focus-visible {
+    outline-color: var(--color-mustard);
+  }
+
+  /* ─── Portada de cine ─── */
+  .night-hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: min(84svh, 46rem);
+    overflow: hidden;
+    background: var(--color-ink);
+  }
+  .night-hero-photo {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: hero-settle 1800ms var(--ease-out-expo) both;
+  }
+  .night-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      180deg,
+      rgb(23 22 28 / 0.6) 0%,
+      rgb(23 22 28 / 0) 20%,
+      rgb(23 22 28 / 0.12) 44%,
+      rgb(23 22 28 / 0.9) 78%,
+      var(--color-ink) 100%
+    );
+  }
+  /* Sin portada: letrero de neón mostaza sobre la noche. */
+  .night-sign {
+    min-height: min(64svh, 34rem);
+    background:
+      radial-gradient(42rem 26rem at 78% 18%, rgb(255 199 44 / 0.2), transparent 62%),
+      radial-gradient(30rem 22rem at 0% 100%, rgb(255 199 44 / 0.08), transparent 60%),
+      var(--color-ink);
+  }
+  .night-sign::after {
+    background-image: radial-gradient(rgb(255 199 44 / 0.1) 1.2px, transparent 1.5px);
+    background-size: 22px 22px;
+    mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+  }
+  .night-sign-echo {
+    position: absolute;
+    top: 14%;
+    left: -0.04em;
+    z-index: -1;
+    font-size: clamp(7rem, 34vw, 16rem);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.8;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgb(255 199 44 / 0.12);
+    pointer-events: none;
+  }
+
+  /* Nombre del negocio: letrero gigante; la última palabra va en contorno mostaza. */
+  .neon-name {
+    font-size: var(--fit, clamp(3rem, 14vw, 6rem));
+    font-stretch: 66%;
+    font-weight: 860;
+    line-height: 0.86;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .neon-name .text-outline {
+    -webkit-text-stroke-width: max(2px, 0.03em);
+  }
+  .night-sign .neon-name .text-outline {
+    text-shadow: 0 0 0.4em rgb(255 199 44 / 0.45);
+  }
+
+  .night-logo {
+    display: grid;
+    place-items: center;
+    width: 3.75rem;
+    height: 3.75rem;
+    flex: none;
+    overflow: hidden;
+    border-radius: 999px;
+    border: 2px solid var(--color-mustard);
+    background: var(--color-mustard);
+    color: var(--color-ink);
+    font-weight: 840;
+    font-size: 1.125rem;
+    box-shadow: 0 6px 20px -8px rgb(0 0 0 / 0.6);
+  }
+  .night-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .night-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    padding: 0 0.875rem;
+    border-radius: 999px;
+    background: rgb(23 22 28 / 0.78);
+    color: var(--color-paper);
+    font-size: 0.875rem;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+  .night-status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    flex: none;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .night-status-dot.is-live {
+    animation: live-dot 2.4s ease-out infinite;
+  }
+
+  /* ─── Datos del negocio: fichas en una fila deslizable ─── */
+  .fact {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    background: var(--color-ink-2);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+    color: var(--color-paper);
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color 150ms var(--ease-out-expo);
+  }
+  .fact .icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    color: var(--color-mustard);
+  }
+  a.fact:hover,
+  button.fact:hover {
+    background: var(--color-ink-3);
+  }
+  button.fact[aria-expanded="true"] {
+    background: var(--color-mustard);
+    color: var(--color-ink);
+  }
+  button.fact[aria-expanded="true"] .icon {
+    color: var(--color-ink);
+  }
+
+  /* ─── Los más pedidos: carrusel de cine ─── */
+  .reel {
+    display: flex;
+    gap: 0.875rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1rem;
+    padding: 0 1rem 0.25rem;
+    scrollbar-width: none;
+  }
+  .reel::-webkit-scrollbar {
+    display: none;
+  }
+  .reel-card {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: min(76vw, 19rem);
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 26px;
+    background: var(--color-ink-2);
+    scroll-snap-align: start;
+  }
+  .reel-card img {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: scale 800ms var(--ease-out-expo);
+  }
+  .reel-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgb(23 22 28 / 0) 40%, rgb(23 22 28 / 0.94) 100%);
+  }
+  .reel-rank {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.875rem;
+    font-size: 5.5rem;
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.8;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--color-mustard);
+    text-shadow: 0 2px 18px rgb(23 22 28 / 0.45);
+  }
+  @media (min-width: 40rem) {
+    /* Alineado con el contenido (máx. 72rem), pero el carrusel corre de borde a borde. */
+    .reel {
+      gap: 1.125rem;
+      padding-inline: max(2rem, calc((100% - 72rem) / 2 + 2rem));
+      scroll-padding-inline: max(2rem, calc((100% - 72rem) / 2 + 2rem));
+    }
+    .reel-card {
+      width: 17.5rem;
+    }
+  }
+
+  /* ─── Menú ─── */
+  .night-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgb(23 22 28 / 0.96);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.07);
+  }
+  #store .cat-chip {
+    min-height: 2.5rem;
+    border: 0;
+    background: var(--color-ink-2);
+    color: var(--color-paper);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+  #store .cat-chip:hover {
+    background: var(--color-ink-3);
+  }
+  #store .cat-chip[aria-current="true"] {
+    background: var(--color-mustard);
+    color: var(--color-ink);
+    box-shadow: none;
+  }
+
+  .menu-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    padding: 1.125rem 0;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+  }
+  .menu-row:first-child {
+    border-top: 0;
+  }
+  .menu-photo {
+    width: 7.25rem;
+    height: 7.25rem;
+    border-radius: 20px;
+    background: var(--color-ink-2);
+  }
+  .menu-noimage {
+    display: none;
+  }
+  @media (min-width: 64rem) {
+    .menu-row {
+      grid-template-columns: 1fr;
+      align-content: start;
+      gap: 0;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      border-radius: 22px;
+      background: var(--color-ink-2);
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+      transition: box-shadow 200ms var(--ease-out-expo);
+    }
+    .menu-row:hover {
+      box-shadow: inset 0 0 0 1px rgb(255 199 44 / 0.5);
+    }
+    .menu-row > :first-child {
+      order: 2;
+      padding: 1rem 1.125rem 1.125rem;
+    }
+    .menu-photo,
+    .menu-noimage {
+      order: 1;
+      display: grid;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 3;
+      border-radius: 0;
+    }
+  }
+  /* Producto sin foto en la cuadrícula: letrero mostaza en la noche. */
+  .menu-noimage {
+    place-items: center;
+    background-color: var(--color-ink-3);
+    background-image: radial-gradient(rgb(255 199 44 / 0.16) 1.2px, transparent 1.5px);
+    background-size: 16px 16px;
+    color: var(--color-mustard);
+  }
+  #store .product-card:has(.product-open:focus-visible) {
+    outline-color: var(--color-mustard);
+  }
+  .is-sold-out .menu-photo img,
+  .is-sold-out.reel-card img {
+    filter: grayscale(1) brightness(0.6);
+  }
+
+  /* Controles de cantidad sobre la noche: mostaza con tinta. */
+  #store .qty-add,
+  #store .stepper {
+    background: var(--color-mustard);
+    color: var(--color-ink);
+    box-shadow: 0 8px 20px -10px rgb(255 199 44 / 0.7);
+  }
+  #store .qty-add:hover,
+  #store .stepper button:hover:not(:disabled) {
+    background: var(--color-mustard-hover);
+  }
+  #store .stepper :focus-visible {
+    outline-color: var(--color-paper);
+  }
+
+  /* Barra del carrito: neón mostaza. La del seguimiento queda tinta con un filo claro. */
+  .store-night .cart-bar[data-open-cart] {
+    background: var(--color-mustard);
+    color: var(--color-ink);
+    box-shadow:
+      0 2px 6px rgb(0 0 0 / 0.35),
+      0 18px 40px -14px rgb(255 199 44 / 0.55);
+  }
+  .store-night .cart-bar[data-open-cart]:hover {
+    background: var(--color-mustard-hover);
+  }
+  .store-night .cart-bar[data-open-cart] > span:first-child {
+    background: var(--color-ink);
+    color: var(--color-mustard);
+  }
+  .store-night .cart-bar[data-open-cart]:focus-visible {
+    outline-color: var(--color-paper);
+  }
+  .store-night .cart-bar:not([data-open-cart]) {
+    box-shadow:
+      inset 0 0 0 1px var(--color-ink-3),
+      var(--shadow-pop);
+  }
+
+  /* Ficha del producto: oscura, la foto manda. */
+  .sheet-night {
+    overflow: hidden;
+    background: var(--color-ink-2);
+    color: var(--color-paper);
+    color-scheme: dark;
+    box-shadow: 0 -1px 0 rgb(255 255 255 / 0.08), var(--shadow-pop);
+  }
+  .sheet-night .btn-ink {
+    background: var(--color-paper);
+    border-color: var(--color-paper);
+    color: var(--color-ink);
+  }
+  .sheet-night .btn-ink:hover:not(:disabled) {
+    background: var(--color-ground);
+  }
+  /* Al abrirla desde un producto con foto, la foto vuela desde la tarjeta (store.js): sin deslizar la hoja. */
+  .sheet.is-morph[open] {
+    animation: none;
+  }
+  .morph-ghost,
+  .fly-ghost {
+    position: fixed;
+    z-index: 80;
+    margin: 0;
+    pointer-events: none;
+    object-fit: cover;
+    will-change: transform;
+  }
+
+  /* Esqueleto de carga sobre la noche. */
+  .store-night .skeleton {
+    background: linear-gradient(90deg, var(--color-ink-2) 0%, var(--color-ink-3) 50%, var(--color-ink-2) 100%);
+    background-size: 200% 100%;
+  }
+}
+
+/* Movimiento ligado al desplazamiento (solo donde el navegador lo soporta; sin él, todo se ve igual). */
+@supports (animation-timeline: scroll()) {
+  .night-hero-photo {
+    animation:
+      hero-settle 1800ms var(--ease-out-expo) both,
+      hero-drift linear both;
+    animation-timeline: auto, scroll(root);
+    animation-range: normal, 0 100svh;
+  }
+  .menu-photo img {
+    animation: photo-develop linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 90%;
+  }
+  .reel-card {
+    animation: reel-focus linear both;
+    animation-timeline: view(inline);
+    animation-range: entry 10% cover 45%;
+  }
+}
+
+@keyframes hero-settle {
+  from {
+    scale: 1.1;
+  }
+}
+@keyframes hero-drift {
+  to {
+    translate: 0 16%;
+  }
+}
+@keyframes photo-develop {
+  from {
+    scale: 1.16;
+    filter: brightness(0.5) saturate(0.5);
+  }
+}
+@keyframes reel-focus {
+  from {
+    opacity: 0.5;
+    scale: 0.92;
+  }
+}
+@keyframes live-dot {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 0.45rem transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .night-hero-photo,
+  .menu-photo img,
+  .reel-card,
+  .night-status-dot.is-live {
+    animation: none !important;
   }
 }
 

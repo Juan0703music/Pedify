@@ -12,19 +12,19 @@
     <script src="/js/error-report.js"></script>
     <script type="module" src="/js/store.js"></script>
   </head>
-  <body class="bg-paper">
+  <body class="store-night">
     <div id="store">
       <!-- Esqueleto mientras carga el menú -->
-      <div class="mx-auto max-w-[64rem]" aria-busy="true" aria-label="Cargando la tienda">
-        <div class="skeleton aspect-[16/9] rounded-none sm:aspect-[3/1] lg:rounded-b-[18px]"></div>
-        <div class="grid gap-3 px-4 pt-5 sm:px-8">
-          <div class="skeleton h-9 w-2/3"></div>
-          <div class="skeleton h-5 w-5/6"></div>
-          <div class="skeleton h-8 w-48 rounded-full"></div>
-          <div class="mt-6 grid gap-4">
-            <div class="skeleton h-24"></div>
-            <div class="skeleton h-24"></div>
-            <div class="skeleton h-24"></div>
+      <div aria-busy="true" aria-label="Cargando la tienda">
+        <div class="skeleton h-[min(84svh,46rem)] rounded-none"></div>
+        <div class="mx-auto grid max-w-[72rem] gap-3 px-4 pt-5 sm:px-8">
+          <div class="flex gap-2">
+            <div class="skeleton h-11 w-40 rounded-full"></div>
+            <div class="skeleton h-11 w-32 rounded-full"></div>
+          </div>
+          <div class="mt-8 grid gap-4">
+            <div class="skeleton h-28 rounded-[20px]"></div>
+            <div class="skeleton h-28 rounded-[20px]"></div>
           </div>
         </div>
       </div>
