@@ -448,6 +448,8 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 
 ## Monitoreo
 
+- `POST /client-errors` (público) → 204. Los errores de JavaScript de los navegadores: `{ message, source?, line?, column?, stack?, page? }` (solo la ruta de la página, sin `?` ni `#`). Lo envía `public/js/error-report.js`, un script clásico que todas las páginas cargan antes que sus módulos (atrapa también errores de sintaxis en navegadores antiguos; máximo 5 por página). Solo se registra en el log con el navegador (`user-agent`). Límite: 30 cada 10 minutos por IP.
+
 - `GET /health` → `{ status: "ok", version, uptimeSeconds, database: { status, latencyMs } }`; 503 con `status: "error"` si la base no responde.
 - Toda respuesta lleva `X-Request-Id`. Los errores 500 incluyen `error.requestId`.
 - `GET /metrics` (fuera de `/api`) con `Authorization: Bearer <METRICS_TOKEN>`: formato Prometheus. Sin `METRICS_TOKEN`, la ruta no existe.

@@ -34,6 +34,9 @@ export const uploadLimiter = rateLimit({ ...common, windowMs: 15 * 60_000, limit
 /** Comprobantes de pago desde la tienda pública (imágenes sin sesión: pocas por IP). */
 export const proofLimiter = rateLimit({ ...common, windowMs: 15 * 60_000, limit: 20 });
 
+/** Errores de JavaScript que reportan los navegadores (solo van al log). */
+export const clientErrorLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 30 });
+
 /** Pedidos desde la tienda pública (evita llenar el panel de solicitudes falsas). */
 export const orderLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 15 });
 

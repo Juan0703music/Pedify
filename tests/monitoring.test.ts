@@ -41,4 +41,15 @@ describe("Monitoreo", () => {
     expect(res.text).toContain('pedifyai_http_requests_total{method="GET",route="/api/v1/health",status="200"}');
     expect(res.text).toContain("pedifyai_orders_created_total");
   });
+
+  it("recibe los errores de JavaScript de los navegadores y valida el reporte", async () => {
+    const report = { message: "TypeError: x is not a function", source: "https://pedify.co/js/cart.js", line: 12, column: 4, page: "/tienda/sabores" };
+    await request(app).post("/api/v1/client-errors").send(report).expect(204);
+    await request(app).post("/api/v1/client-errors").send({ ...report, message: "" }).expect(400);
+    await request(app).post("/api/v1/client-errors").send({ ...report, message: "x".repeat(501) }).expect(400);
+    // Todas las páginas cargan el reporte antes que sus módulos.
+    const store = await request(app).get("/").expect(200);
+    expect(store.text.indexOf("/js/error-report.js")).toBeGreaterThan(-1);
+    expect(store.text.indexOf("/js/error-report.js")).toBeLessThan(store.text.indexOf('type="module"'));
+  });
 });

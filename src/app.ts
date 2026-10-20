@@ -21,6 +21,7 @@ import { categoriesRoutes, productsRoutes } from "./modules/products/products.ro
 import { storeController } from "./modules/products/store.controller.js";
 import { storeRoutes } from "./modules/products/store.routes.js";
 import { courierRoutes } from "./modules/courier/courier.routes.js";
+import { clientErrorsRoutes } from "./modules/monitoring/client-errors.routes.js";
 import { paymentAccountsRoutes } from "./modules/payment-accounts/payment-accounts.routes.js";
 import { storePaymentProofRoutes, storePaymentQrRoutes } from "./modules/payment-accounts/payment-proofs.routes.js";
 import { pushRoutes } from "./modules/push/push.routes.js";
@@ -108,6 +109,9 @@ function apiRouter(): Router {
   api.get("/map-config", (_req, res) => {
     res.set("Cache-Control", "public, max-age=3600").json({ data: mapConfig });
   });
+
+  // Errores de JavaScript de los navegadores (public/js/error-report.js): solo se registran en el log.
+  api.use("/client-errors", clientErrorsRoutes);
 
   api.use("/auth", authRoutes);
   api.use("/businesses/current/payment-accounts", paymentAccountsRoutes);
