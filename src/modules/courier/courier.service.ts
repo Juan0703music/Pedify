@@ -7,6 +7,7 @@ import { notifications } from "../../services/notification.service.js";
 import type { TenantContext } from "../../types/common.js";
 import { conflict, notFound } from "../../utils/errors.js";
 import { ordersRepository } from "../orders/orders.repository.js";
+import { ACCOUNT_FOR_METHOD, paymentAccountsService } from "../payment-accounts/payment-accounts.service.js";
 import type { CourierLocationInput } from "./courier.schemas.js";
 
 /**
@@ -109,6 +110,9 @@ export const courierService = {
       paymentMethod: order.paymentMethod,
       paid: Boolean(order.paidAt),
       position: tracking.lat !== null && tracking.lng !== null ? { lat: tracking.lat, lng: tracking.lng, updatedAt: tracking.updatedAt } : null,
+      // QR y llaves para que el cliente pague por transferencia al recibir (la sugerida, según su método).
+      paymentAccounts: await paymentAccountsService.list(tracking.businessId),
+      suggestedAccount: order.paymentMethod ? (ACCOUNT_FOR_METHOD[order.paymentMethod] ?? null) : null,
       expiresAt: tracking.expiresAt,
       map: mapConfig,
     };

@@ -145,6 +145,7 @@ model Business {
   subscription      Subscription?
   pushSubscriptions PushSubscription[]
   courierTrackings  CourierTracking[]
+  paymentAccounts   PaymentAccount[]
   payments          SubscriptionPayment[]
   categories        Category[]
   products          Product[]
@@ -448,4 +449,32 @@ model CourierTracking {
   @@unique([orderId, businessId])
   @@index([businessId])
   @@map("courier_tracking")
+}
+
+enum PaymentAccountKind {
+  NEQUI
+  BRE_B
+  DAVIPLATA
+}
+
+/// Cuentas para cobrar por transferencia: el QR que el negocio sacó de su app (Nequi, Bre-B de su
+/// banco o Daviplata) y su número o llave. El domiciliario las muestra al entregar el pedido.
+model PaymentAccount {
+  id         String             @id @default(uuid(7)) @db.Uuid
+  businessId String             @map("business_id") @db.Uuid
+  kind       PaymentAccountKind
+  /// Número de celular o llave Bre-B (celular, correo, cédula o alias con @).
+  accountKey String?            @map("account_key")
+  holderName String?            @map("holder_name")
+  /// Contenido del código QR leído de la imagen subida (se vuelve a dibujar nítido para escanearlo).
+  qrPayload  String?            @map("qr_payload")
+  qrImageUrl String?            @map("qr_image_url")
+  qrImageKey String?            @map("qr_image_key")
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, kind])
+  @@map("payment_accounts")
 }

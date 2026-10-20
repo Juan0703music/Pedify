@@ -1,6 +1,7 @@
 // Página de Configuración: datos del negocio, WhatsApp, horario, entrega, pagos, equipo y cuenta.
 import { api, formatPhone, parseMoney } from "./api.js";
 import { initPanel, renderNoBusiness, ROLE_LABEL } from "./dashboard.js";
+import { mountPaymentAccounts } from "./payment-accounts-ui.js";
 import { mountPush } from "./push-ui.js";
 import {
   clearFieldErrors,
@@ -274,7 +275,7 @@ function paymentsSection() {
   return section(
     "pagos",
     "Métodos de pago",
-    "Se muestran en tu tienda para que el cliente elija cómo pagar.",
+    "Se muestran en tu tienda para que el cliente elija cómo pagar. Abajo configuras tus QR para cobrar al entregar.",
     html`<form data-form="pagos" novalidate>
       <fieldset ${isOwner ? "" : "disabled"}>
         <legend class="sr-only">Métodos de pago aceptados</legend>
@@ -290,7 +291,8 @@ function paymentsSection() {
         </div>
       </fieldset>
       ${isOwner ? saveBar() : ""}
-    </form>`,
+    </form>
+    ${isOwner ? html`<div class="mt-6 border-t border-line pt-6" data-payment-accounts></div>` : ""}`,
   );
 }
 
@@ -835,6 +837,7 @@ if (context) {
       state.members = members;
       render(main, page());
       void mountPush(main.querySelector("[data-push-section]"), "section");
+      void mountPaymentAccounts(main.querySelector("[data-payment-accounts]"));
       updateCounter(main.querySelector("#b-description"));
       bindPage(main);
       trackSections(main);

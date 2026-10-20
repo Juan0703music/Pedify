@@ -1,9 +1,10 @@
 // Página del domiciliario (/domicilio#clave): se abre con el enlace que genera el negocio, sin cuenta.
 // Muestra la dirección y lo que hay que cobrar, comparte la ubicación del celular mientras el pedido
-// va en camino (el cliente la ve en su seguimiento) y permite marcar la entrega.
+// va en camino (el cliente la ve en su seguimiento), muestra el QR del negocio para cobrar por
+// transferencia y permite marcar la entrega.
 import { formatCOP, formatPhone } from "./api.js";
 import { deliveryMap, distanceLabel, distanceMeters } from "./map.js";
-import { html, icon, render, setBusy } from "./ui.js";
+import { copyText, html, icon, raw, render, setBusy } from "./ui.js";
 
 const root = document.getElementById("courier");
 const key = decodeURIComponent(location.hash.slice(1));
@@ -100,6 +101,146 @@ function navigationLinks(order) {
     <a class="btn btn-ghost btn-sm" href="${waze}" target="_blank" rel="noopener">${icon("navigation", "h-4 w-4")} Waze</a>`;
 }
 
+/** Lo que hay que cobrar y, si el negocio subió sus QR, el botón para mostrarlos al cliente. */
+function chargeCard(order) {
+  if (order.paid) {
+    return html`<section class="rounded-[20px] bg-leaf-soft p-4 text-leaf">
+      <p class="flex items-center gap-2 font-[760]">${icon("circle-check")} Ya está pagado: no cobres.</p>
+    </section>`;
+  }
+  const accounts = order.paymentAccounts ?? [];
+  // El cliente eligió Nequi, Daviplata o transferencia: el QR es lo principal.
+  const byTransfer = Boolean(order.suggestedAccount);
+  return html`<section class="rounded-[20px] bg-ink p-4 text-paper">
+    <p class="text-sm text-paper/70">Cobrar ${PAYMENT[order.paymentMethod] ?? ""}</p>
+    <p class="num text-[2rem] leading-none font-[840] [font-stretch:80%] text-mustard">${formatCOP(order.total)}</p>
+    ${accounts.length > 0
+      ? html`<button
+          type="button"
+          class="btn ${byTransfer ? "btn-primary min-h-13 text-base" : "btn-quiet border border-paper/25 text-paper hover:bg-ink-3"} mt-3 w-full"
+          data-show-qr
+        >
+          ${icon("qr-code")} ${byTransfer ? "Mostrar QR para pagar" : "¿Paga por transferencia? Mostrar QR"}
+        </button>`
+      : byTransfer
+        ? html`<p class="mt-2 text-sm text-paper/70">El negocio no ha subido su QR de cobro. Pídele al negocio el número para que el cliente transfiera.</p>`
+        : ""}
+  </section>`;
+}
+
+/** Pantalla blanca a todo lo ancho con el QR grande, para que el cliente lo escanee desde su celular. */
+let payDialog = null;
+let payKind = null;
+
+function payView() {
+  const { order } = state;
+  const accounts = order.paymentAccounts ?? [];
+  const account = accounts.find((item) => item.kind === payKind) ?? accounts[0];
+  if (!account) return "";
+  return html`<div class="mx-auto flex min-h-full max-w-[30rem] flex-col px-5 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+    <header class="flex items-start gap-3">
+      <div class="min-w-0">
+        <p class="truncate text-sm text-muted">Pedido #${order.number} · ${order.business.name}</p>
+        <h2 id="pay-title" class="text-[1.5rem] leading-tight font-[820] [font-stretch:85%] outline-none" tabindex="-1" autofocus>Escanea para pagar</h2>
+      </div>
+      <button type="button" class="btn btn-ghost btn-icon ml-auto flex-none" data-close-qr aria-label="Cerrar">${icon("x")}</button>
+    </header>
+    ${accounts.length > 1
+      ? html`<div class="mt-4 flex gap-1 rounded-full bg-ground p-1" role="group" aria-label="Cuenta para pagar">
+          ${accounts.map(
+            (item) => html`<button
+              type="button"
+              class="min-h-10 flex-1 rounded-full px-3 text-[0.9375rem] font-[720] text-muted aria-pressed:bg-ink aria-pressed:text-paper"
+              aria-pressed="${item.kind === account.kind ? "true" : "false"}"
+              data-pay-kind="${item.kind}"
+            >
+              ${item.label}
+            </button>`,
+          )}
+        </div>`
+      : ""}
+    <div class="grid flex-1 content-center justify-items-center gap-4 py-5 text-center">
+      ${account.qrSvg
+        ? html`<div
+            class="w-full max-w-[19rem] rounded-[22px] border-[3px] border-ink bg-[#fff] p-2.5 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full"
+            role="img"
+            aria-label="Código QR de ${account.label} para pagar"
+          >
+            ${raw(account.qrSvg)}
+          </div>`
+        : html`<div class="grid w-full max-w-[19rem] justify-items-center gap-2 rounded-[22px] bg-ground px-5 py-7">
+            ${icon("smartphone", "h-8 w-8 text-muted")}
+            <p class="font-[720]">El negocio no subió el QR de ${account.label}</p>
+            <p class="text-sm text-muted">Muéstrale o díctale al cliente el número de abajo.</p>
+          </div>`}
+      <div>
+        <p class="text-sm font-[620] text-muted">Valor a pagar</p>
+        <p class="num text-[2.75rem] leading-none font-[860] [font-stretch:80%]">${formatCOP(order.total)}</p>
+      </div>
+      ${account.holderName || account.accountKey
+        ? html`<div class="grid justify-items-center gap-2">
+            ${account.holderName ? html`<p class="text-[0.9375rem]">${account.label} a nombre de <strong class="font-[760]">${account.holderName}</strong></p>` : ""}
+            ${account.accountKey
+              ? html`<button type="button" class="inline-flex min-h-11 items-center gap-2 rounded-full bg-ground px-4 text-[1rem] font-[720]" data-copy-key="${account.accountKey}">
+                  <span class="text-muted">${account.kind === "BRE_B" ? "Llave" : "Número"}</span>
+                  <span class="num [overflow-wrap:anywhere]">${account.accountKey}</span>
+                  <span class="text-muted" data-copy-label>${icon("copy", "h-4 w-4")}</span>
+                </button>`
+              : ""}
+          </div>`
+        : ""}
+      <p class="max-w-[22rem] text-sm text-muted">
+        El cliente abre su app (Nequi, Daviplata o la de su banco), toca «Escanear» y escribe el valor. Antes de entregar, pide ver el pago aprobado.
+      </p>
+    </div>
+  </div>`;
+}
+
+function openPay() {
+  const { order } = state;
+  const accounts = order.paymentAccounts ?? [];
+  if (accounts.length === 0) return;
+  // Primero la cuenta que eligió el cliente si tiene QR; si no, cualquiera con QR (Bre-B se paga desde
+  // cualquier banco o billetera); si ninguna tiene QR, la elegida para mostrar la llave.
+  const suggested = accounts.find((item) => item.kind === order.suggestedAccount);
+  payKind = ((suggested?.qrSvg ? suggested : null) ?? accounts.find((item) => item.qrSvg) ?? suggested ?? accounts[0]).kind;
+  if (!payDialog) {
+    payDialog = document.createElement("dialog");
+    payDialog.className = "m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto bg-paper p-0 text-ink backdrop:bg-ink/70";
+    payDialog.setAttribute("aria-labelledby", "pay-title");
+    document.body.append(payDialog);
+    payDialog.addEventListener("click", async (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      if (button.matches("[data-close-qr]")) payDialog.close();
+      if (button.matches("[data-pay-kind]")) {
+        payKind = button.dataset.payKind;
+        render(payDialog, payView());
+      }
+      if (button.matches("[data-copy-key]")) {
+        const ok = await copyText(button.dataset.copyKey);
+        const label = button.querySelector("[data-copy-label]");
+        if (label) label.textContent = ok ? "Copiado" : "";
+      }
+    });
+    payDialog.addEventListener("close", () => {
+      // Si no está compartiendo la ubicación, la pantalla ya puede apagarse.
+      if (watchId === null) {
+        void wakeLock?.release().catch(() => {});
+        wakeLock = null;
+      }
+      document.documentElement.classList.remove("overflow-hidden");
+      root.querySelector("[data-show-qr]")?.focus();
+    });
+  }
+  render(payDialog, payView());
+  document.documentElement.classList.add("overflow-hidden");
+  payDialog.showModal();
+  payDialog.scrollTop = 0;
+  // Que la pantalla no se apague mientras el cliente saca su celular.
+  void keepScreenOn();
+}
+
 function page() {
   const { order } = state;
   const { customer } = order;
@@ -135,12 +276,7 @@ function page() {
         </div>
       </section>
 
-      <section class="rounded-[20px] ${order.paid ? "bg-leaf-soft text-leaf" : "bg-ink text-paper"} p-4">
-        ${order.paid
-          ? html`<p class="flex items-center gap-2 font-[760]">${icon("circle-check")} Ya está pagado: no cobres.</p>`
-          : html`<p class="text-sm text-paper/70">Cobrar ${PAYMENT[order.paymentMethod] ?? ""}</p>
-              <p class="num text-[2rem] leading-none font-[840] [font-stretch:80%] text-mustard">${formatCOP(order.total)}</p>`}
-      </section>
+      ${chargeCard(order)}
 
       <details class="rounded-[20px] bg-paper px-4 py-3">
         <summary class="cursor-pointer font-[700]">Productos (${order.items.reduce((sum, item) => sum + item.quantity, 0)})</summary>
@@ -199,6 +335,7 @@ function updateDistance() {
 // ───────────────────────────── Ubicación ─────────────────────────────
 
 async function keepScreenOn() {
+  if (wakeLock && !wakeLock.released) return;
   try {
     wakeLock = await navigator.wakeLock?.request("screen");
   } catch {
@@ -297,6 +434,7 @@ root.addEventListener("click", async (event) => {
   const button = event.target.closest("button");
   if (!button) return;
   if (button.matches("[data-start]")) startSharing();
+  if (button.matches("[data-show-qr]")) openPay();
   if (button.matches("[data-stop]")) stopSharing();
   if (button.matches("[data-ask-deliver]")) {
     render(

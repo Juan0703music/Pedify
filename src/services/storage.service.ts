@@ -114,11 +114,14 @@ type ImagePreset = { width: number; height: number; fit: "inside" | "cover"; qua
  * - product: tarjetas y detalle en la tienda (se recortan con CSS).
  * - logo: cuadrado, se recorta al centro.
  * - banner: portada ancha de la tienda.
+ * - qr: imagen del QR de cobro que el negocio sacó de su app.
  */
 export const IMAGE_PRESETS = {
   product: { width: 800, height: 800, fit: "inside", quality: 80 },
   logo: { width: 512, height: 512, fit: "cover", quality: 85 },
   banner: { width: 1600, height: 1000, fit: "inside", quality: 80 },
+  // QR de cobro (pantallazo de Nequi o del banco): alta calidad para que siga siendo legible.
+  qr: { width: 1200, height: 2000, fit: "inside", quality: 92 },
 } satisfies Record<string, ImagePreset>;
 
 export type ImageKind = keyof typeof IMAGE_PRESETS;

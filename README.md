@@ -121,7 +121,13 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - Al tocar **«Enviar con domiciliario»**, el panel muestra un **enlace y un código QR** para el domiciliario (se puede enviar por WhatsApp). Él lo abre en su celular sin cuenta: ve la dirección, el celular del cliente, lo que debe cobrar y botones a Google Maps y Waze; toca **«Empezar entrega»** y comparte su ubicación (la pantalla no se apaga mientras tanto).
 - El cliente ve en su seguimiento un **mapa con la moto acercándose a su casa** y la distancia («Tu domiciliario está a 950 m»), actualizado cada 5 segundos. El negocio también lo ve en el detalle del pedido.
 - El domiciliario marca **«Entregado»** desde su celular. Al entregar o cancelar se borran las ubicaciones y el enlace deja de funcionar.
-- Mapas con Leaflet y OpenStreetMap (sin llave); el proveedor se cambia con `MAP_TILE_URL`. 154 pruebas en total.
+- Mapas con Leaflet y OpenStreetMap (sin llave); el proveedor se cambia con `MAP_TILE_URL`.
+
+### Cobrar con QR al entregar (Nequi, Bre-B, Daviplata)
+
+- En **Configuración → Pagos** el dueño sube el QR para recibir pagos que le da su app (un pantallazo sirve) y escribe su número o llave y el titular. Pedify lee el código y lo muestra nítido; si la imagen no tiene un QR legible, lo avisa.
+- En la página del domiciliario, la tarjeta «Cobrar» tiene **«Mostrar QR para pagar»**: abre una pantalla blanca con el QR grande, el valor a pagar, el titular y la llave (con botón para copiarla). Si hay varias cuentas se cambia entre ellas con pestañas; primero sale la que eligió el cliente.
+- El QR de la llave Bre-B se paga desde cualquier banco o billetera. Como es el QR fijo del negocio, no trae el valor: el cliente escribe el total que le muestra el domiciliario. 159 pruebas en total.
 
 ## Requisitos
 

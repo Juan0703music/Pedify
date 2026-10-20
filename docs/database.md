@@ -21,6 +21,7 @@ PostgreSQL con Prisma 7 (`prisma/schema.prisma`). Identificadores UUID v7, fecha
 | `subscriptions` | Suscripción del negocio a Pedify | business_id, plan (`EMPRENDEDOR`/`NEGOCIO`), trial_ends_at, paid_until |
 | `subscription_payments` | Pagos registrados por el equipo | business_id, plan, amount, months, method, reference, period_start, period_end, recorded_by_id |
 | `password_reset_tokens` | Enlaces para restablecer la contraseña | user_id, token_hash (único), expires_at, used_at |
+| `payment_accounts` | QR y llaves para cobrar al entregar | business_id, kind (`NEQUI`/`BRE_B`/`DAVIPLATA`, única por negocio), account_key, holder_name, qr_payload (código leído del QR), qr_image_url/qr_image_key |
 
 `products` y `categories` se usan desde la fase 2; `customers`, `customer_addresses`, `orders`, `order_items` y `order_status_history`, desde la fase 3.
 

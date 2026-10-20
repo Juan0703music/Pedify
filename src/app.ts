@@ -21,6 +21,7 @@ import { categoriesRoutes, productsRoutes } from "./modules/products/products.ro
 import { storeController } from "./modules/products/store.controller.js";
 import { storeRoutes } from "./modules/products/store.routes.js";
 import { courierRoutes } from "./modules/courier/courier.routes.js";
+import { paymentAccountsRoutes } from "./modules/payment-accounts/payment-accounts.routes.js";
 import { pushRoutes } from "./modules/push/push.routes.js";
 import { pushService } from "./modules/push/push.service.js";
 import { subscriptionRoutes } from "./modules/subscriptions/subscriptions.routes.js";
@@ -108,6 +109,7 @@ function apiRouter(): Router {
   });
 
   api.use("/auth", authRoutes);
+  api.use("/businesses/current/payment-accounts", paymentAccountsRoutes);
   api.use("/businesses", businessesRoutes);
   api.use("/products", productsRoutes);
   api.use("/categories", categoriesRoutes);

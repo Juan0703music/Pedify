@@ -174,13 +174,26 @@ Para pedidos a domicilio. El cliente puede marcar su punto exacto al pedir (`loc
 | Método | Ruta | Quién | Respuesta |
 |---|---|---|---|
 | POST | `/orders/:id/courier-link` | equipo del negocio | 201 `{ url, expiresAt, qrSvg }`. URL `…/domicilio#<clave>`; vence en 12 h. Generar otro invalida el anterior. Solo domicilios (`NOT_DELIVERY`) no terminados (`ORDER_FINISHED`) |
-| GET | `/courier` | domiciliario (`X-Courier-Key`) | Número, negocio, cliente (nombre, celular, dirección, referencias, notas), `destination`, productos, total, método de pago, `paid`, `position`, `map` |
+| GET | `/courier` | domiciliario (`X-Courier-Key`) | Número, negocio, cliente (nombre, celular, dirección, referencias, notas), `destination`, productos, total, método de pago, `paid`, `position`, `map`, `paymentAccounts` (QR y llaves de cobro del negocio) y `suggestedAccount` (`NEQUI`, `DAVIPLATA` o `BRE_B` según cómo dijo el cliente que pagaría; `null` en efectivo o datáfono) |
 | POST | `/courier/location` | domiciliario | `{ lat, lng, accuracy?, heading? }` → 204. Solo con el pedido «En camino» (409 `NOT_ON_THE_WAY`) |
 | POST | `/courier/delivered` | domiciliario | 204: el pedido pasa a «Entregado» (historial: «Entregado por el domiciliario») |
 | GET | `/map-config` | público | `{ tileUrl, attribution }` (`MAP_TILE_URL`, `MAP_TILE_ATTRIBUTION`) |
 
 - La clave viaja en la cabecera `X-Courier-Key` (en la página va después de `#`, así que no llega a los registros del servidor). Clave inválida, vencida o de un pedido terminado → 404 `COURIER_LINK_INVALID`. Límite: 400 peticiones cada 10 minutos por IP.
 - El seguimiento del cliente (`GET /store/:slug/orders/:id`) incluye `destination` (su punto) y `courier` (`{ lat, lng, accuracy, heading, updatedAt }` solo mientras va «En camino»). El detalle del panel incluye `deliveryLat`, `deliveryLng` y `courier`.
+
+## Cobrar con QR al entregar — `/businesses/current/payment-accounts`
+
+El negocio sube el QR para recibir pagos que le da su app (Nequi, la llave **Bre-B** de cualquier banco o Daviplata); un pantallazo sirve. El servidor lee el código de la imagen y lo devuelve dibujado de nuevo (`qrSvg`), así se ve nítido en la pantalla del domiciliario. Pedify no genera códigos de pago propios: usa exactamente el que emitió el banco. Ese QR no lleva el valor: el cliente escribe el total al pagar.
+
+| Método | Ruta | Quién | Cuerpo / respuesta |
+|---|---|---|---|
+| GET | `/businesses/current/payment-accounts` | OWNER | `[{ kind, label, accountKey, holderName, qrSvg, qrImageUrl }]` en orden Nequi, Bre-B, Daviplata (solo las configuradas) |
+| PUT | `/businesses/current/payment-accounts/:kind` | OWNER | `{ accountKey?, holderName? }` (número o llave de 3 a 80 caracteres; `""` lo borra). Crea la cuenta si no existía |
+| POST | `/businesses/current/payment-accounts/:kind/qr` | OWNER | Imagen en binario (como las fotos). 422 `QR_NOT_FOUND` si no hay un QR legible; 422 `QR_TOO_LONG` si el código no parece de cobro. Reemplaza la imagen anterior |
+| DELETE | `/businesses/current/payment-accounts/:kind` | OWNER | 204 (borra el QR y la llave). 404 `PAYMENT_ACCOUNT_NOT_FOUND` |
+
+`:kind` es `NEQUI`, `BRE_B` o `DAVIPLATA`. El contenido leído del QR no se expone tal cual (solo su dibujo en SVG) y la clave de la imagen nunca sale en la API.
 
 ## Roles y permisos
 
