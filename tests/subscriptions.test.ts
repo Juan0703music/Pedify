@@ -28,10 +28,10 @@ describe("Estado de la suscripción", () => {
 });
 
 describe("Suscripción del negocio", () => {
-  it("un negocio nuevo empieza con 14 días de prueba del plan Negocio", async () => {
+  it("un negocio nuevo empieza con 7 días de prueba del plan Negocio", async () => {
     const { agent } = await registerMerchant();
     const current = await agent.get("/api/v1/businesses/current").expect(200);
-    expect(current.body.data.subscription).toMatchObject({ plan: "NEGOCIO", planName: "Negocio", status: "TRIAL", daysLeft: 14, canReceiveOrders: true });
+    expect(current.body.data.subscription).toMatchObject({ plan: "NEGOCIO", planName: "Negocio", status: "TRIAL", daysLeft: 7, canReceiveOrders: true });
 
     const plan = await agent.get("/api/v1/subscription").expect(200);
     expect(plan.body.data).toMatchObject({
@@ -43,6 +43,23 @@ describe("Suscripción del negocio", () => {
     expect(plan.body.data.plans.map((item: { code: string }) => item.code)).toEqual(["EMPRENDEDOR", "NEGOCIO", "EMPRESA"]);
     expect(plan.body.data).toMatchObject({ priceMonthly: 299900, priceYearly: 3310896, annualDiscountPercent: 8 });
     expect(decodeURIComponent(plan.body.data.support.url)).toContain("quiero pagar el plan Negocio");
+  });
+
+  it("al registrarse se elige el plan de la prueba: 7 días con los límites de ese plan", async () => {
+    const register = (agent: ReturnType<typeof newAgent>, plan: string) =>
+      agent
+        .post("/api/v1/auth/register")
+        .send({ name: "Ana Pérez", email: uniqueEmail(), password: PASSWORD, businessName: "Pizzería Napoli", businessPhone: "300 123 4567", acceptPrivacy: true, plan });
+    for (const [plan, limits] of [
+      ["EMPRENDEDOR", { products: 40, members: 2 }],
+      ["EMPRESA", { products: 1000, members: 20 }],
+    ] as const) {
+      const agent = newAgent();
+      await register(agent, plan).expect(201);
+      expect((await agent.get("/api/v1/subscription").expect(200)).body.data).toMatchObject({ plan, status: "TRIAL", daysLeft: 7, limits });
+    }
+    const invalid = await register(newAgent(), "GRATIS").expect(400);
+    expect(invalid.body.error.fields.plan).toBe("Elige uno de los planes.");
   });
 
   it("aplica los límites del plan a productos y equipo", async () => {
@@ -183,7 +200,7 @@ describe("Panel central de Pedify", () => {
 
     await agent.patch(`/api/v1/admin/businesses/${shop.businessId}`).send({ status: "ACTIVE", extendTrialDays: 7 }).expect(200);
     await newAgent().get(`/api/v1/store/${slug}`).expect(200);
-    expect((await shop.agent.get("/api/v1/businesses/current").expect(200)).body.data.subscription.daysLeft).toBe(21);
+    expect((await shop.agent.get("/api/v1/businesses/current").expect(200)).body.data.subscription.daysLeft).toBe(14);
 
     await agent.patch(`/api/v1/admin/businesses/${shop.businessId}`).send({}).expect(400);
   });
@@ -202,6 +219,23 @@ describe("Portada", () => {
       expect(html).toContain(`Ahorra ${plan.annualDiscountPercent} %`);
       expect(html).toContain(`Hasta ${plan.maxProducts} productos`);
       expect(html).toContain(`${plan.maxMembers} personas con acceso`);
+      expect(html).toContain(`href="/registro?plan=${plan.code}"`);
     }
+    expect(html).not.toContain("14 días");
+  });
+
+  it("el registro ofrece los planes con sus precios y límites para la prueba", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { PLANS, DEFAULT_TRIAL_PLAN } = await import("../src/modules/subscriptions/plans.js");
+    const { formatCOP } = await import("../src/utils/currency.js");
+    const html = readFileSync("public/pages/auth/register.html", "utf8");
+    for (const plan of Object.values(PLANS)) {
+      expect(html).toContain(`value="${plan.code}"${plan.code === DEFAULT_TRIAL_PLAN ? " checked" : ""} />`);
+      expect(html).toContain(`>${plan.name}</span>`);
+      expect(html).toContain(`${formatCOP(plan.priceMonthly)} / mes`);
+      expect(html).toContain(`${plan.maxProducts} productos · ${plan.maxMembers} personas`);
+    }
+    expect(html).toContain("7 días gratis");
+    expect(html).not.toContain("14 días");
   });
 });

@@ -59,8 +59,12 @@ export const UPGRADE: Partial<Record<PlanCode, PlanCode>> = { EMPRENDEDOR: "NEGO
 /** Valor de un pago: 12 meses se cobran al precio anual (con descuento); otros, mes a mes. */
 export const priceFor = (plan: Plan, months: number) => (months === 12 ? plan.priceYearly : plan.priceMonthly * months);
 
-/** Días de prueba gratis al registrar un negocio (con los límites del plan Negocio). */
-export const TRIAL_DAYS = 14;
+/**
+ * Días de prueba gratis de cada plan. Al registrarse el negocio elige qué plan probar y la prueba
+ * usa los límites de ese plan; si no elige, prueba Negocio.
+ */
+export const TRIAL_DAYS = 7;
+export const DEFAULT_TRIAL_PLAN: PlanCode = "NEGOCIO";
 
 /** Días después del vencimiento en que la tienda sigue recibiendo pedidos mientras se paga. */
 export const GRACE_DAYS = 5;

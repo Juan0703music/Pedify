@@ -81,6 +81,35 @@
           <form id="register-form" class="mt-8 grid gap-8" novalidate>
             <div data-slot="alert"></div>
 
+            <!-- Precios y límites de src/modules/subscriptions/plans.ts (una prueba verifica que coincidan). -->
+            <fieldset class="grid gap-3">
+              <legend class="mb-4 text-[1.0625rem] font-[720]">Plan que quieres probar</legend>
+              <div class="grid gap-2" data-error-anchor="plan">
+                <label class="role-option">
+                  <input type="radio" name="plan" value="EMPRENDEDOR" />
+                  <span class="role-check" aria-hidden="true"></span>
+                  <span class="font-[740]">Emprendedor</span>
+                  <span class="num text-sm font-[650]">$99.900 / mes</span>
+                  <span class="text-sm leading-snug text-muted">40 productos · 2 personas</span>
+                </label>
+                <label class="role-option">
+                  <input type="radio" name="plan" value="NEGOCIO" checked />
+                  <span class="role-check" aria-hidden="true"></span>
+                  <span class="font-[740]">Negocio</span>
+                  <span class="num text-sm font-[650]">$299.900 / mes</span>
+                  <span class="text-sm leading-snug text-muted">300 productos · 6 personas</span>
+                </label>
+                <label class="role-option">
+                  <input type="radio" name="plan" value="EMPRESA" />
+                  <span class="role-check" aria-hidden="true"></span>
+                  <span class="font-[740]">Empresa</span>
+                  <span class="num text-sm font-[650]">$699.900 / mes</span>
+                  <span class="text-sm leading-snug text-muted">1000 productos · 20 personas</span>
+                </label>
+              </div>
+              <p class="hint">7 días gratis con el plan que elijas, con todo incluido. Al terminar pagas ese plan o te cambias a otro.</p>
+            </fieldset>
+
             <fieldset class="grid gap-5">
               <legend class="mb-4 text-[1.0625rem] font-[720]">Tu negocio</legend>
               <div class="field">
@@ -125,8 +154,8 @@
                   <a href="/privacidad" target="_blank" rel="noopener" class="font-semibold underline">política de tratamiento de datos</a> de Pedify.
                 </span>
               </label>
-              <button class="btn btn-ink w-full" type="submit">Crear mi tienda · 14 días gratis</button>
-              <p class="text-center text-[0.8125rem] leading-snug text-muted">Sin tarjeta de crédito. Al terminar la prueba eliges tu plan.</p>
+              <button class="btn btn-ink w-full" type="submit">Crear mi tienda · 7 días gratis</button>
+              <p class="text-center text-[0.8125rem] leading-snug text-muted">Sin tarjeta de crédito. Al terminar la prueba pagas el plan que elegiste o te cambias a otro.</p>
             </div>
           </form>
         </div>

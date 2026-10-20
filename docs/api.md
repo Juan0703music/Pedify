@@ -48,7 +48,7 @@ Teléfonos: se aceptan en cualquier formato colombiano (`300 123 4567`, `+57 300
 | POST | `/auth/forgot-password` | — | `email` | `{ ok }` siempre (no revela si existe la cuenta); envía un enlace de 30 min |
 | POST | `/auth/reset-password` | — | `token, newPassword` | `{ ok }`; cierra todas las sesiones · 400 `RESET_LINK_INVALID` |
 
-`POST /auth/register` exige `acceptPrivacy: true` (autorización de tratamiento de datos, Ley 1581) y crea el negocio con 14 días de prueba. El perfil incluye `user.isPlatformAdmin`.
+`POST /auth/register` exige `acceptPrivacy: true` (autorización de tratamiento de datos, Ley 1581) y crea el negocio con 7 días de prueba del plan `plan` (`EMPRENDEDOR`, `NEGOCIO` o `EMPRESA`; opcional, por defecto `NEGOCIO`). El perfil incluye `user.isPlatformAdmin`.
 
 Perfil:
 

@@ -1,10 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { DEFAULT_EMPLOYEE_PERMISSIONS, permissionsOf, toPermissionColumns } from "./permissions.js";
 import { prisma, type DbClient } from "../../config/database.js";
-import type { MembershipRole } from "../../generated/prisma/enums.js";
+import type { MembershipRole, PlanCode } from "../../generated/prisma/enums.js";
 import type { TenantContext } from "../../types/common.js";
 import { deleteImage, saveImage } from "../../services/storage.service.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
+import { DEFAULT_TRIAL_PLAN } from "../subscriptions/plans.js";
 import { newTrialEnd, subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { authRepository } from "../auth/auth.repository.js";
 import { hashPassword } from "../auth/password.js";
@@ -72,8 +73,11 @@ function permissionsFor(input: AddMemberInput) {
 }
 
 export const businessesService = {
-  /** Registra un negocio con el usuario como propietario. Acepta un cliente de transacción. */
-  async createForOwner(ownerId: string, input: CreateBusinessInput, db: DbClient = prisma) {
+  /**
+   * Registra un negocio con el usuario como propietario y empieza la prueba gratis del plan elegido.
+   * Acepta un cliente de transacción.
+   */
+  async createForOwner(ownerId: string, input: CreateBusinessInput, db: DbClient = prisma, trialPlan: PlanCode = DEFAULT_TRIAL_PLAN) {
     const slug = await generateUniqueSlug(input.name, db);
     return businessesRepository.createWithOwner(
       {
@@ -81,6 +85,7 @@ export const businessesService = {
         slug,
         phone: input.phone,
         ownerId,
+        trialPlan,
         trialEndsAt: newTrialEnd(),
         settings: {
           openingHours: DEFAULT_OPENING_HOURS,

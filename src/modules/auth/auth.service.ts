@@ -80,6 +80,7 @@ export const authService = {
         user.id,
         { name: input.businessName, phone: input.businessPhone },
         tx,
+        input.plan,
       );
       return openSession(user.id, business.id, meta, tx);
     });

@@ -1,6 +1,6 @@
 import { prisma, type DbClient } from "../../config/database.js";
 import { permissionColumnsSelect, type PermissionColumns } from "./permissions.js";
-import type { MembershipRole, PaymentMethod } from "../../generated/prisma/enums.js";
+import type { MembershipRole, PaymentMethod, PlanCode } from "../../generated/prisma/enums.js";
 import type { Prisma } from "../../generated/prisma/client.js";
 
 export const businessSelect = {
@@ -56,6 +56,7 @@ export const businessesRepository = {
       slug: string;
       phone: string;
       ownerId: string;
+      trialPlan: PlanCode;
       trialEndsAt: Date;
       settings: {
         openingHours: Prisma.InputJsonValue;
@@ -72,7 +73,7 @@ export const businessesRepository = {
         phone: data.phone,
         memberships: { create: { userId: data.ownerId, role: "OWNER" } },
         settings: { create: data.settings },
-        subscription: { create: { trialEndsAt: data.trialEndsAt } },
+        subscription: { create: { plan: data.trialPlan, trialEndsAt: data.trialEndsAt } },
       },
       select: businessSelect,
     });

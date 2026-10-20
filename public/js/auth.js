@@ -104,6 +104,10 @@ if (page === "login") {
 
 if (page === "register") {
   setupStorePreview();
+  // Plan elegido en la portada (/registro?plan=EMPRESA): queda marcado para la prueba.
+  const chosen = new URLSearchParams(location.search).get("plan")?.toUpperCase();
+  const option = chosen ? document.querySelector(`#register-form [name="plan"][value="${CSS.escape(chosen)}"]`) : null;
+  if (option) option.checked = true;
   setupForm(document.getElementById("register-form"), async (data) => {
     await api("/auth/register", { method: "POST", body: data });
     location.assign("/panel?bienvenida=1");
