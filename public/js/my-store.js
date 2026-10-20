@@ -131,6 +131,9 @@ function share() {
   </section>`;
 }
 
+// La tienda a 390 px de ancho, reducida para caber justo en el marco del celular (278 × 619 px por dentro).
+// El marco usa overflow-clip y no overflow-hidden: este último se puede desplazar por código, y al abrir el
+// carrito o el seguimiento dentro de la vista previa el navegador lo corría y la hoja quedaba cortada.
 function preview() {
   return html`<aside class="hidden lg:block" aria-labelledby="preview-title">
     <div class="sticky top-10 grid justify-items-center gap-3">
@@ -138,11 +141,11 @@ function preview() {
         <h2 id="preview-title" class="text-sm font-[700]">Vista previa</h2>
         <a class="text-sm font-[620] text-muted hover:text-ink" href="${state.business.storeUrl}" target="_blank" rel="noopener">Abrir ${icon("external-link", "inline h-4 w-4 align-[-3px]")}</a>
       </div>
-      <div class="h-[633px] w-[292px] overflow-hidden rounded-[2rem] border-[7px] border-ink bg-paper shadow-[var(--shadow-pop)]">
+      <div class="h-[633px] w-[292px] overflow-clip rounded-[2rem] border-[7px] border-ink bg-paper shadow-[var(--shadow-pop)]">
         <iframe
           src="/tienda/${state.business.slug}"
           title="Vista previa de tu tienda"
-          class="h-[844px] w-[390px] origin-top-left scale-[0.7282]"
+          class="h-[868px] w-[390px] origin-top-left scale-[0.71282]"
           loading="lazy"
           data-preview
         ></iframe>
