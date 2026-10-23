@@ -16,11 +16,11 @@ Errores:
 
 | Estado | Códigos frecuentes |
 |---|---|
-| 400 | `INVALID_TRANSITION`, `ORDER_CANCELLED`, `VALIDATION_ERROR`, `INVALID_JSON`, `NO_DELIVERY_MODE`, `PASSWORD_REQUIRED`, `CATEGORY_NOT_FOUND`, `IMAGE_REQUIRED`, `DELIVERY_UNAVAILABLE`, `PICKUP_UNAVAILABLE`, `PAYMENT_METHOD_NOT_ACCEPTED`, `MINIMUM_ORDER`, `QUANTITY_LIMIT` |
+| 400 | `INVALID_TRANSITION`, `ORDER_CANCELLED`, `VALIDATION_ERROR`, `INVALID_JSON`, `NO_DELIVERY_MODE`, `PASSWORD_REQUIRED`, `CATEGORY_NOT_FOUND`, `IMAGE_REQUIRED`, `DELIVERY_UNAVAILABLE`, `PICKUP_UNAVAILABLE`, `PAYMENT_METHOD_NOT_ACCEPTED`, `MINIMUM_ORDER`, `QUANTITY_LIMIT`, `LOCATION_REQUIRED`, `DELIVERY_TIERS_REQUIRED`, `DELIVERY_OUT_OF_RANGE` |
 | 401 | `UNAUTHORIZED`, `SESSION_EXPIRED`, `INVALID_CREDENTIALS` |
 | 403 | `FORBIDDEN` (otro origen), `NOT_A_MEMBER`, `ROLE_REQUIRED`, `NO_ACTIVE_BUSINESS`, `BUSINESS_SUSPENDED`, `INVALID_PASSWORD` |
 | 404 | `NOT_FOUND`, `PRODUCT_NOT_FOUND`, `CATEGORY_NOT_FOUND`, `STORE_NOT_FOUND`, `ORDER_NOT_FOUND`, `CUSTOMER_NOT_FOUND` |
-| 409 | `EMAIL_TAKEN`, `SLUG_TAKEN`, `ALREADY_MEMBER`, `LAST_OWNER`, `DUPLICATE`, `CATEGORY_EXISTS`, `ORDER_OUTDATED`, `PRODUCT_ARCHIVED`, `PRODUCT_LIMIT`, `CATEGORY_LIMIT`, `STORE_CLOSED`, `ORDERS_PAUSED`, `PRODUCTS_UNAVAILABLE`, `STATUS_CHANGED` |
+| 409 | `EMAIL_TAKEN`, `SLUG_TAKEN`, `ALREADY_MEMBER`, `LAST_OWNER`, `DUPLICATE`, `CATEGORY_EXISTS`, `ORDER_OUTDATED`, `PRODUCT_ARCHIVED`, `PRODUCT_LIMIT`, `CATEGORY_LIMIT`, `STORE_CLOSED`, `ORDERS_PAUSED`, `PRODUCTS_UNAVAILABLE`, `STATUS_CHANGED`, `DELIVERY_NOT_CONFIGURED` |
 | 413 | `IMAGE_TOO_LARGE` (más de 8 MB), `PAYLOAD_TOO_LARGE` |
 | 415 | `UNSUPPORTED_IMAGE` |
 | 429 | `TOO_MANY_REQUESTS` |
@@ -71,7 +71,7 @@ Todas requieren sesión. Las rutas `/current…` actúan sobre el **negocio acti
 | GET | `/businesses/current` | miembro | — |
 | PATCH | `/businesses/current` | OWNER | `name, phone, slug, description, city, address` (parcial) |
 | GET | `/businesses/current/settings` | miembro | — |
-| PATCH | `/businesses/current/settings` | OWNER | `openingHours, acceptingOrders, whatsappPhone, deliveryEnabled, deliveryFee, deliveryArea, pickupEnabled, minimumOrder, paymentMethods, salesPolicy` (parcial) |
+| PATCH | `/businesses/current/settings` | OWNER | `openingHours, acceptingOrders, whatsappPhone, deliveryEnabled, deliveryPricing, deliveryFee, deliveryTiers, location, deliveryArea, pickupEnabled, minimumOrder, paymentMethods, salesPolicy` (parcial). Ver «Domicilio según la distancia» |
 | GET | `/businesses/current/members` | OWNER | — |
 | POST | `/businesses/current/members` | OWNER | `name, email, password?, role` |
 | PATCH | `/businesses/current/members/:membershipId` | OWNER | `role` |
@@ -103,6 +103,18 @@ Content-Type: application/json
   "deliveryFee": 4000,
   "paymentMethods": ["CASH", "NEQUI"]
 }
+```
+
+### Domicilio según la distancia
+
+- `deliveryPricing`: `FIXED` (cobra `deliveryFee` a todos) o `DISTANCE` (cobra según la distancia en línea recta desde el negocio hasta la ubicación que comparte el cliente).
+- `deliveryTiers`: hasta 8 rangos `{ upToKm, fee }` de menor a mayor (`upToKm` con un decimal, máx. 50 km): se cobra el primer rango que cubre la distancia; más allá del último no se ofrece domicilio.
+- `location`: `{ lat, lng }` del negocio (punto de partida) o `null`.
+- Con `DISTANCE` son obligatorios la ubicación (400 `LOCATION_REQUIRED`) y al menos un rango (400 `DELIVERY_TIERS_REQUIRED`). La respuesta trae `deliveryTiers` ordenados y `location`.
+
+```json
+{ "deliveryPricing": "DISTANCE", "location": { "lat": 9.3047, "lng": -75.3978 },
+  "deliveryTiers": [ { "upToKm": 2, "fee": 3000 }, { "upToKm": 4, "fee": 5000 }, { "upToKm": 6, "fee": 7000 } ] }
 ```
 
 ## Productos — `/products`
@@ -254,7 +266,8 @@ Sin sesión.
   "business": { "name": "Sabores del Caribe", "slug": "sabores-del-caribe", "description": "…", "city": "Sincelejo",
                 "address": "Calle 20 #15-30", "phone": "573001234567", "logoUrl": null, "bannerUrl": null },
   "settings": { "openingHours": [ … ], "timezone": "America/Bogota", "whatsappPhone": "573001234567",
-                "deliveryEnabled": true, "deliveryFee": 4000, "deliveryArea": "Todo Sincelejo",
+                "deliveryEnabled": true, "deliveryPricing": "FIXED", "deliveryFee": 4000, "deliveryTiers": [], "location": null,
+                "deliveryArea": "Todo Sincelejo",
                 "pickupEnabled": true, "minimumOrder": 15000, "paymentMethods": ["CASH", "NEQUI"] },
   "status": { "isOpen": false, "closesAt": null, "nextOpen": { "inDays": 1, "day": 2, "time": "17:00" },
               "acceptingOrders": true, "canOrder": false },
@@ -298,6 +311,7 @@ Con Nequi, Daviplata o transferencia y cuentas configuradas, además `"paymentPr
 - Solo se reciben productos y cantidades. Precios, subtotal, domicilio, descuento y total los calcula el servidor; cualquier valor monetario enviado se descarta.
 - `idempotencyKey`: la genera el navegador por intento de compra (16–80 caracteres `A-Z a-z 0-9 -`). Si llega de nuevo, se responde **200** con el pedido ya creado, sin duplicarlo.
 - `phone`: celular colombiano (se normaliza a `57XXXXXXXXXX`). `address` es obligatoria para `DELIVERY` y se ignora en `PICKUP`.
+- Domicilio según la distancia (`settings.deliveryPricing: "DISTANCE"`, con `deliveryTiers` y la `location` del negocio en `GET /store/:slug`): el pedido a domicilio debe traer `location` del cliente (400 `LOCATION_REQUIRED`) dentro del último rango (400 `DELIVERY_OUT_OF_RANGE`: «Tu ubicación está a 9 km y … lleva domicilios hasta 6 km»). El servidor calcula el valor y guarda la distancia en `deliveryDistanceM` (también con tarifa fija si el negocio y el cliente marcaron su ubicación).
 - Reglas: el negocio debe estar abierto según su horario (`STORE_CLOSED`) y sin pausa (`ORDERS_PAUSED`); no necesita WhatsApp: el pedido llega directo al panel; la modalidad y el método de pago deben estar habilitados; el subtotal debe cubrir el pedido mínimo (`MINIMUM_ORDER`); cada producto debe ser del negocio, visible, no archivado y disponible (`PRODUCTS_UNAVAILABLE`, con `details.products: [{ productId, name, reason: "sold_out" | "not_found" }]`).
 
 Respuesta **201**:

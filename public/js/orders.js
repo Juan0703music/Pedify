@@ -354,7 +354,7 @@ function detailView(order) {
           </ul>
           <dl class="mt-2 grid gap-1 border-t border-dashed border-line-strong pt-3">
             ${row("Subtotal", formatCOP(order.subtotal))}
-            ${order.deliveryFee > 0 ? row("Domicilio", formatCOP(order.deliveryFee)) : ""}
+            ${order.deliveryFee > 0 ? row(order.deliveryDistanceM ? `Domicilio · ${distanceLabel(order.deliveryDistanceM)}` : "Domicilio", formatCOP(order.deliveryFee)) : ""}
             ${order.discount > 0 ? row("Descuento", `-${formatCOP(order.discount)}`) : ""}
             ${row("Total", formatCOP(order.total), true)}
           </dl>

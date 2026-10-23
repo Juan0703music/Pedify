@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MembershipRole, PaymentMethod, SalesPolicy } from "../../generated/prisma/enums.js";
+import { DeliveryPricing, MembershipRole, PaymentMethod, SalesPolicy } from "../../generated/prisma/enums.js";
 import { copAmountSchema } from "../../utils/currency.js";
 import { mobilePhoneSchema, phoneSchema } from "../../utils/phone.js";
 import { businessNameSchema, emailSchema, newPasswordSchema, personNameSchema } from "../auth/auth.schemas.js";
@@ -59,13 +59,41 @@ export const openingHoursSchema = z
   .refine((days) => new Set(days.map((day) => day.day)).size === 7, "Cada día de la semana debe aparecer una vez.")
   .transform((days) => [...days].sort((a, b) => a.day - b.day));
 
+/** Punto en el mapa (la ubicación del negocio o la del cliente). */
+export const geoPointSchema = z.object({
+  lat: z.number({ error: "Ubicación inválida." }).min(-90).max(90),
+  lng: z.number({ error: "Ubicación inválida." }).min(-180).max(180),
+});
+
+/** Rango de la tarifa por distancia: hasta X km (con un decimal) se cobra tanto. */
+const deliveryTierSchema = z.object({
+  upToKm: z
+    .number({ error: "Escribe hasta cuántos kilómetros." })
+    .positive("Los kilómetros deben ser mayores que 0.")
+    .max(50, "El domicilio puede llegar hasta 50 km.")
+    .transform((km) => Math.round(km * 10) / 10),
+  fee: copAmountSchema,
+});
+
+export const deliveryTiersSchema = z
+  .array(deliveryTierSchema)
+  .max(8, "Puedes tener hasta 8 rangos de distancia.")
+  .refine((tiers) => tiers.every((tier, index) => index === 0 || tier.upToKm > tiers[index - 1]!.upToKm), {
+    message: "Cada rango debe llegar más lejos que el anterior.",
+  });
+
 export const updateSettingsSchema = z
   .object({
     openingHours: openingHoursSchema,
     acceptingOrders: z.boolean(),
     whatsappPhone: mobilePhoneSchema,
     deliveryEnabled: z.boolean(),
+    /** Tarifa fija (deliveryFee) o según la distancia (deliveryTiers, desde `location`). */
+    deliveryPricing: z.enum(DeliveryPricing),
     deliveryFee: copAmountSchema,
+    deliveryTiers: deliveryTiersSchema,
+    /** Ubicación del negocio; null la quita. */
+    location: geoPointSchema.nullable(),
     deliveryArea: optionalText(200, "La zona de cobertura"),
     pickupEnabled: z.boolean(),
     minimumOrder: copAmountSchema,

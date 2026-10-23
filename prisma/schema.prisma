@@ -57,6 +57,12 @@ enum PlanCheckoutStatus {
   ERROR
 }
 
+/// Cobro del domicilio: un valor fijo o según la distancia hasta el cliente.
+enum DeliveryPricing {
+  FIXED
+  DISTANCE
+}
+
 // Qué pedidos cuentan como venta en las analíticas (sección 11 del documento).
 enum SalesPolicy {
   ACCEPTED // desde que el negocio acepta el pedido (confirmado en adelante)
@@ -200,7 +206,15 @@ model BusinessSettings {
   // Número de WhatsApp que recibe los pedidos (celular). Null hasta que el comerciante lo configure.
   whatsappPhone   String?         @map("whatsapp_phone")
   deliveryEnabled Boolean         @default(true) @map("delivery_enabled")
+  // Cómo se cobra el domicilio: tarifa fija (deliveryFee) o según la distancia (deliveryTiers).
+  deliveryPricing DeliveryPricing @default(FIXED) @map("delivery_pricing")
   deliveryFee     Int             @default(0) @map("delivery_fee")
+  // Tarifas por distancia en línea recta desde el negocio: [{ upToKm, fee }] de menor a mayor.
+  // Más allá del último rango no se ofrece domicilio.
+  deliveryTiers   Json            @default("[]") @map("delivery_tiers")
+  // Ubicación del negocio (punto de partida para medir la distancia del domicilio).
+  locationLat     Float?          @map("location_lat")
+  locationLng     Float?          @map("location_lng")
   deliveryArea    String?         @map("delivery_area")
   pickupEnabled   Boolean         @default(true) @map("pickup_enabled")
   minimumOrder    Int             @default(0) @map("minimum_order")
@@ -390,6 +404,8 @@ model Order {
   /// Se borra cuando el pedido se entrega o se cancela (minimización de datos personales).
   deliveryLat       Float?         @map("delivery_lat")
   deliveryLng       Float?         @map("delivery_lng")
+  /// Distancia en línea recta del negocio al punto de entrega, en metros (con la que se cobró el domicilio).
+  deliveryDistanceM Int?           @map("delivery_distance_m")
   cancelReason      String?        @map("cancel_reason")
   createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)

@@ -2,6 +2,7 @@
 import { api, formatPhone, parseMoney } from "./api.js";
 import { initPanel, renderNoBusiness, ROLE_LABEL, showChangedElsewhere } from "./dashboard.js";
 import { onLive } from "./notifications.js";
+import { distanceFields, mountDistancePricing, pricingChoice } from "./delivery-pricing-ui.js";
 import { mountPaymentAccounts } from "./payment-accounts-ui.js";
 import { mountPush } from "./push-ui.js";
 import {
@@ -54,6 +55,8 @@ const SECTIONS = [
 ];
 
 const state = { me: null, business: null, settings: null, members: [], isOwner: false };
+/** Editor del domicilio según la distancia (sección Entrega, solo el propietario). */
+let distancePricing = { read: () => ({}) };
 
 /** Permisos que el propietario elige para cada empleado (el servidor los verifica en cada petición). */
 const PERMISSION_OPTIONS = [
@@ -264,14 +267,17 @@ function deliverySection() {
         ${formAlert()}
         <div class="grid gap-5 rounded-[12px] border border-line p-4">
           ${switchRow("d-delivery", "deliveryEnabled", settings.deliveryEnabled, "Domicilio", "Llevas el pedido a la dirección del cliente.")}
-          <div class="grid gap-5 sm:grid-cols-[12rem_1fr]" data-delivery-fields>
-            <div class="field">
+          <div class="grid gap-5" data-delivery-fields>
+            ${pricingChoice(settings, !settings.deliveryEnabled)}
+            <div class="field max-w-[12rem]" data-pricing="FIXED">
               <label class="label" for="d-fee">Valor del domicilio</label>
               ${moneyInput("d-fee", "deliveryFee", settings.deliveryFee, { disabled: !settings.deliveryEnabled })}
             </div>
+            <div data-pricing="DISTANCE" hidden>${distanceFields(settings, !settings.deliveryEnabled)}</div>
             <div class="field">
               <label class="label" for="d-area">Zona de cobertura</label>
               <input class="input" id="d-area" name="deliveryArea" value="${settings.deliveryArea ?? ""}" placeholder="Ej.: Todo Sincelejo" maxlength="200" ${settings.deliveryEnabled ? "" : "disabled"} />
+              <p class="hint">Un texto para tus clientes. Con «Según la distancia», el domicilio solo llega hasta tu último rango.</p>
             </div>
           </div>
         </div>
@@ -542,6 +548,7 @@ const PAYLOADS = {
   }),
   entrega: (form) => ({
     deliveryEnabled: form.elements.deliveryEnabled.checked,
+    ...distancePricing.read(),
     deliveryFee: parseMoney(form.elements.deliveryFee.value),
     deliveryArea: form.elements.deliveryArea.value.trim(),
     pickupEnabled: form.elements.pickupEnabled.checked,
@@ -690,7 +697,7 @@ function bindPage(main) {
       dayRow.querySelector("[data-open-label]").textContent = input.checked ? "Abierto" : "Cerrado";
     }
     if (input.name === "deliveryEnabled") {
-      main.querySelectorAll("[data-delivery-fields] input").forEach((field) => (field.disabled = !input.checked));
+      main.querySelectorAll("[data-delivery-fields] :is(input, button)").forEach((field) => (field.disabled = !input.checked));
     }
     if (input.matches("[data-role-select]")) changeRole(input);
     if (input.matches("[data-member-permission]")) changePermission(input);
@@ -857,6 +864,8 @@ if (context) {
       render(main, page());
       void mountPush(main.querySelector("[data-push-section]"), "section");
       void mountPaymentAccounts(main.querySelector("[data-payment-accounts]"));
+      const deliveryForm = main.querySelector('[data-form="entrega"]');
+      if (deliveryForm) distancePricing = mountDistancePricing(deliveryForm, settings);
       updateCounter(main.querySelector("#b-description"));
       bindPage(main);
       trackSections(main);

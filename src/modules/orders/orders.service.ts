@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { prisma } from "../../config/database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { notifications } from "../../services/notification.service.js";
-import { calculateOrder } from "../../services/pricing.service.js";
+import { calculateOrder, feeForDistance, parseDeliveryTiers } from "../../services/pricing.service.js";
 import { clock } from "../../utils/clock.js";
 import { formatCOP } from "../../utils/currency.js";
 import { AppError, badRequest, conflict, notFound } from "../../utils/errors.js";
@@ -16,6 +16,7 @@ import { paymentProofsService } from "../payment-accounts/payment-proofs.service
 import { mapConfig } from "../../config/map.js";
 import type { TenantContext } from "../../types/common.js";
 import { addDays, startOfDay } from "../../utils/dates.js";
+import { distanceLabel, distanceMeters } from "../../utils/geo.js";
 import { buildPage } from "../../utils/pagination.js";
 import { allowedTransitions, canTransition, STATUS_LABEL } from "./order-status.js";
 import { ordersRepository } from "./orders.repository.js";
@@ -34,6 +35,40 @@ async function loadStore(slug: string) {
   const business = await businessesRepository.findStoreBySlug(slug);
   if (!business || business.status !== "ACTIVE" || !business.settings) throw storeNotFound();
   return { ...business, settings: business.settings };
+}
+
+type StoreSettings = Awaited<ReturnType<typeof loadStore>>["settings"];
+
+/**
+ * Valor del domicilio y distancia en línea recta (metros) del negocio al punto que marcó el cliente.
+ * Con tarifa por distancia, el cliente debe compartir su ubicación y estar dentro del último rango.
+ */
+function quoteDelivery(businessName: string, settings: StoreSettings, input: CreateOrderInput) {
+  if (input.deliveryType !== "DELIVERY") return { fee: 0, distanceM: null };
+  const origin = settings.locationLat !== null && settings.locationLng !== null ? { lat: settings.locationLat, lng: settings.locationLng } : null;
+  const meters = origin && input.location ? distanceMeters(origin, input.location) : null;
+  const distanceM = meters === null ? null : Math.round(meters);
+  if (settings.deliveryPricing !== "DISTANCE") return { fee: settings.deliveryFee, distanceM };
+
+  const tiers = parseDeliveryTiers(settings.deliveryTiers);
+  if (!origin || tiers.length === 0) {
+    throw conflict("Este negocio aún no configuró el valor del domicilio. Elige recoger en el local o escríbele.", "DELIVERY_NOT_CONFIGURED");
+  }
+  if (meters === null) {
+    throw badRequest("Comparte tu ubicación para calcular el valor del domicilio.", "LOCATION_REQUIRED", {
+      fields: { location: "Comparte tu ubicación para calcular el domicilio." },
+    });
+  }
+  const fee = feeForDistance(tiers, meters);
+  if (fee === null) {
+    const farthest = `${String(tiers.at(-1)!.upToKm).replace(".", ",")} km`;
+    throw badRequest(
+      `Tu ubicación está a ${distanceLabel(meters)} y ${businessName} lleva domicilios hasta ${farthest}.${settings.pickupEnabled ? " Puedes elegir recoger en el local." : ""}`,
+      "DELIVERY_OUT_OF_RANGE",
+      { fields: { location: `Fuera de la zona de domicilios (hasta ${farthest}).` } },
+    );
+  }
+  return { fee, distanceM };
 }
 
 /** Mensaje y enlace de WhatsApp de un pedido guardado (sección 9). */
@@ -105,6 +140,7 @@ export const ordersService = {
         fields: { paymentMethod: "Elige uno de los métodos de pago del negocio." },
       });
     }
+    const delivery = quoteDelivery(business.name, settings, input);
     // Nequi, Daviplata o transferencia con cuenta configurada: se paga antes y se adjunta el comprobante.
     const proofId = await paymentProofsService.requireFor(business.id, settings.paymentMethods, input.paymentMethod, input.paymentProofId);
 
@@ -144,7 +180,7 @@ export const ordersService = {
         const totals = calculateOrder({
           items: [...quantities].map(([productId, quantity]) => ({ product: byId.get(productId)!, quantity })),
           deliveryType: input.deliveryType,
-          deliveryFee: settings.deliveryFee,
+          deliveryFee: delivery.fee,
         });
 
         // El pedido mínimo se compara con el subtotal (sin domicilio).
@@ -181,6 +217,7 @@ export const ordersService = {
             addressReferences: isDelivery ? (input.references ?? null) : null,
             deliveryLat: isDelivery && input.location ? input.location.lat : null,
             deliveryLng: isDelivery && input.location ? input.location.lng : null,
+            deliveryDistanceM: delivery.distanceM,
             paymentMethod: input.paymentMethod,
             notes: input.notes ?? null,
             subtotal: totals.subtotal,

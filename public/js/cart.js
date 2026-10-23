@@ -57,8 +57,13 @@ export function initCart({ store, slug, root, orderable = true }) {
   const { settings, business } = store;
   /** Pago por adelantado: método → cuentas (Nequi, Bre-B, Daviplata) con QR o llave. */
   const payments = store.payments ?? { prepay: {}, accounts: [] };
+  // Domicilio según la distancia: rangos «hasta X km» medidos en línea recta desde el negocio.
+  const tiers = settings.deliveryTiers ?? [];
+  const byDistance = settings.deliveryPricing === "DISTANCE" && Boolean(settings.location) && tiers.length > 0;
+  const farthestKm = byDistance ? `${String(tiers.at(-1).upToKm).replace(".", ",")} km` : null;
+  const fixedDetail = settings.deliveryFee > 0 ? `+ ${formatCOP(settings.deliveryFee)}` : "Gratis";
   const deliveryModes = [
-    settings.deliveryEnabled && { value: "DELIVERY", label: "Domicilio", detail: settings.deliveryFee > 0 ? `+ ${formatCOP(settings.deliveryFee)}` : "Gratis" },
+    settings.deliveryEnabled && { value: "DELIVERY", label: "Domicilio", detail: byDistance ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))}` : fixedDetail },
     settings.pickupEnabled && { value: "PICKUP", label: "Recoger en el local", detail: "Sin costo" },
   ].filter(Boolean);
 
@@ -105,7 +110,18 @@ export function initCart({ store, slug, root, orderable = true }) {
   // ─── Cálculos para mostrar (el servidor tiene la última palabra) ───
   const count = () => [...cart.values()].reduce((sum, quantity) => sum + quantity, 0);
   const subtotal = () => [...cart].reduce((sum, [id, quantity]) => sum + (products.get(id)?.price ?? 0) * quantity, 0);
-  const deliveryFee = () => (customer.deliveryType === "DELIVERY" ? settings.deliveryFee : 0);
+  /** Con tarifa por distancia: { meters, fee } según la ubicación marcada (fee null = fuera de la zona). */
+  const distanceQuote = () => {
+    if (!byDistance || !customer.location) return null;
+    const meters = distanceMeters(settings.location, customer.location);
+    return { meters, fee: tiers.find((tier) => meters <= tier.upToKm * 1000)?.fee ?? null };
+  };
+  /** Domicilio por distancia aún sin calcular: falta la ubicación o queda fuera de la zona. */
+  const deliveryPending = () => customer.deliveryType === "DELIVERY" && byDistance && (distanceQuote()?.fee ?? null) === null;
+  const deliveryFee = () => {
+    if (customer.deliveryType !== "DELIVERY") return 0;
+    return byDistance ? (distanceQuote()?.fee ?? 0) : settings.deliveryFee;
+  };
   const missingForMinimum = () => Math.max(0, settings.minimumOrder - subtotal());
 
   function persistCart() {
@@ -204,6 +220,9 @@ export function initCart({ store, slug, root, orderable = true }) {
     </div>`;
   }
 
+  /** « · $41.000» en el botón de pedir; sin el valor mientras falte calcular el domicilio. */
+  const submitTotal = () => (deliveryPending() ? "" : html`· <span class="num">${formatCOP(subtotal() + deliveryFee())}</span>`);
+
   function radioChoice(name, value, checked, label, detail) {
     return html`<label class="choice min-h-12 justify-between">
       <input type="radio" name="${name}" value="${value}" ${checked ? "checked" : ""} required />
@@ -217,11 +236,21 @@ export function initCart({ store, slug, root, orderable = true }) {
     const row = (label, value, strong = false) => html`<div class="flex items-baseline justify-between gap-4 ${strong ? "text-[1.125rem] font-[800]" : ""}">
       <dt>${label}</dt><dd class="num">${value}</dd>
     </div>`;
+    const quote = distanceQuote();
+    const delivery = !isDelivery
+      ? ""
+      : !byDistance
+        ? row("Domicilio", settings.deliveryFee > 0 ? formatCOP(settings.deliveryFee) : "Gratis")
+        : !quote
+          ? row("Domicilio", html`<span class="text-sm text-muted">según tu ubicación</span>`)
+          : quote.fee === null
+            ? row(`Domicilio · ${distanceLabel(quote.meters)}`, html`<span class="text-sm font-[700] text-tomato">fuera de la zona</span>`)
+            : row(`Domicilio · ${distanceLabel(quote.meters)}`, quote.fee > 0 ? formatCOP(quote.fee) : "Gratis");
     return html`<dl class="grid gap-1.5">
       ${row("Subtotal", formatCOP(subtotal()))}
-      ${isDelivery ? row("Domicilio", settings.deliveryFee > 0 ? formatCOP(settings.deliveryFee) : "Gratis") : ""}
+      ${delivery}
       <hr class="ticket-rule my-1.5" />
-      ${row("TOTAL", formatCOP(subtotal() + deliveryFee()), true)}
+      ${row("TOTAL", deliveryPending() ? `${formatCOP(subtotal())} + domicilio` : formatCOP(subtotal() + deliveryFee()), true)}
     </dl>`;
   }
 
@@ -248,15 +277,37 @@ export function initCart({ store, slug, root, orderable = true }) {
     </ul>`;
   }
 
-  /** Ubicación exacta (opcional): con ella el domiciliario llega directo y el cliente lo ve en el mapa. */
+  /** Estado de la ubicación marcada: con tarifa por distancia, a cuánto queda y cuánto cuesta el domicilio. */
+  function locationStatus() {
+    const quote = distanceQuote();
+    if (quote && quote.fee === null) {
+      return html`<p class="flex items-start gap-2 text-sm font-[650] text-tomato" role="alert">
+        ${icon("circle-alert", "mt-0.5 h-4 w-4 flex-none")}
+        <span>Estás a ${distanceLabel(quote.meters)} y ${business.name} lleva domicilios hasta ${farthestKm}.${settings.pickupEnabled ? " Puedes elegir recoger en el local." : ""}</span>
+      </p>`;
+    }
+    return html`<p class="flex items-start gap-2 text-sm font-[700] text-leaf">
+      ${icon("circle-check", "mt-0.5 h-4 w-4 flex-none")}
+      <span>Ubicación marcada${quote ? html`<span class="font-[600] text-ink"> · a ${distanceLabel(quote.meters)} · domicilio <span class="num">${quote.fee > 0 ? formatCOP(quote.fee) : "gratis"}</span></span>` : ""}</span>
+    </p>`;
+  }
+
+  /**
+   * Ubicación exacta: con ella el domiciliario llega directo y el cliente lo ve en el mapa. Con tarifa
+   * por distancia es obligatoria, porque de ella sale el valor del domicilio.
+   */
   function locationField() {
     if (customer.location) {
       return html`<div class="flex items-center justify-between gap-3">
-          <p class="flex items-center gap-2 text-sm font-[700] text-leaf">${icon("circle-check", "h-4 w-4")} Ubicación marcada</p>
-          <button type="button" class="text-sm font-[650] text-muted underline" data-clear-location>Quitar</button>
+          <div class="min-w-0" data-location-status>${locationStatus()}</div>
+          <button type="button" class="flex-none text-sm font-[650] text-muted underline" data-clear-location>Quitar</button>
         </div>
         <div class="delivery-map h-48" data-picker aria-label="Mapa: mueve el pin a tu puerta"></div>
         <p class="hint">Si el pin no quedó en tu puerta, muévelo o toca el mapa.</p>`;
+    }
+    if (byDistance) {
+      return html`<button type="button" class="btn btn-ink w-full justify-start" data-locate>${icon("locate-fixed")} Compartir mi ubicación</button>
+        <p class="hint">El domicilio cuesta según la distancia hasta tu ubicación (hasta ${farthestKm}). También le sirve al domiciliario para llegar directo.</p>`;
     }
     return html`<button type="button" class="btn btn-ghost w-full justify-start" data-locate>
         ${icon("locate-fixed")} Marcar mi ubicación exacta <span class="font-normal text-muted">(opcional)</span>
@@ -274,6 +325,12 @@ export function initCart({ store, slug, root, orderable = true }) {
       picker = await pickerMap(container, customer.location, (point) => {
         customer.location = point;
         persistCustomer();
+        // Con tarifa por distancia, mover el pin cambia el domicilio y el total.
+        if (byDistance) {
+          const status = dialog.querySelector("[data-location-status]");
+          if (status) render(status, locationStatus());
+          refresh();
+        }
       });
     } catch {
       render(container, html`<p class="grid h-full place-items-center p-3 text-center text-sm text-muted">No se pudo cargar el mapa, pero tu ubicación quedó marcada.</p>`);
@@ -297,6 +354,13 @@ export function initCart({ store, slug, root, orderable = true }) {
   function prepaySection() {
     const accounts = prepayAccounts();
     if (accounts.length === 0) return "";
+    if (deliveryPending()) {
+      // Sin el valor del domicilio no se sabe cuánto pagar: se redibuja al marcar la ubicación.
+      prepayDrawnFor = Number.NaN;
+      return html`<p class="flex items-start gap-2 rounded-[12px] bg-mustard-soft px-4 py-3 text-sm text-mustard-deep">
+        ${icon("locate-fixed", "mt-0.5 h-4 w-4 flex-none")} Comparte tu ubicación para saber el valor del domicilio y pagar el total.
+      </p>`;
+    }
     const account = accounts.find((item) => item.kind === payKind) ?? accounts.find((item) => item.qrSvg) ?? accounts[0];
     const total = subtotal() + deliveryFee();
     prepayDrawnFor = total;
@@ -523,7 +587,7 @@ export function initCart({ store, slug, root, orderable = true }) {
               El pedido mínimo es ${formatCOP(settings.minimumOrder)}. Te faltan <span class="num">${formatCOP(missing)}</span>.
             </p>
             <button type="submit" class="btn btn-primary min-h-13 w-full text-base" ${missing > 0 ? "disabled" : ""}>
-              ${icon("check")} Hacer pedido · <span class="num">${formatCOP(subtotal() + deliveryFee())}</span>
+              ${icon("check")} Hacer pedido<span data-submit-total>${submitTotal()}</span>
             </button>
             <p class="mt-2 text-center text-xs leading-snug text-muted">
               Al continuar autorizas a ${business.name} a usar tus datos para gestionar tu pedido.
@@ -754,6 +818,7 @@ export function initCart({ store, slug, root, orderable = true }) {
         note.classList.toggle("hidden", missing === 0);
         note.querySelector("span").textContent = formatCOP(missing);
         form.querySelector('[type="submit"]').disabled = missing > 0;
+        render(form.querySelector("[data-submit-total]"), submitTotal());
       }
     }
   }
@@ -864,6 +929,18 @@ export function initCart({ store, slug, root, orderable = true }) {
     clearFieldErrors(form);
 
     const isDelivery = customer.deliveryType === "DELIVERY";
+    if (isDelivery && byDistance) {
+      const quote = distanceQuote();
+      if (!quote || quote.fee === null) {
+        showErrors(form, {
+          message: !quote
+            ? "Comparte tu ubicación para calcular el valor del domicilio."
+            : `Estás a ${distanceLabel(quote.meters)} y ${business.name} lleva domicilios hasta ${farthestKm}.${settings.pickupEnabled ? " Puedes elegir recoger en el local." : ""}`,
+        });
+        form.querySelector("[data-location-field]")?.scrollIntoView({ block: "center", behavior: "smooth" });
+        return;
+      }
+    }
     const prepaid = prepayAccounts().length > 0;
     if (prepaid && !proof) {
       showErrors(form, {
@@ -1028,6 +1105,7 @@ export function initCart({ store, slug, root, orderable = true }) {
         customer.location = { lat: position.lat, lng: position.lng };
         persistCustomer();
         drawLocationField();
+        if (byDistance) refresh(); // el domicilio y el total dependen de la ubicación
       } catch (error) {
         setBusy(button, false);
         const form = dialog.querySelector("[data-checkout]");
@@ -1049,6 +1127,7 @@ export function initCart({ store, slug, root, orderable = true }) {
       customer.location = null;
       persistCustomer();
       drawLocationField();
+      if (byDistance) refresh();
     }
   });
   dialog.addEventListener("close", () => {

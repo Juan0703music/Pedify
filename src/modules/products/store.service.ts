@@ -1,3 +1,4 @@
+import { parseDeliveryTiers } from "../../services/pricing.service.js";
 import { clock } from "../../utils/clock.js";
 import { notFound } from "../../utils/errors.js";
 import { businessesRepository } from "../businesses/businesses.repository.js";
@@ -64,6 +65,7 @@ export const storeService = {
 
     const { settings } = business;
     const openingHours = parseOpeningHours(settings.openingHours);
+    const distancePricing = settings.deliveryPricing === "DISTANCE" && settings.locationLat !== null && settings.locationLng !== null;
     const opening = getOpeningStatus(openingHours, settings.timezone, now);
 
     return {
@@ -82,7 +84,11 @@ export const storeService = {
         timezone: settings.timezone,
         whatsappPhone: settings.whatsappPhone,
         deliveryEnabled: settings.deliveryEnabled,
+        deliveryPricing: settings.deliveryPricing,
         deliveryFee: settings.deliveryFee,
+        deliveryTiers: distancePricing ? parseDeliveryTiers(settings.deliveryTiers) : [],
+        /** Punto desde el que se mide la distancia (solo con domicilio según la distancia). */
+        location: distancePricing ? { lat: settings.locationLat, lng: settings.locationLng } : null,
         deliveryArea: settings.deliveryArea,
         pickupEnabled: settings.pickupEnabled,
         minimumOrder: settings.minimumOrder,

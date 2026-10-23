@@ -53,10 +53,10 @@ function courierIcon(L) {
   });
 }
 
-function homeIcon(L) {
+function homeIcon(L, name = "house") {
   return L.divIcon({
     className: "map-pin",
-    html: `<span class="map-pin-home">${iconSvg("house", 18)}</span>`,
+    html: `<span class="map-pin-home">${iconSvg(name, 18)}</span>`,
     iconSize: [38, 46],
     iconAnchor: [19, 44],
   });
@@ -152,15 +152,15 @@ export async function deliveryMap(container, { destination = null, courier = nul
 }
 
 /**
- * Mapa para elegir un punto (checkout): pin arrastrable que empieza en `point`.
- * `onChange({ lat, lng })` se llama al moverlo o al tocar el mapa.
+ * Mapa para elegir un punto (checkout o la ubicación del negocio): pin arrastrable que empieza en
+ * `point`. `onChange({ lat, lng })` se llama al moverlo o al tocar el mapa.
  */
-export async function pickerMap(container, point, onChange) {
+export async function pickerMap(container, point, onChange, { zoom = 17, icon = "house", title = "Tu ubicación" } = {}) {
   const [L, settings] = await Promise.all([loadLeaflet(), mapConfig()]);
-  const map = L.map(container, { scrollWheelZoom: false, zoomControl: true }).setView([point.lat, point.lng], 17);
+  const map = L.map(container, { scrollWheelZoom: false, zoomControl: true }).setView([point.lat, point.lng], zoom);
   L.tileLayer(settings.tileUrl, tileOptions(settings)).addTo(map);
   map.attributionControl.setPrefix(false);
-  const marker = L.marker([point.lat, point.lng], { icon: homeIcon(L), draggable: true, title: "Tu ubicación" }).addTo(map);
+  const marker = L.marker([point.lat, point.lng], { icon: homeIcon(L, icon), draggable: true, title }).addTo(map);
   const emit = () => {
     const { lat, lng } = marker.getLatLng();
     onChange({ lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) });

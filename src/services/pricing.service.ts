@@ -6,7 +6,7 @@ import { multiplyCOP } from "../utils/currency.js";
  * de la base de datos, nunca con valores enviados por el navegador.
  *
  * - Subtotal = suma de precio unitario × cantidad.
- * - Domicilio: solo cuando la entrega es a domicilio.
+ * - Domicilio: solo cuando la entrega es a domicilio; tarifa fija o según la distancia (feeForDistance).
  * - Descuento: 0 en esta versión; la estructura queda lista para promociones.
  * - Total = subtotal + domicilio − descuento (la base de datos lo verifica con un CHECK).
  *
@@ -54,4 +54,23 @@ export function calculateOrder(input: {
   const total = subtotal + deliveryFee - discount;
   if (!Number.isSafeInteger(total)) throw new RangeError("El valor del pedido excede el límite permitido.");
   return { lines, subtotal, deliveryFee, discount, total };
+}
+
+/** Rango de la tarifa por distancia: hasta `upToKm` kilómetros (en línea recta) se cobra `fee`. */
+export interface DeliveryTier {
+  upToKm: number;
+  fee: number;
+}
+
+/** Rangos guardados en la configuración (JSON), ordenados de menor a mayor distancia. */
+export function parseDeliveryTiers(value: unknown): DeliveryTier[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((tier): tier is DeliveryTier => typeof tier?.upToKm === "number" && Number.isInteger(tier?.fee))
+    .sort((a, b) => a.upToKm - b.upToKm);
+}
+
+/** Valor del domicilio para una distancia: el del primer rango que la cubre, o null si queda más lejos. */
+export function feeForDistance(tiers: DeliveryTier[], meters: number): number | null {
+  return tiers.find((tier) => meters <= tier.upToKm * 1000)?.fee ?? null;
 }

@@ -140,6 +140,12 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - Sin internet, la app muestra una pantalla propia («Se fue el internet») que se recarga sola al volver la conexión.
 - 184 pruebas en total.
 
+### Domicilio según la distancia
+
+- En **Configuración → Entrega** el negocio elige **Tarifa fija** (como antes) o **Según la distancia**: marca la ubicación de su negocio en el mapa (o con el GPS) y define rangos «hasta 2 km → $3.000, hasta 4 km → $5.000…» (hasta 8). Más allá del último rango no se ofrece domicilio.
+- En la tienda, la ficha dice «Domicilio desde $3.000 · hasta 6 km». En el carrito, el cliente comparte su ubicación (GPS o pin en el mapa) y ve al instante «a 3,2 km · domicilio $5.000» y el total; si queda fuera de la zona, se le explica y puede elegir recoger. Al mover el pin, el valor se recalcula.
+- El servidor recalcula siempre el domicilio con la ubicación del cliente (línea recta desde el negocio) y guarda la distancia del pedido; en el panel, cada pedido dice «Domicilio · 3,2 km».
+
 ## Requisitos
 
 - Node.js 22.12 o superior (probado con Node 24).

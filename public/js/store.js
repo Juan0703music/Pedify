@@ -136,8 +136,16 @@ function facts(store) {
   const { business, settings } = store;
   const items = [];
   if (settings.deliveryEnabled) {
+    // Según la distancia: desde el rango más barato hasta el más lejano.
+    const tiers = settings.deliveryPricing === "DISTANCE" ? (settings.deliveryTiers ?? []) : [];
+    const price =
+      tiers.length > 0
+        ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))} · hasta ${String(tiers.at(-1).upToKm).replace(".", ",")} km`
+        : settings.deliveryFee > 0
+          ? formatCOP(settings.deliveryFee)
+          : "gratis";
     items.push(html`<span class="fact">${icon("bike")} Domicilio
-      <span class="num font-[720]">${settings.deliveryFee > 0 ? formatCOP(settings.deliveryFee) : "gratis"}</span>
+      <span class="num font-[720]">${price}</span>
       ${settings.deliveryArea ? html`<span class="text-paper/55">· ${settings.deliveryArea}</span>` : ""}</span>`);
   }
   if (settings.pickupEnabled) items.push(html`<span class="fact">${icon("shopping-bag")} Recoger en el local</span>`);

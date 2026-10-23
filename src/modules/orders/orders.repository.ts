@@ -23,6 +23,7 @@ export const orderSelect = {
   paidAt: true,
   deliveryLat: true,
   deliveryLng: true,
+  deliveryDistanceM: true,
   createdAt: true,
   /** Comprobante del pago por adelantado (la imagen se pide aparte). */
   paymentProof: { select: { createdAt: true } },
@@ -160,6 +161,7 @@ export const ordersRepository = {
       addressReferences: string | null;
       deliveryLat: number | null;
       deliveryLng: number | null;
+      deliveryDistanceM: number | null;
       paymentMethod: PaymentMethod;
       notes: string | null;
       subtotal: number;

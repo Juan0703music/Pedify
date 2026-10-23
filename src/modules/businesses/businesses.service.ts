@@ -3,6 +3,7 @@ import { DEFAULT_EMPLOYEE_PERMISSIONS, permissionsOf, toPermissionColumns } from
 import { prisma, type DbClient } from "../../config/database.js";
 import type { MembershipRole, PlanCode } from "../../generated/prisma/enums.js";
 import type { TenantContext } from "../../types/common.js";
+import { parseDeliveryTiers } from "../../services/pricing.service.js";
 import { deleteImage, saveImage } from "../../services/storage.service.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { DEFAULT_TRIAL_PLAN } from "../subscriptions/plans.js";
@@ -70,6 +71,16 @@ function toMember(member: StoredMember) {
 /** Permisos de un miembro nuevo: los indicados, sobre los valores iniciales de un empleado. */
 function permissionsFor(input: AddMemberInput) {
   return toPermissionColumns({ ...DEFAULT_EMPLOYEE_PERMISSIONS, ...(input.permissions ?? {}) });
+}
+
+/** Configuración para el panel: los rangos del domicilio ordenados y la ubicación como un punto. */
+function presentSettings<T extends { deliveryTiers: unknown; locationLat: number | null; locationLng: number | null }>(settings: T) {
+  const { locationLat, locationLng, ...rest } = settings;
+  return {
+    ...rest,
+    deliveryTiers: parseDeliveryTiers(settings.deliveryTiers),
+    location: locationLat !== null && locationLng !== null ? { lat: locationLat, lng: locationLng } : null,
+  };
 }
 
 export const businessesService = {
@@ -161,7 +172,7 @@ export const businessesService = {
   async getSettings(tenant: TenantContext) {
     const settings = await businessesRepository.findSettings(tenant.businessId);
     if (!settings) throw notFound("El negocio no tiene configuración.");
-    return settings;
+    return presentSettings(settings);
   },
 
   async updateSettings(tenant: TenantContext, input: UpdateSettingsInput) {
@@ -171,7 +182,22 @@ export const businessesService = {
     if (!deliveryEnabled && !pickupEnabled) {
       throw badRequest("Activa al menos una modalidad de entrega: domicilio o recoger.", "NO_DELIVERY_MODE");
     }
-    return businessesRepository.updateSettings(tenant.businessId, input);
+    // Domicilio según la distancia: hace falta saber desde dónde se mide y cuánto cobrar.
+    if ((input.deliveryPricing ?? current.deliveryPricing) === "DISTANCE") {
+      if (!(input.location === undefined ? current.location : input.location)) {
+        throw badRequest("Marca en el mapa la ubicación de tu negocio para cobrar el domicilio según la distancia.", "LOCATION_REQUIRED", {
+          fields: { location: "Marca la ubicación de tu negocio." },
+        });
+      }
+      if ((input.deliveryTiers ?? current.deliveryTiers).length === 0) {
+        throw badRequest("Agrega al menos un rango de distancia con su valor.", "DELIVERY_TIERS_REQUIRED", {
+          fields: { deliveryTiers: "Agrega al menos un rango." },
+        });
+      }
+    }
+    const { location, ...data } = input;
+    const coordinates = location === undefined ? {} : { locationLat: location?.lat ?? null, locationLng: location?.lng ?? null };
+    return presentSettings(await businessesRepository.updateSettings(tenant.businessId, { ...data, ...coordinates }));
   },
 
   async listMembers(tenant: TenantContext) {

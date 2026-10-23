@@ -1,5 +1,6 @@
 // Piezas compartidas para mostrar pedidos en el panel (Inicio y Pedidos).
 import { formatCOP } from "./api.js";
+import { distanceLabel } from "./map.js";
 import { html, icon } from "./ui.js";
 
 export const STATUS = {
@@ -73,9 +74,10 @@ export function elapsedLabel(value) {
   return rest ? `hace ${hours} h ${rest} min` : `hace ${hours} h`;
 }
 
+/** «Domicilio · 3,2 km» (distancia en línea recta, si el cliente marcó su ubicación) o «Recoger». */
 export function deliveryLabel(order) {
   return order.deliveryType === "DELIVERY"
-    ? html`${icon("bike", "h-4 w-4")} Domicilio`
+    ? html`${icon("bike", "h-4 w-4")} Domicilio${order.deliveryDistanceM ? ` · ${distanceLabel(order.deliveryDistanceM)}` : ""}`
     : html`${icon("shopping-bag", "h-4 w-4")} Recoger`;
 }
 
