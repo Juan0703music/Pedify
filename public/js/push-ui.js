@@ -34,7 +34,7 @@ export function pushView(state, variant = "card") {
     return html`<section class="relative overflow-hidden rounded-[18px] bg-ink p-5 text-paper sm:flex sm:items-center sm:gap-6" data-push aria-labelledby="push-card-title">
       <div class="dots-mustard pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent)]" aria-hidden="true"></div>
       <div class="relative flex items-start gap-4 sm:flex-1 sm:items-center">
-        <span class="bell-ring grid h-11 w-11 flex-none place-items-center rounded-full bg-mustard text-ink">${icon("bell-ring", "h-5 w-5")}</span>
+        <span class="bell-ring grid h-11 w-11 flex-none place-items-center rounded-full bg-mustard text-ink [--ring-scale:1.45]">${icon("bell-ring", "h-5 w-5")}</span>
         <div class="grid gap-1.5">
           <h2 id="push-card-title" class="text-[1.125rem] leading-tight font-[780]">Que ningún pedido se te pase</h2>
           <p class="text-[0.9375rem] text-paper/75">${copy.hint}</p>

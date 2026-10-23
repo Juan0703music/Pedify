@@ -52,22 +52,25 @@ function liveControl({ compact = false } = {}) {
         <span data-sound-icon>${icon("bell-off")}</span>
         <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-ink-soft" data-live-dot aria-hidden="true"></span>
       </button>`
-    : html`<div class="grid gap-1.5 rounded-[12px] bg-ink-2 p-2.5">
-        <p class="flex items-center gap-2 px-1 text-xs font-[620] text-ink-soft">
-          <span class="h-2 w-2 rounded-full bg-ink-soft" data-live-dot aria-hidden="true"></span><span data-live-text>Conectando…</span>
+    : html`<div class="grid gap-0.5 rounded-[12px] bg-ink-2 py-1.5">
+        <p class="flex items-center gap-3 px-3 pt-1 pb-1.5 text-xs font-[620] text-ink-soft">
+          <span class="grid w-5 flex-none place-items-center" aria-hidden="true"><span class="h-2 w-2 rounded-full bg-ink-soft" data-live-dot></span></span>
+          <span data-live-text>Conectando…</span>
         </p>
-        <button type="button" class="btn btn-sm w-full justify-start border-ink-3 bg-ink-3 text-paper hover:bg-ink" data-sound-toggle>
-          <span data-sound-icon>${icon("bell-off")}</span><span data-sound-text>Activar sonido de pedidos</span>
+        <button type="button" class="live-row" data-sound-toggle>
+          <span class="live-row-icon" data-sound-icon>${icon("bell-off")}</span><span class="min-w-0 flex-1 truncate text-left">Sonido de pedidos</span>
+          <span class="live-state" data-sound-state>Activar</span>
         </button>
-        <p class="hidden px-1 text-xs leading-snug text-mustard" data-sound-hint>Toca cualquier parte de la página para que suene aquí.</p>
+        <p class="hidden pr-3 pb-1 pl-11 text-xs leading-snug text-mustard" data-sound-hint>Toca cualquier parte de la página para que suene aquí.</p>
         ${pushButton()}
       </div>`;
 }
 
-/** Botón de avisos push en este dispositivo (menú lateral y cajón del celular). */
+/** Fila de avisos push en este dispositivo (bloque «En vivo» del menú lateral y del cajón del celular). */
 function pushButton() {
-  return html`<button type="button" class="btn btn-sm hidden w-full justify-start border-ink-3 bg-ink-3 text-paper hover:bg-ink" data-push-toggle>
-    <span data-push-icon>${icon("smartphone")}</span><span class="truncate" data-push-text>Avisos en este dispositivo</span>
+  return html`<button type="button" class="live-row hidden" data-push-toggle>
+    <span class="live-row-icon" data-push-icon>${icon("smartphone")}</span><span class="min-w-0 flex-1 truncate text-left">Avisos de pedidos</span>
+    <span class="live-state" data-push-state>Activar</span>
   </button>`;
 }
 
@@ -261,7 +264,10 @@ function shell(me, business, page) {
           <button type="button" class="btn btn-quiet btn-icon text-paper hover:bg-ink-3" data-close-drawer aria-label="Cerrar menú">${icon("x")}</button>
         </div>
         <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, business)}</nav>
-        <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">${business ? pushButton() : ""}<div class="grid grid-cols-[minmax(0,1fr)] gap-0.5">${planLink(business)} ${adminLink(me)}</div> ${userBlock(me)}</div>
+        <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
+          <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5">${planLink(business)} ${adminLink(me)}</div>
+          ${business ? liveControl() : ""} ${userBlock(me)}
+        </div>
       </div>
     </dialog>
   </div>`;
@@ -382,8 +388,8 @@ function paintLive(root, status) {
     button.title = !on ? "Activar sonido de pedidos" : waiting ? "Sonido activado: toca la página una vez para que suene aquí" : "Sonido de pedidos activado";
     const iconSlot = button.querySelector("[data-sound-icon]");
     if (iconSlot) iconSlot.innerHTML = String(icon(on ? "bell-ring" : "bell-off", on ? "text-mustard" : ""));
-    const text = button.querySelector("[data-sound-text]");
-    if (text) text.textContent = on ? "Sonido de pedidos activado" : "Activar sonido de pedidos";
+    const pill = button.querySelector("[data-sound-state]");
+    if (pill) pill.textContent = on ? "Activo" : "Activar";
   });
   root.querySelectorAll("[data-sound-hint]").forEach((hint) => {
     hint.classList.toggle("hidden", !waiting);
@@ -416,7 +422,9 @@ function paintPush(root, state) {
     button.setAttribute("aria-pressed", String(on));
     button.title = PUSH_COPY[state]?.hint ?? "";
     button.querySelector("[data-push-icon]").innerHTML = String(icon("smartphone", on ? "text-mustard" : ""));
-    button.querySelector("[data-push-text]").textContent = on ? "Avisos activados aquí" : state === "off" ? "Activar avisos aquí" : "Avisos en este dispositivo";
+    // Bloqueados o en iPhone sin instalar: el toque explica qué hacer.
+    button.querySelector("[data-push-state]").textContent = on ? "Activo" : state === "off" ? "Activar" : state === "denied" ? "Bloqueados" : "Ver cómo";
+    button.toggleAttribute("data-muted", !on && state !== "off");
   });
 }
 
