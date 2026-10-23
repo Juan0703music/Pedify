@@ -104,6 +104,38 @@ function userBlock(me) {
   </div>`;
 }
 
+/**
+ * «Crear otro negocio»: el formulario si el plan lo permite (con cuántos llevas) o el motivo si ya
+ * llegaste al límite (Emprendedor: 1 negocio · Negocio: 3 · Empresa: ilimitados).
+ */
+function newBusinessBlock(me, business, id) {
+  const limit = me.newBusiness;
+  if (limit && !limit.allowed) {
+    return html`<div class="mt-1 grid gap-2.5 border-t border-line px-3 pt-3 pb-2">
+      <p class="flex items-start gap-2 text-sm text-muted">${icon("lock", "mt-0.5 h-4 w-4 flex-none")}<span>${limit.message}</span></p>
+      ${business.role === "OWNER" ? html`<a class="btn btn-ink btn-sm w-fit" href="/panel/plan">Ver planes</a>` : ""}
+    </div>`;
+  }
+  return html`<details class="group mt-1 border-t border-line pt-1">
+    <summary class="flex cursor-pointer list-none items-center gap-3 rounded-[10px] px-3 py-2.5 font-semibold hover:bg-ground">
+      ${icon("plus")} <span class="flex-1">Crear otro negocio</span>
+      ${limit?.max ? html`<span class="num text-xs font-[600] text-muted" title="Negocios que tienes de los que permite tu plan">${limit.owned} de ${limit.max}</span>` : ""}
+    </summary>
+    <form class="grid gap-3 px-3 pt-2 pb-3" data-create-business novalidate>
+      ${formAlert()}
+      <div class="field">
+        <label class="label" for="${id}-name">Nombre</label>
+        <input class="input" id="${id}-name" name="name" required maxlength="80" />
+      </div>
+      <div class="field">
+        <label class="label" for="${id}-phone">Celular</label>
+        <input class="input" id="${id}-phone" name="phone" type="tel" inputmode="tel" placeholder="300 123 4567" required />
+      </div>
+      <button class="btn btn-ink w-full" type="submit">Crear negocio</button>
+    </form>
+  </details>`;
+}
+
 function businessSwitcher(me, business, id, { compact = false } = {}) {
   const others = me.businesses;
   return html`<button
@@ -145,23 +177,7 @@ function businessSwitcher(me, business, id, { compact = false } = {}) {
           </li>`,
         )}
       </ul>
-      <details class="group mt-1 border-t border-line pt-1">
-        <summary class="flex cursor-pointer list-none items-center gap-3 rounded-[10px] px-3 py-2.5 font-semibold hover:bg-ground">
-          ${icon("plus")} Crear otro negocio
-        </summary>
-        <form class="grid gap-3 px-3 pt-2 pb-3" data-create-business novalidate>
-          ${formAlert()}
-          <div class="field">
-            <label class="label" for="${id}-name">Nombre</label>
-            <input class="input" id="${id}-name" name="name" required maxlength="80" />
-          </div>
-          <div class="field">
-            <label class="label" for="${id}-phone">Celular</label>
-            <input class="input" id="${id}-phone" name="phone" type="tel" inputmode="tel" placeholder="300 123 4567" required />
-          </div>
-          <button class="btn btn-ink w-full" type="submit">Crear negocio</button>
-        </form>
-      </details>
+      ${newBusinessBlock(me, business, id)}
     </div>`;
 }
 

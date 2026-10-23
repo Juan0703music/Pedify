@@ -39,7 +39,7 @@ Teléfonos: se aceptan en cualquier formato colombiano (`300 123 4567`, `+57 300
 |---|---|---|---|---|
 | POST | `/auth/register` | — | `name, email, password, businessName, businessPhone` | 201 perfil + cookie |
 | POST | `/auth/login` | — | `email, password` | 200 perfil + cookie |
-| GET | `/auth/me` | ✔ | — | perfil |
+| GET | `/auth/me` | ✔ | — | perfil: `user`, `businesses`, `activeBusinessId` y `newBusiness { allowed, owned, max, planName, message }` (si puede crear otro negocio según su plan) |
 | PATCH | `/auth/me` | ✔ | `name` | `{ user }` |
 | POST | `/auth/switch-business` | ✔ | `businessId` | perfil con el nuevo negocio activo |
 | PATCH | `/auth/password` | ✔ | `currentPassword, newPassword` | `{ ok }`; cierra las demás sesiones |
@@ -67,7 +67,7 @@ Todas requieren sesión. Las rutas `/current…` actúan sobre el **negocio acti
 | Método | Ruta | Rol | Cuerpo |
 |---|---|---|---|
 | GET | `/businesses` | — | Negocios del usuario |
-| POST | `/businesses` | — | `name, phone` → crea otro negocio (queda activo) |
+| POST | `/businesses` | — | `name, phone` → crea otro negocio (queda activo, con su propia prueba). 409 `PLAN_LIMIT` si ya tiene los negocios que permite su plan (Emprendedor 1, Negocio 3, Empresa ilimitados; cuenta el plan más amplio entre los negocios de los que es propietario) |
 | GET | `/businesses/current` | miembro | — |
 | PATCH | `/businesses/current` | OWNER | `name, phone, slug, description, city, address` (parcial) |
 | GET | `/businesses/current/settings` | miembro | — |

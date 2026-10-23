@@ -5,7 +5,7 @@ import { wompi } from "../../services/wompi.service.js";
 import type { TenantContext } from "../../types/common.js";
 import { clock } from "../../utils/clock.js";
 import { conflict } from "../../utils/errors.js";
-import { planOf, PLANS, TRIAL_DAYS, UPGRADE } from "./plans.js";
+import { businessesLabel, DEFAULT_TRIAL_PLAN, planOf, PLANS, TRIAL_DAYS, UPGRADE } from "./plans.js";
 import { addMonths, latest, subscriptionState } from "./subscription-state.js";
 import { subscriptionsRepository } from "./subscriptions.repository.js";
 
@@ -79,6 +79,32 @@ export const subscriptionsService = {
     const periodEnd = addMonths(periodStart, input.months);
     await subscriptionsRepository.update(businessId, { plan: input.plan, paidUntil: periodEnd }, tx);
     return subscriptionsRepository.createPayment({ businessId, ...input, periodStart, periodEnd }, tx);
+  },
+
+  /**
+   * ¿Puede la persona crear otro negocio? Cuenta los negocios de los que es propietaria y usa el plan
+   * más amplio entre ellos (Emprendedor: 1 · Negocio: 3 · Empresa: ilimitados). Si aún no es dueña de
+   * ninguno (p. ej. solo es empleada), puede crear el primero. `message` explica por qué no.
+   */
+  async businessAllowance(userId: string, db: DbClient = prisma) {
+    const plans = (await subscriptionsRepository.ownedPlans(userId, db)).map((code) => planOf(code ?? DEFAULT_TRIAL_PLAN));
+    const owned = plans.length;
+    if (owned === 0) return { allowed: true, owned, max: null, planName: null, message: null };
+    const widest = plans.reduce((best, plan) =>
+      best.maxBusinesses === null || (plan.maxBusinesses !== null && plan.maxBusinesses <= best.maxBusinesses) ? best : plan,
+    );
+    const max = widest.maxBusinesses;
+    if (max === null || owned < max) return { allowed: true, owned, max, planName: widest.name, message: null };
+    const nextCode = UPGRADE[widest.code];
+    const next = nextCode ? planOf(nextCode) : null;
+    const upgrade = next ? ` Pásate al plan ${next.name} para tener ${businessesLabel(next.maxBusinesses)}.` : "";
+    return { allowed: false, owned, max, planName: widest.name, message: `Tu plan ${widest.name} permite ${businessesLabel(max)}.${upgrade}` };
+  },
+
+  /** Verifica el límite de negocios antes de crear otro (dentro de la transacción que lo crea). */
+  async assertCanCreateBusiness(userId: string, db: DbClient = prisma) {
+    const allowance = await subscriptionsService.businessAllowance(userId, db);
+    if (!allowance.allowed) throw conflict(allowance.message!, "PLAN_LIMIT");
   },
 
   /** Verifica el límite del plan antes de agregar un producto o una persona al equipo. */

@@ -58,6 +58,15 @@ export const subscriptionsRepository = {
     return prisma.subscriptionPayment.findMany({ where: { businessId }, orderBy: { createdAt: "desc" }, take, select: paymentSelect });
   },
 
+  /** Plan de cada negocio del que la persona es propietaria. */
+  async ownedPlans(userId: string, db: DbClient = prisma) {
+    const owned = await db.businessMembership.findMany({
+      where: { userId, role: "OWNER" },
+      select: { business: { select: { subscription: { select: { plan: true } } } } },
+    });
+    return owned.map((membership) => membership.business.subscription?.plan ?? null);
+  },
+
   async usage(businessId: string, db: DbClient = prisma) {
     const [products, members] = await Promise.all([
       db.product.count({ where: { businessId, archivedAt: null } }),

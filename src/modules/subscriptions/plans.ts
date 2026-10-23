@@ -2,8 +2,8 @@ import type { PlanCode } from "../../generated/prisma/enums.js";
 
 /**
  * Planes de Pedify (fase 5: comercialización). Precios en pesos colombianos: mes a mes o el año completo
- * con descuento. Todos los planes incluyen todas las funciones; cambian los límites de productos y de
- * personas del equipo. Para cambiar precios o límites basta con editar este archivo (no requiere
+ * con descuento. Todos los planes incluyen todas las funciones; cambian los límites de productos, de
+ * personas del equipo y de negocios que puede tener el propietario. Para cambiar precios o límites basta con editar este archivo (no requiere
  * migración; un plan nuevo sí, porque `PlanCode` es un enum de la base).
  */
 export interface Plan {
@@ -18,6 +18,8 @@ export interface Plan {
   maxProducts: number | null;
   /** Personas con acceso al panel, incluido el propietario; null = ilimitadas. */
   maxMembers: number | null;
+  /** Negocios que puede tener el propietario (incluido este); null = ilimitados. */
+  maxBusinesses: number | null;
   summary: string;
 }
 
@@ -30,6 +32,7 @@ export const PLANS: Record<PlanCode, Plan> = {
     priceYearly: 1_294_920,
     maxProducts: 10,
     maxMembers: 1,
+    maxBusinesses: 1,
     summary: "Para empezar a vender por tu enlace: un menú corto que manejas tú mismo.",
   },
   NEGOCIO: {
@@ -40,6 +43,7 @@ export const PLANS: Record<PlanCode, Plan> = {
     priceYearly: 4_414_896,
     maxProducts: 50,
     maxMembers: 6,
+    maxBusinesses: 3,
     summary: "Para el negocio con carta completa y equipo en el mostrador.",
   },
   EMPRESA: {
@@ -50,7 +54,8 @@ export const PLANS: Record<PlanCode, Plan> = {
     priceYearly: 9_118_860,
     maxProducts: null,
     maxMembers: null,
-    summary: "Para el negocio grande: productos y equipo sin límite.",
+    maxBusinesses: null,
+    summary: "Para el negocio grande: productos, equipo y negocios sin límite.",
   },
 };
 
@@ -71,3 +76,6 @@ export const DEFAULT_TRIAL_PLAN: PlanCode = "NEGOCIO";
 export const GRACE_DAYS = 5;
 
 export const planOf = (code: PlanCode): Plan => PLANS[code];
+
+/** "1 negocio" · "hasta 3 negocios" · "negocios ilimitados". */
+export const businessesLabel = (max: number | null) => (max === null ? "negocios ilimitados" : max === 1 ? "1 negocio" : `hasta ${max} negocios`);

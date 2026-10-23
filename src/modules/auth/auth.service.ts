@@ -9,6 +9,7 @@ import { logger } from "../../utils/logger.js";
 import { businessesRepository } from "../businesses/businesses.repository.js";
 import { businessesService } from "../businesses/businesses.service.js";
 import { pushRepository } from "../push/push.repository.js";
+import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { authRepository } from "./auth.repository.js";
 import type {
   ChangePasswordInput,
@@ -152,7 +153,9 @@ export const authService = {
       await authRepository.setActiveBusiness(auth.sessionId, activeBusinessId);
     }
 
-    return { user, businesses, activeBusinessId };
+    // Si puede crear otro negocio según su plan (el panel muestra el formulario o el motivo).
+    const newBusiness = await subscriptionsService.businessAllowance(auth.userId);
+    return { user, businesses, activeBusinessId, newBusiness };
   },
 
   async updateProfile(auth: AuthContext, input: UpdateProfileInput) {

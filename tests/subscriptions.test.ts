@@ -93,6 +93,44 @@ describe("Suscripción del negocio", () => {
     expect((await agent.get("/api/v1/subscription").expect(200)).body.data).toMatchObject({ usage: { members: 11 }, limits: { products: null, members: null } });
   });
 
+  it("limita los negocios de cada propietario: Emprendedor 1, Negocio 3 y Empresa ilimitados", async () => {
+    const { agent, businessId, profile } = await registerMerchant();
+    const newBusiness = (name: string) => agent.post("/api/v1/businesses").send({ name, phone: "3001234567" });
+
+    // Emprendedor: solo el negocio con el que se registró.
+    await prisma.subscription.update({ where: { businessId }, data: { plan: "EMPRENDEDOR" } });
+    const emprendedor = "Tu plan Emprendedor permite 1 negocio. Pásate al plan Negocio para tener hasta 3 negocios.";
+    expect((await agent.get("/api/v1/auth/me").expect(200)).body.data.newBusiness).toEqual({ allowed: false, owned: 1, max: 1, planName: "Emprendedor", message: emprendedor });
+    expect((await newBusiness("Segunda sede").expect(409)).body.error).toMatchObject({ code: "PLAN_LIMIT", message: emprendedor });
+
+    // Negocio: hasta 3 (los nuevos empiezan su propia prueba).
+    await prisma.subscription.update({ where: { businessId }, data: { plan: "NEGOCIO" } });
+    expect((await agent.get("/api/v1/auth/me")).body.data.newBusiness).toMatchObject({ allowed: true, owned: 1, max: 3 });
+    await newBusiness("Segunda sede").expect(201);
+    await newBusiness("Tercera sede").expect(201);
+    const negocio = await newBusiness("Cuarta sede").expect(409);
+    expect(negocio.body.error.message).toBe("Tu plan Negocio permite hasta 3 negocios. Pásate al plan Empresa para tener negocios ilimitados.");
+
+    // Empresa: sin límite (cuenta el plan más amplio entre sus negocios).
+    await prisma.subscription.update({ where: { businessId }, data: { plan: "EMPRESA" } });
+    await newBusiness("Cuarta sede").expect(201);
+    await newBusiness("Quinta sede").expect(201);
+    expect((await agent.get("/api/v1/auth/me")).body.data.newBusiness).toMatchObject({ allowed: true, owned: 5, max: null, planName: "Empresa" });
+    expect(await prisma.businessMembership.count({ where: { userId: profile.user.id, role: "OWNER" } })).toBe(5);
+  });
+
+  it("quien solo es empleado puede crear su primer negocio", async () => {
+    const { agent } = await registerMerchant();
+    const email = uniqueEmail("empleado");
+    await agent.post("/api/v1/businesses/current/members").send({ name: "Carlos", email, password: PASSWORD }).expect(201);
+
+    const employee = await login(email);
+    expect((await employee.get("/api/v1/auth/me")).body.data.newBusiness).toMatchObject({ allowed: true, owned: 0 });
+    await employee.post("/api/v1/businesses").send({ name: "Mi propio negocio", phone: "3009998877" }).expect(201);
+    // Su negocio nuevo empieza la prueba del plan Negocio: puede tener hasta 3.
+    expect((await employee.get("/api/v1/auth/me")).body.data.newBusiness).toMatchObject({ allowed: true, owned: 1, max: 3 });
+  });
+
   it("el precio anual es 12 meses con el descuento de cada plan ya aplicado", async () => {
     const { PLANS } = await import("../src/modules/subscriptions/plans.js");
     expect(Object.values(PLANS).map((plan) => [plan.code, plan.priceMonthly, plan.annualDiscountPercent, plan.priceYearly])).toEqual([
@@ -229,6 +267,7 @@ describe("Portada", () => {
       expect(html).toContain(`Ahorra ${plan.annualDiscountPercent} %`);
       expect(html).toContain(plan.maxProducts === null ? "Productos ilimitados con foto" : `Hasta ${plan.maxProducts} productos`);
       expect(html).toContain(plan.maxMembers === null ? "Personas ilimitadas con acceso" : `${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"} con acceso`);
+      expect(html).toContain(plan.maxBusinesses === null ? "Negocios ilimitados en tu cuenta" : plan.maxBusinesses === 1 ? "1 negocio en tu cuenta" : `Hasta ${plan.maxBusinesses} negocios en tu cuenta`);
       expect(html).toContain(`href="/registro?plan=${plan.code}"`);
     }
     expect(html).not.toContain("14 días");
@@ -244,7 +283,9 @@ describe("Portada", () => {
       expect(html).toContain(`>${plan.name}</span>`);
       expect(html).toContain(`${formatCOP(plan.priceMonthly)} / mes`);
       expect(html).toContain(
-        plan.maxProducts === null ? "Productos y personas ilimitados<" : `${plan.maxProducts} productos · ${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"}<`,
+        plan.maxProducts === null
+          ? "Productos, personas y negocios ilimitados<"
+          : `${plan.maxProducts} productos · ${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"} · ${plan.maxBusinesses} ${plan.maxBusinesses === 1 ? "negocio" : "negocios"}<`,
       );
     }
     expect(html).toContain("7 días gratis");

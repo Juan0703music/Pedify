@@ -98,8 +98,14 @@ export const businessesService = {
     );
   },
 
+  /** Otro negocio del mismo propietario, dentro del límite de su plan (ver subscriptionsService.businessAllowance). */
   async createAdditional(userId: string, input: CreateBusinessInput) {
-    return prisma.$transaction((tx) => businessesService.createForOwner(userId, input, tx));
+    return prisma.$transaction(async (tx) => {
+      // Bloquea a la persona: dos solicitudes al mismo tiempo no pasan juntas el límite de negocios.
+      await tx.$queryRaw`SELECT 1 FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
+      await subscriptionsService.assertCanCreateBusiness(userId, tx);
+      return businessesService.createForOwner(userId, input, tx);
+    });
   },
 
   async listMine(userId: string) {
