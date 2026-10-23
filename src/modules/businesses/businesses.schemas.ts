@@ -92,6 +92,15 @@ export const updateSettingsSchema = z
     deliveryPricing: z.enum(DeliveryPricing),
     deliveryFee: copAmountSchema,
     deliveryTiers: deliveryTiersSchema,
+    /** Más allá del último rango, valor por cada km adicional; null = no se lleva más lejos. */
+    deliveryExtraKmFee: copAmountSchema.max(100_000, "El valor por km adicional no puede superar $100.000.").nullable(),
+    /** Distancia máxima en km; null = toda la ciudad (hasta 50 km). */
+    deliveryMaxKm: z
+      .number({ error: "Escribe hasta cuántos kilómetros llevas." })
+      .positive("Los kilómetros deben ser mayores que 0.")
+      .max(50, "El domicilio puede llegar hasta 50 km.")
+      .transform((km) => Math.round(km * 10) / 10)
+      .nullable(),
     /** Ubicación del negocio; null la quita. */
     location: geoPointSchema.nullable(),
     deliveryArea: optionalText(200, "La zona de cobertura"),

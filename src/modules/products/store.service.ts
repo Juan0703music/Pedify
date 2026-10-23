@@ -1,4 +1,4 @@
-import { parseDeliveryTiers } from "../../services/pricing.service.js";
+import { deliveryReachKm, parseDeliveryTiers } from "../../services/pricing.service.js";
 import { clock } from "../../utils/clock.js";
 import { notFound } from "../../utils/errors.js";
 import { businessesRepository } from "../businesses/businesses.repository.js";
@@ -87,6 +87,14 @@ export const storeService = {
         deliveryPricing: settings.deliveryPricing,
         deliveryFee: settings.deliveryFee,
         deliveryTiers: distancePricing ? parseDeliveryTiers(settings.deliveryTiers) : [],
+        /** Más allá del último rango, por cada km adicional (null = no llega más lejos). */
+        deliveryExtraKmFee: distancePricing ? settings.deliveryExtraKmFee : null,
+        /** Alcance del domicilio en km (toda la ciudad = el tope de Pedify). */
+        deliveryReachKm: distancePricing
+          ? deliveryReachKm({ tiers: parseDeliveryTiers(settings.deliveryTiers), extraKmFee: settings.deliveryExtraKmFee, maxKm: settings.deliveryMaxKm })
+          : null,
+        /** true si el negocio no puso un límite: lleva a toda la ciudad. */
+        deliveryWholeCity: distancePricing && settings.deliveryExtraKmFee !== null && settings.deliveryMaxKm === null,
         /** Punto desde el que se mide la distancia (solo con domicilio según la distancia). */
         location: distancePricing ? { lat: settings.locationLat, lng: settings.locationLng } : null,
         deliveryArea: settings.deliveryArea,

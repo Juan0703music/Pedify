@@ -26,6 +26,8 @@ export const settingsSelect = {
   deliveryPricing: true,
   deliveryFee: true,
   deliveryTiers: true,
+  deliveryExtraKmFee: true,
+  deliveryMaxKm: true,
   locationLat: true,
   locationLng: true,
   deliveryArea: true,

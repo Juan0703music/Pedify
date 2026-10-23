@@ -136,11 +136,12 @@ function facts(store) {
   const { business, settings } = store;
   const items = [];
   if (settings.deliveryEnabled) {
-    // Según la distancia: desde el rango más barato hasta el más lejano.
+    // Según la distancia: desde el rango más barato, a toda la ciudad o hasta donde llegue.
     const tiers = settings.deliveryPricing === "DISTANCE" ? (settings.deliveryTiers ?? []) : [];
+    const reach = settings.deliveryWholeCity ? "toda la ciudad" : `hasta ${String(settings.deliveryReachKm).replace(".", ",")} km`;
     const price =
       tiers.length > 0
-        ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))} · hasta ${String(tiers.at(-1).upToKm).replace(".", ",")} km`
+        ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))} · ${reach}`
         : settings.deliveryFee > 0
           ? formatCOP(settings.deliveryFee)
           : "gratis";

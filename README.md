@@ -142,8 +142,8 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 
 ### Domicilio según la distancia
 
-- En **Configuración → Entrega** el negocio elige **Tarifa fija** (como antes) o **Según la distancia**: marca la ubicación de su negocio en el mapa (o con el GPS) y define rangos «hasta 2 km → $3.000, hasta 4 km → $5.000…» (hasta 8). Más allá del último rango no se ofrece domicilio.
-- En la tienda, la ficha dice «Domicilio desde $3.000 · hasta 6 km». En el carrito, el cliente comparte su ubicación (GPS o pin en el mapa) y ve al instante «a 3,2 km · domicilio $5.000» y el total; si queda fuera de la zona, se le explica y puede elegir recoger. Al mover el pin, el valor se recalcula.
+- En **Configuración → Entrega** el negocio elige **Tarifa fija** (como antes) o **Según la distancia**: marca la ubicación de su negocio en el mapa (o con el GPS) y define rangos (hasta 8) y un valor por **cada km adicional** para llegar a **toda la ciudad, sea cual sea** (o solo hasta los km que elija; tope de 50 km). Valores sugeridos (2026): hasta 2 km $4.000 · 4 km $5.500 · 6 km $7.000 · 8 km $8.500 · cada km adicional $1.000. Una vista previa muestra lo que paga un cliente a 1, 3, 5, 8, 12 y 20 km.
+- En la tienda, la ficha dice «Domicilio desde $4.000 · toda la ciudad». En el carrito, el cliente comparte su ubicación (GPS o pin en el mapa) y ve al instante «a 3,2 km · domicilio $5.000» y el total; si queda fuera de la zona, se le explica y puede elegir recoger. Al mover el pin, el valor se recalcula.
 - El servidor recalcula siempre el domicilio con la ubicación del cliente (línea recta desde el negocio) y guarda la distancia del pedido; en el panel, cada pedido dice «Domicilio · 3,2 km».
 
 ## Requisitos

@@ -71,7 +71,7 @@ Todas requieren sesión. Las rutas `/current…` actúan sobre el **negocio acti
 | GET | `/businesses/current` | miembro | — |
 | PATCH | `/businesses/current` | OWNER | `name, phone, slug, description, city, address` (parcial) |
 | GET | `/businesses/current/settings` | miembro | — |
-| PATCH | `/businesses/current/settings` | OWNER | `openingHours, acceptingOrders, whatsappPhone, deliveryEnabled, deliveryPricing, deliveryFee, deliveryTiers, location, deliveryArea, pickupEnabled, minimumOrder, paymentMethods, salesPolicy` (parcial). Ver «Domicilio según la distancia» |
+| PATCH | `/businesses/current/settings` | OWNER | `openingHours, acceptingOrders, whatsappPhone, deliveryEnabled, deliveryPricing, deliveryFee, deliveryTiers, deliveryExtraKmFee, deliveryMaxKm, location, deliveryArea, pickupEnabled, minimumOrder, paymentMethods, salesPolicy` (parcial). Ver «Domicilio según la distancia» |
 | GET | `/businesses/current/members` | OWNER | — |
 | POST | `/businesses/current/members` | OWNER | `name, email, password?, role` |
 | PATCH | `/businesses/current/members/:membershipId` | OWNER | `role` |
@@ -108,14 +108,19 @@ Content-Type: application/json
 ### Domicilio según la distancia
 
 - `deliveryPricing`: `FIXED` (cobra `deliveryFee` a todos) o `DISTANCE` (cobra según la distancia en línea recta desde el negocio hasta la ubicación que comparte el cliente).
-- `deliveryTiers`: hasta 8 rangos `{ upToKm, fee }` de menor a mayor (`upToKm` con un decimal, máx. 50 km): se cobra el primer rango que cubre la distancia; más allá del último no se ofrece domicilio.
+- `deliveryTiers`: hasta 8 rangos `{ upToKm, fee }` de menor a mayor (`upToKm` con un decimal, máx. 50 km): se cobra el primer rango que cubre la distancia.
+- `deliveryExtraKmFee`: más allá del último rango, valor por cada km adicional empezado (así llega a **toda la ciudad**); `null` = no se lleva más lejos del último rango.
+- `deliveryMaxKm`: distancia máxima (km, hasta 50); `null` = toda la ciudad, hasta el tope de 50 km en línea recta. La distancia se toma de a 100 m.
 - `location`: `{ lat, lng }` del negocio (punto de partida) o `null`.
 - Con `DISTANCE` son obligatorios la ubicación (400 `LOCATION_REQUIRED`) y al menos un rango (400 `DELIVERY_TIERS_REQUIRED`). La respuesta trae `deliveryTiers` ordenados y `location`.
 
 ```json
 { "deliveryPricing": "DISTANCE", "location": { "lat": 9.3047, "lng": -75.3978 },
-  "deliveryTiers": [ { "upToKm": 2, "fee": 3000 }, { "upToKm": 4, "fee": 5000 }, { "upToKm": 6, "fee": 7000 } ] }
+  "deliveryTiers": [ { "upToKm": 2, "fee": 4000 }, { "upToKm": 4, "fee": 5500 }, { "upToKm": 6, "fee": 7000 }, { "upToKm": 8, "fee": 8500 } ],
+  "deliveryExtraKmFee": 1000, "deliveryMaxKm": null }
 ```
+
+Con esos valores (los sugeridos en el panel): a 1 km $4.000, a 5 km $7.000, a 8 km $8.500, a 12 km $12.500 y a 20 km $20.500.
 
 ## Productos — `/products`
 
@@ -311,7 +316,7 @@ Con Nequi, Daviplata o transferencia y cuentas configuradas, además `"paymentPr
 - Solo se reciben productos y cantidades. Precios, subtotal, domicilio, descuento y total los calcula el servidor; cualquier valor monetario enviado se descarta.
 - `idempotencyKey`: la genera el navegador por intento de compra (16–80 caracteres `A-Z a-z 0-9 -`). Si llega de nuevo, se responde **200** con el pedido ya creado, sin duplicarlo.
 - `phone`: celular colombiano (se normaliza a `57XXXXXXXXXX`). `address` es obligatoria para `DELIVERY` y se ignora en `PICKUP`.
-- Domicilio según la distancia (`settings.deliveryPricing: "DISTANCE"`, con `deliveryTiers` y la `location` del negocio en `GET /store/:slug`): el pedido a domicilio debe traer `location` del cliente (400 `LOCATION_REQUIRED`) dentro del último rango (400 `DELIVERY_OUT_OF_RANGE`: «Tu ubicación está a 9 km y … lleva domicilios hasta 6 km»). El servidor calcula el valor y guarda la distancia en `deliveryDistanceM` (también con tarifa fija si el negocio y el cliente marcaron su ubicación).
+- Domicilio según la distancia (`settings.deliveryPricing: "DISTANCE"`, con `deliveryTiers` y la `location` del negocio en `GET /store/:slug`): el pedido a domicilio debe traer `location` del cliente (400 `LOCATION_REQUIRED`) dentro del alcance (400 `DELIVERY_OUT_OF_RANGE`: «Tu ubicación está a 9 km y … lleva domicilios hasta 6 km»). La tienda publica `deliveryExtraKmFee`, `deliveryReachKm` (hasta dónde llega) y `deliveryWholeCity`. El servidor calcula el valor y guarda la distancia en `deliveryDistanceM` (también con tarifa fija si el negocio y el cliente marcaron su ubicación).
 - Reglas: el negocio debe estar abierto según su horario (`STORE_CLOSED`) y sin pausa (`ORDERS_PAUSED`); no necesita WhatsApp: el pedido llega directo al panel; la modalidad y el método de pago deben estar habilitados; el subtotal debe cubrir el pedido mínimo (`MINIMUM_ORDER`); cada producto debe ser del negocio, visible, no archivado y disponible (`PRODUCTS_UNAVAILABLE`, con `details.products: [{ productId, name, reason: "sold_out" | "not_found" }]`).
 
 Respuesta **201**:

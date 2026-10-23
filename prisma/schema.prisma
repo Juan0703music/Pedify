@@ -197,30 +197,33 @@ model BusinessMembership {
 }
 
 model BusinessSettings {
-  businessId      String          @id @map("business_id") @db.Uuid
+  businessId         String          @id @map("business_id") @db.Uuid
   // Horario semanal: [{ day: 0-6 (0 = domingo), closed, open: "HH:MM", close: "HH:MM" }]
-  openingHours    Json            @map("opening_hours")
-  timezone        String          @default("America/Bogota")
+  openingHours       Json            @map("opening_hours")
+  timezone           String          @default("America/Bogota")
   // Interruptor manual para pausar la recepción de pedidos.
-  acceptingOrders Boolean         @default(true) @map("accepting_orders")
+  acceptingOrders    Boolean         @default(true) @map("accepting_orders")
   // Número de WhatsApp que recibe los pedidos (celular). Null hasta que el comerciante lo configure.
-  whatsappPhone   String?         @map("whatsapp_phone")
-  deliveryEnabled Boolean         @default(true) @map("delivery_enabled")
+  whatsappPhone      String?         @map("whatsapp_phone")
+  deliveryEnabled    Boolean         @default(true) @map("delivery_enabled")
   // Cómo se cobra el domicilio: tarifa fija (deliveryFee) o según la distancia (deliveryTiers).
-  deliveryPricing DeliveryPricing @default(FIXED) @map("delivery_pricing")
-  deliveryFee     Int             @default(0) @map("delivery_fee")
+  deliveryPricing    DeliveryPricing @default(FIXED) @map("delivery_pricing")
+  deliveryFee        Int             @default(0) @map("delivery_fee")
   // Tarifas por distancia en línea recta desde el negocio: [{ upToKm, fee }] de menor a mayor.
-  // Más allá del último rango no se ofrece domicilio.
-  deliveryTiers   Json            @default("[]") @map("delivery_tiers")
+  deliveryTiers      Json            @default("[]") @map("delivery_tiers")
+  // Más allá del último rango: valor por cada km adicional (null = no se lleva más lejos).
+  deliveryExtraKmFee Int?            @map("delivery_extra_km_fee")
+  // Distancia máxima del domicilio en km (null = toda la ciudad, hasta el tope de Pedify).
+  deliveryMaxKm      Float?          @map("delivery_max_km")
   // Ubicación del negocio (punto de partida para medir la distancia del domicilio).
-  locationLat     Float?          @map("location_lat")
-  locationLng     Float?          @map("location_lng")
-  deliveryArea    String?         @map("delivery_area")
-  pickupEnabled   Boolean         @default(true) @map("pickup_enabled")
-  minimumOrder    Int             @default(0) @map("minimum_order")
-  paymentMethods  PaymentMethod[] @default([CASH]) @map("payment_methods")
-  salesPolicy     SalesPolicy     @default(ACCEPTED) @map("sales_policy")
-  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  locationLat        Float?          @map("location_lat")
+  locationLng        Float?          @map("location_lng")
+  deliveryArea       String?         @map("delivery_area")
+  pickupEnabled      Boolean         @default(true) @map("pickup_enabled")
+  minimumOrder       Int             @default(0) @map("minimum_order")
+  paymentMethods     PaymentMethod[] @default([CASH]) @map("payment_methods")
+  salesPolicy        SalesPolicy     @default(ACCEPTED) @map("sales_policy")
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 

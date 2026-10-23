@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { prisma } from "../../config/database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { notifications } from "../../services/notification.service.js";
-import { calculateOrder, feeForDistance, parseDeliveryTiers } from "../../services/pricing.service.js";
+import { calculateOrder, deliveryReachKm, feeForDistance, parseDeliveryTiers } from "../../services/pricing.service.js";
 import { clock } from "../../utils/clock.js";
 import { formatCOP } from "../../utils/currency.js";
 import { AppError, badRequest, conflict, notFound } from "../../utils/errors.js";
@@ -41,7 +41,7 @@ type StoreSettings = Awaited<ReturnType<typeof loadStore>>["settings"];
 
 /**
  * Valor del domicilio y distancia en línea recta (metros) del negocio al punto que marcó el cliente.
- * Con tarifa por distancia, el cliente debe compartir su ubicación y estar dentro del último rango.
+ * Con tarifa por distancia, el cliente debe compartir su ubicación y estar dentro del alcance del negocio.
  */
 function quoteDelivery(businessName: string, settings: StoreSettings, input: CreateOrderInput) {
   if (input.deliveryType !== "DELIVERY") return { fee: 0, distanceM: null };
@@ -50,8 +50,8 @@ function quoteDelivery(businessName: string, settings: StoreSettings, input: Cre
   const distanceM = meters === null ? null : Math.round(meters);
   if (settings.deliveryPricing !== "DISTANCE") return { fee: settings.deliveryFee, distanceM };
 
-  const tiers = parseDeliveryTiers(settings.deliveryTiers);
-  if (!origin || tiers.length === 0) {
+  const pricing = { tiers: parseDeliveryTiers(settings.deliveryTiers), extraKmFee: settings.deliveryExtraKmFee, maxKm: settings.deliveryMaxKm };
+  if (!origin || pricing.tiers.length === 0) {
     throw conflict("Este negocio aún no configuró el valor del domicilio. Elige recoger en el local o escríbele.", "DELIVERY_NOT_CONFIGURED");
   }
   if (meters === null) {
@@ -59,9 +59,9 @@ function quoteDelivery(businessName: string, settings: StoreSettings, input: Cre
       fields: { location: "Comparte tu ubicación para calcular el domicilio." },
     });
   }
-  const fee = feeForDistance(tiers, meters);
+  const fee = feeForDistance(pricing, meters);
   if (fee === null) {
-    const farthest = `${String(tiers.at(-1)!.upToKm).replace(".", ",")} km`;
+    const farthest = `${String(deliveryReachKm(pricing)).replace(".", ",")} km`;
     throw badRequest(
       `Tu ubicación está a ${distanceLabel(meters)} y ${businessName} lleva domicilios hasta ${farthest}.${settings.pickupEnabled ? " Puedes elegir recoger en el local." : ""}`,
       "DELIVERY_OUT_OF_RANGE",

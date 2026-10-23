@@ -10,7 +10,7 @@ PostgreSQL con Prisma 7 (`prisma/schema.prisma`). Identificadores UUID v7, fecha
 | `sessions` | Sesiones del panel | user_id, token_hash (único), active_business_id, expires_at, revoked_at |
 | `businesses` | Negocios registrados | id, name, slug (único), phone, status, description, city, address, logo_url/logo_key, banner_url/banner_key, last_order_number |
 | `business_memberships` | Usuarios ↔ negocios | user_id, business_id (únicos juntos), role (`OWNER`/`EMPLOYEE`) |
-| `business_settings` | Configuración | business_id, opening_hours (JSON), timezone, accepting_orders, whatsapp_phone, delivery_enabled, delivery_pricing (FIXED/DISTANCE), delivery_fee, delivery_tiers (JSON: `[{ upToKm, fee }]`), location_lat/location_lng (ubicación del negocio), delivery_area, pickup_enabled, minimum_order, payment_methods |
+| `business_settings` | Configuración | business_id, opening_hours (JSON), timezone, accepting_orders, whatsapp_phone, delivery_enabled, delivery_pricing (FIXED/DISTANCE), delivery_fee, delivery_tiers (JSON: `[{ upToKm, fee }]`), delivery_extra_km_fee (por km adicional; null = no llega más lejos), delivery_max_km (null = toda la ciudad, hasta 50 km), location_lat/location_lng (ubicación del negocio), delivery_area, pickup_enabled, minimum_order, payment_methods |
 | `categories` | Categorías del menú | business_id, name (único por negocio), position |
 | `products` | Productos | business_id, category_id, name, description, price, image_url/image_key, is_active, is_available, position, archived_at |
 | `customers` | Clientes | business_id, name, phone (único por negocio) |

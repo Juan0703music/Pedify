@@ -6,6 +6,7 @@
 // enviar el pedido y sube el pantallazo del comprobante (el negocio lo revisa en el panel).
 import { formatCOP, formatPhone } from "./api.js";
 import { checkImageFile, clearFieldErrors, copyText, formAlert, html, icon, raw, render, setBusy, showErrors } from "./ui.js";
+import { deliveryReachKm, feeForDistance, formatKm } from "./delivery-fee.js";
 import { currentPosition, deliveryMap, distanceLabel, distanceMeters, pickerMap } from "./map.js";
 
 export const PAYMENT_LABEL = {
@@ -57,10 +58,14 @@ export function initCart({ store, slug, root, orderable = true }) {
   const { settings, business } = store;
   /** Pago por adelantado: método → cuentas (Nequi, Bre-B, Daviplata) con QR o llave. */
   const payments = store.payments ?? { prepay: {}, accounts: [] };
-  // Domicilio según la distancia: rangos «hasta X km» medidos en línea recta desde el negocio.
+  // Domicilio según la distancia: rangos «hasta X km» medidos en línea recta desde el negocio y, más
+  // lejos, un valor por cada km adicional (así llega a toda la ciudad).
   const tiers = settings.deliveryTiers ?? [];
   const byDistance = settings.deliveryPricing === "DISTANCE" && Boolean(settings.location) && tiers.length > 0;
-  const farthestKm = byDistance ? `${String(tiers.at(-1).upToKm).replace(".", ",")} km` : null;
+  const pricing = { tiers, extraKmFee: settings.deliveryExtraKmFee ?? null, maxKm: null };
+  const reachKm = byDistance ? (settings.deliveryReachKm ?? deliveryReachKm(pricing)) : null;
+  if (byDistance) pricing.maxKm = reachKm;
+  const farthestKm = byDistance ? `${formatKm(reachKm)} km` : null;
   const fixedDetail = settings.deliveryFee > 0 ? `+ ${formatCOP(settings.deliveryFee)}` : "Gratis";
   const deliveryModes = [
     settings.deliveryEnabled && { value: "DELIVERY", label: "Domicilio", detail: byDistance ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))}` : fixedDetail },
@@ -114,7 +119,7 @@ export function initCart({ store, slug, root, orderable = true }) {
   const distanceQuote = () => {
     if (!byDistance || !customer.location) return null;
     const meters = distanceMeters(settings.location, customer.location);
-    return { meters, fee: tiers.find((tier) => meters <= tier.upToKm * 1000)?.fee ?? null };
+    return { meters, fee: feeForDistance(pricing, meters) };
   };
   /** Domicilio por distancia aún sin calcular: falta la ubicación o queda fuera de la zona. */
   const deliveryPending = () => customer.deliveryType === "DELIVERY" && byDistance && (distanceQuote()?.fee ?? null) === null;
@@ -307,7 +312,7 @@ export function initCart({ store, slug, root, orderable = true }) {
     }
     if (byDistance) {
       return html`<button type="button" class="btn btn-ink w-full justify-start" data-locate>${icon("locate-fixed")} Compartir mi ubicación</button>
-        <p class="hint">El domicilio cuesta según la distancia hasta tu ubicación (hasta ${farthestKm}). También le sirve al domiciliario para llegar directo.</p>`;
+        <p class="hint">El domicilio cuesta según la distancia hasta tu ubicación${settings.deliveryWholeCity ? "" : ` (hasta ${farthestKm})`}. También le sirve al domiciliario para llegar directo.</p>`;
     }
     return html`<button type="button" class="btn btn-ghost w-full justify-start" data-locate>
         ${icon("locate-fixed")} Marcar mi ubicación exacta <span class="font-normal text-muted">(opcional)</span>

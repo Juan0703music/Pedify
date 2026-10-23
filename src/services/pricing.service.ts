@@ -70,7 +70,36 @@ export function parseDeliveryTiers(value: unknown): DeliveryTier[] {
     .sort((a, b) => a.upToKm - b.upToKm);
 }
 
-/** Valor del domicilio para una distancia: el del primer rango que la cubre, o null si queda más lejos. */
-export function feeForDistance(tiers: DeliveryTier[], meters: number): number | null {
-  return tiers.find((tier) => meters <= tier.upToKm * 1000)?.fee ?? null;
+/** Tope de Pedify para un domicilio: cubre de punta a punta hasta las ciudades más grandes del país. */
+export const MAX_DELIVERY_KM = 50;
+
+/**
+ * Cobro por distancia: los rangos y, más allá del último, un valor por cada km adicional (o nada si
+ * `extraKmFee` es null). `maxKm` limita el alcance; null = toda la ciudad (hasta MAX_DELIVERY_KM).
+ */
+export interface DistancePricing {
+  tiers: DeliveryTier[];
+  extraKmFee: number | null;
+  maxKm: number | null;
+}
+
+/** Hasta cuántos km llega el domicilio con esta configuración. */
+export function deliveryReachKm({ tiers, extraKmFee, maxKm }: DistancePricing): number {
+  const limit = maxKm ?? MAX_DELIVERY_KM;
+  return extraKmFee === null ? Math.min(tiers.at(-1)?.upToKm ?? 0, limit) : limit;
+}
+
+/**
+ * Valor del domicilio para una distancia: el del primer rango que la cubre; más lejos, el último rango
+ * más el valor por cada km adicional (contando el km empezado). null si queda fuera del alcance.
+ * La distancia se toma de a 100 m (el GPS no es más preciso): 2,04 km cuenta como 2 km.
+ */
+export function feeForDistance(pricing: DistancePricing, meters: number): number | null {
+  const km = Math.round(meters / 100) / 10;
+  if (km > deliveryReachKm(pricing)) return null;
+  const tier = pricing.tiers.find((item) => km <= item.upToKm);
+  if (tier) return tier.fee;
+  const last = pricing.tiers.at(-1);
+  if (!last || pricing.extraKmFee === null) return null;
+  return last.fee + Math.ceil(km - last.upToKm) * pricing.extraKmFee;
 }

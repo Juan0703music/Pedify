@@ -277,7 +277,7 @@ function deliverySection() {
             <div class="field">
               <label class="label" for="d-area">Zona de cobertura</label>
               <input class="input" id="d-area" name="deliveryArea" value="${settings.deliveryArea ?? ""}" placeholder="Ej.: Todo Sincelejo" maxlength="200" ${settings.deliveryEnabled ? "" : "disabled"} />
-              <p class="hint">Un texto para tus clientes. Con «Según la distancia», el domicilio solo llega hasta tu último rango.</p>
+              <p class="hint">Un texto que ven tus clientes, por ejemplo «Todo Sincelejo».</p>
             </div>
           </div>
         </div>
