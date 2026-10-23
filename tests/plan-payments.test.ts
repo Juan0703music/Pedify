@@ -222,11 +222,11 @@ describe("Pago del plan en línea con Wompi", () => {
 
   it("no deja pagar un plan más pequeño que el menú o el equipo", async () => {
     const { agent, businessId } = await registerMerchant();
-    await prisma.product.createMany({ data: Array.from({ length: 11 }, (_, index) => ({ businessId, name: `Producto ${index}`, price: 1000 })) });
+    await prisma.product.createMany({ data: Array.from({ length: 16 }, (_, index) => ({ businessId, name: `Producto ${index}`, price: 1000 })) });
     const products = await agent.post("/api/v1/subscription/checkouts").send({ plan: "EMPRENDEDOR", months: 1 }).expect(409);
     expect(products.body.error).toMatchObject({
       code: "PLAN_TOO_SMALL",
-      message: "Tienes 11 productos en el menú y el plan Emprendedor permite 10. Elimina algunos o elige un plan más grande.",
+      message: "Tienes 16 productos en el menú y el plan Emprendedor permite 15. Elimina algunos o elige un plan más grande.",
     });
     await startCheckout(agent, { plan: "NEGOCIO", months: 1 });
 
