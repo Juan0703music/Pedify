@@ -3,7 +3,7 @@
 // el carrito, el pedido y su seguimiento están en cart.js.
 import { ApiError, formatCOP, formatPhone } from "./api.js";
 import { initCart, PAYMENT_LABEL } from "./cart.js";
-import { html, icon, initials, render } from "./ui.js";
+import { html, icon, initials, render, time12 } from "./ui.js";
 
 const DAY_NAMES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 /** Semana colombiana: de lunes a domingo. */
@@ -13,13 +13,6 @@ const root = document.getElementById("store");
 const slug = decodeURIComponent(location.pathname.split("/")[2] ?? "");
 
 // ───────────────────────────── Utilidades ─────────────────────────────
-
-/** "17:00" → "5:00 p. m." (formato habitual en Colombia). */
-function time12(value) {
-  const [hours, minutes] = value.split(":").map(Number);
-  const suffix = hours < 12 ? "a. m." : "p. m.";
-  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${suffix}`;
-}
 
 const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 

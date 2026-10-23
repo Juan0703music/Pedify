@@ -43,6 +43,13 @@ export function html(strings, ...values) {
   return new SafeHtml(out);
 }
 
+/** "17:00" → "5:00 p. m." (formato habitual en Colombia, no la hora militar). */
+export function time12(value) {
+  const [hours, minutes] = value.split(":").map(Number);
+  const suffix = hours < 12 ? "a. m." : "p. m.";
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${suffix}`;
+}
+
 export function icon(name, className = "") {
   return raw(`<svg class="icon ${className}" aria-hidden="true" focusable="false"><use href="${SPRITE}#i-${name}"></use></svg>`);
 }

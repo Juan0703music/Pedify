@@ -37,6 +37,7 @@ Una sola familia: **Archivo** variable (peso 100–900, ancho 62–125 %), autoa
 
 - **Botones** (`.btn` + `.btn-primary` mostaza / `.btn-ink` / `.btn-ghost` / `.btn-quiet` / `.btn-danger`, `.btn-sm`, `.btn-icon`): 44 px de alto, radio 10 px, estados hover, activo, deshabilitado y `aria-busy` con spinner.
 - **Campos** (`.field`, `.label`, `.input`, `.input-group` con `.addon`, `.hint`, `.field-error`): foco con borde tinta + halo mostaza; error con `aria-invalid`.
+- **Horas** (Configuración → Horario): listas con las horas cada media hora en hora normal («6:00 a. m.», «11:30 p. m.»; nunca hora militar). Si el horario guardado no cae en media hora exacta, esa hora también aparece en la lista. Toda hora que se muestra usa `time12()` de `public/js/ui.js`.
 - **Interruptor** (`.switch` sobre `<input type="checkbox" role="switch">`): encendido = pista tinta con perilla mostaza.
 - **Fichas de opción** (`.choice`): selección múltiple (métodos de pago).
 - **Paneles** (`.panel`): blanco, borde `line`, radio 14 px. Nunca paneles dentro de paneles.

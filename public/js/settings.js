@@ -17,6 +17,7 @@ import {
   render,
   setBusy,
   showErrors,
+  time12,
   toast,
 } from "./ui.js";
 
@@ -194,6 +195,23 @@ function employeeAlertsSection() {
   );
 }
 
+/** Horas para abrir y cerrar cada media hora, en hora normal (6:00 a. m., 6:30 a. m.…). */
+const HALF_HOURS = Array.from({ length: 48 }, (_, index) => `${String(Math.floor(index / 2)).padStart(2, "0")}:${index % 2 ? "30" : "00"}`);
+
+/** Lista de horas; si el horario guardado no cae en media hora exacta (p. ej. 11:15), también aparece. */
+function hourSelect(id, name, value, disabled) {
+  const hours = HALF_HOURS.includes(value) ? HALF_HOURS : [...HALF_HOURS, value].sort();
+  return html`<select class="input num w-full min-w-0 px-2.5" id="${id}" name="${name}" ${disabled ? "disabled" : ""}>
+    ${hours.map((hour) => html`<option value="${hour}" ${hour === value ? "selected" : ""}>${time12(hour)}</option>`)}
+  </select>`;
+}
+
+/** Elige una hora en la lista (la agrega si no está, p. ej. al copiar un 11:15 del lunes). */
+function setHour(select, value) {
+  if (![...select.options].some((option) => option.value === value)) select.add(new Option(time12(value), value));
+  select.value = value;
+}
+
 function scheduleRow({ day, label }) {
   const entry = state.settings.openingHours.find((item) => item.day === day) ?? { day, closed: true, open: "11:00", close: "22:00" };
   const open = !entry.closed;
@@ -205,10 +223,10 @@ function scheduleRow({ day, label }) {
     </label>
     <div class="col-span-2 grid max-w-[22rem] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:col-span-1 ${open ? "" : "opacity-40"}" data-times>
       <label class="sr-only" for="h-${day}-open">${label}: abre</label>
-      <input class="input num w-full min-w-0 px-2.5" type="time" id="h-${day}-open" name="openingHours.${day}.open" value="${entry.open}" ${open ? "" : "disabled"} />
+      ${hourSelect(`h-${day}-open`, `openingHours.${day}.open`, entry.open, !open)}
       <span class="text-sm text-muted">a</span>
       <label class="sr-only" for="h-${day}-close">${label}: cierra</label>
-      <input class="input num w-full min-w-0 px-2.5" type="time" id="h-${day}-close" name="openingHours.${day}.close" value="${entry.close}" ${open ? "" : "disabled"} />
+      ${hourSelect(`h-${day}-close`, `openingHours.${day}.close`, entry.close, !open)}
     </div>
   </li>`;
 }
@@ -227,7 +245,7 @@ function scheduleSection() {
         </ul>
         <div class="mt-4 flex flex-wrap items-center gap-3">
           ${isOwner ? html`<button type="button" class="btn btn-ghost btn-sm" data-copy-monday>${icon("copy")} Usar el horario del lunes para todos</button>` : ""}
-          <p class="hint">Si cierras después de medianoche, escribe la hora de cierre del día siguiente (ej.: 18:00 a 02:00).</p>
+          <p class="hint">Si cierras a medianoche o después, elige la hora del día siguiente: 12:00 a. m. es medianoche (ej.: 6:00 p. m. a 2:00 a. m.).</p>
         </div>
       </fieldset>
       ${isOwner ? saveBar() : ""}
@@ -668,7 +686,7 @@ function bindPage(main) {
     if (dayRow && input.matches('[role="switch"]')) {
       const times = dayRow.querySelector("[data-times]");
       times.classList.toggle("opacity-40", !input.checked);
-      times.querySelectorAll("input").forEach((time) => (time.disabled = !input.checked));
+      times.querySelectorAll("select").forEach((time) => (time.disabled = !input.checked));
       dayRow.querySelector("[data-open-label]").textContent = input.checked ? "Abierto" : "Cerrado";
     }
     if (input.name === "deliveryEnabled") {
@@ -697,8 +715,8 @@ function bindPage(main) {
         const toggle = form.elements[`day-${day}-open`];
         toggle.checked = monday.open;
         toggle.dispatchEvent(new Event("change", { bubbles: true }));
-        form.elements[`openingHours.${day}.open`].value = monday.from;
-        form.elements[`openingHours.${day}.close`].value = monday.to;
+        setHour(form.elements[`openingHours.${day}.open`], monday.from);
+        setHour(form.elements[`openingHours.${day}.close`], monday.to);
       }
       markDirty(form, true);
     }
