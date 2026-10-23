@@ -130,7 +130,7 @@ describe("Pago del plan en línea con Wompi", () => {
     // Los días de prueba no se pierden: el mes pagado empieza cuando termina la prueba.
     expect(subscription).toMatchObject({ plan: "EMPRENDEDOR", paidUntil: addMonths(trialEndsAt, 1) });
     const payments = await paymentsOf(businessId);
-    expect(payments).toMatchObject([{ plan: "EMPRENDEDOR", months: 1, amount: 99_900, method: "WOMPI", reference: transaction.id, note: "Nequi", recordedById: null }]);
+    expect(payments).toMatchObject([{ plan: "EMPRENDEDOR", months: 1, amount: 119_900, method: "WOMPI", reference: transaction.id, note: "Nequi", recordedById: null }]);
     expect(await prisma.planCheckout.findUniqueOrThrow({ where: { id: checkout.id } })).toMatchObject({
       status: "APPROVED",
       transactionId: transaction.id,
@@ -143,7 +143,7 @@ describe("Pago del plan en línea con Wompi", () => {
     expect(await paymentsOf(businessId)).toHaveLength(1);
 
     const plan = (await agent.get("/api/v1/subscription").expect(200)).body.data;
-    expect(plan).toMatchObject({ status: "ACTIVE", plan: "EMPRENDEDOR", payments: [{ method: "WOMPI", note: "Nequi", amount: 99_900 }] });
+    expect(plan).toMatchObject({ status: "ACTIVE", plan: "EMPRENDEDOR", payments: [{ method: "WOMPI", note: "Nequi", amount: 119_900 }] });
   });
 
   it("rechaza avisos sin la firma de Wompi y no aplica valores distintos al del plan", async () => {
@@ -160,7 +160,7 @@ describe("Pago del plan en línea con Wompi", () => {
     // Firmado por Wompi pero por otro valor (no puede pasar con el enlace firmado): no se aplica.
     await sendEvent(signedEvent(transactionFor(checkout, { amount_in_cents: 150_000 }))).expect(200);
     // Otros cobros de la misma cuenta de Wompi y otros eventos se ignoran.
-    await sendEvent(signedEvent(transactionFor({ id: "venta-tienda-123", amount: 99_900 }))).expect(200);
+    await sendEvent(signedEvent(transactionFor({ id: "venta-tienda-123", amount: 119_900 }))).expect(200);
     await sendEvent({ ...signedEvent(transactionFor(checkout)), event: "nequi_token.updated" }).expect(200);
 
     expect(await paymentsOf(businessId)).toEqual([]);
@@ -192,7 +192,7 @@ describe("Pago del plan en línea con Wompi", () => {
 
     // El aviso de Wompi y la confirmación llegan al mismo tiempo: el plan se extiende una sola vez.
     const [confirmed] = await Promise.all([confirm(agent, checkout.id, transaction.id).expect(200), sendEvent(signedEvent(transaction)).expect(200)]);
-    expect(confirmed.body.data).toMatchObject({ status: "APPROVED", planName: "Emprendedor", months: 1, amount: 99_900 });
+    expect(confirmed.body.data).toMatchObject({ status: "APPROVED", planName: "Emprendedor", months: 1, amount: 119_900 });
     expect(lookup).toHaveBeenCalledWith(transaction.id);
     expect(await paymentsOf(businessId)).toHaveLength(1);
     expect((await confirm(agent, checkout.id, transaction.id).expect(200)).body.data).toMatchObject({ status: "APPROVED", paymentMethod: "PSE" });
@@ -218,11 +218,11 @@ describe("Pago del plan en línea con Wompi", () => {
 
   it("no deja pagar un plan más pequeño que el menú o el equipo", async () => {
     const { agent, businessId } = await registerMerchant();
-    await prisma.product.createMany({ data: Array.from({ length: 6 }, (_, index) => ({ businessId, name: `Producto ${index}`, price: 1000 })) });
+    await prisma.product.createMany({ data: Array.from({ length: 11 }, (_, index) => ({ businessId, name: `Producto ${index}`, price: 1000 })) });
     const products = await agent.post("/api/v1/subscription/checkouts").send({ plan: "EMPRENDEDOR", months: 1 }).expect(409);
     expect(products.body.error).toMatchObject({
       code: "PLAN_TOO_SMALL",
-      message: "Tienes 6 productos en el menú y el plan Emprendedor permite 5. Elimina algunos o elige un plan más grande.",
+      message: "Tienes 11 productos en el menú y el plan Emprendedor permite 10. Elimina algunos o elige un plan más grande.",
     });
     await startCheckout(agent, { plan: "NEGOCIO", months: 1 });
 
