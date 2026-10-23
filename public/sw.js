@@ -1,8 +1,43 @@
-// Service worker de Pedify: solo recibe los avisos push de pedidos nuevos y abre el panel al tocarlos.
-// No guarda páginas en caché: el panel siempre se carga del servidor (los pedidos deben estar al día).
+// Service worker de Pedify: recibe los avisos push de pedidos nuevos, abre el panel al tocarlos y, si no
+// hay internet, muestra una pantalla propia en vez del error del navegador (también en la app instalada).
+// No guarda el panel en caché: siempre se carga del servidor (los pedidos deben estar al día).
 
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+const OFFLINE_CACHE = "pedify-offline-v1";
+const OFFLINE_URL = "/offline.html";
+// La pantalla sin conexión usa la letra de Pedify: se guarda junto con ella.
+const FONT_URL = "/assets/fonts/archivo-latin-wdth.woff2";
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(OFFLINE_CACHE)
+      .then((cache) => cache.addAll([OFFLINE_URL, FONT_URL].map((url) => new Request(url, { cache: "reload" }))))
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      const names = await caches.keys();
+      await Promise.all(names.filter((name) => name.startsWith("pedify-") && name !== OFFLINE_CACHE).map((name) => caches.delete(name)));
+      // Por si una versión anterior dejó activada la precarga de páginas (ver «fetch»).
+      await self.registration.navigationPreload?.disable();
+      await self.clients.claim();
+    })(),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  if (new URL(event.request.url).pathname === FONT_URL) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(FONT_URL)));
+    return;
+  }
+  if (event.request.mode !== "navigate") return;
+  // Sin «navigation preload»: en Firefox, si la precarga falla por falta de red, la navegación termina en
+  // el error del navegador antes de llegar a la pantalla sin conexión.
+  event.respondWith(fetch(event.request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
+});
 
 self.addEventListener("push", (event) => {
   let data = {};

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>La app de Pedify · En tu celular y en tu computador</title>
+    <meta
+      name="description"
+      content="Instala Pedify gratis en tu celular (Android o iPhone) y en tu computador (Windows o Mac). Tus pedidos llegan en vivo a todos tus equipos al mismo tiempo."
+    />
+    <meta name="theme-color" content="#17161c" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="La app de Pedify · En tu celular y en tu computador" />
+    <meta property="og:description" content="Tus pedidos en vivo en todos tus equipos al mismo tiempo. Gratis, sin tiendas de apps." />
+    <link rel="icon" href="/assets/icons/logo.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Pedify" />
+    <link rel="preload" href="/assets/fonts/archivo-latin-wdth.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/error-report.js"></script>
+    <script type="module" src="/js/app-page.js"></script>
+  </head>
+  <body class="bg-paper">
+    <!-- ═══════════════════════════ PORTADA (tinta) ═══════════════════════════ -->
+    <div class="glow-mustard relative isolate overflow-hidden text-paper">
+      <div class="dots-mustard pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" aria-hidden="true"></div>
+
+      <header class="mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-6">
+        <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="Pedify, inicio">
+          <img src="/assets/icons/logo.svg" alt="" class="h-9 w-9" width="32" height="32" />
+          <span class="text-[1.6rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
+        </a>
+        <nav class="flex items-center gap-1 sm:gap-2" aria-label="Cuenta">
+          <a href="/login" class="btn btn-quiet px-3 text-paper hover:bg-ink-3 sm:px-4">Iniciar sesión</a>
+          <a href="/registro" class="btn btn-primary hidden sm:inline-flex">Crear mi tienda</a>
+        </nav>
+      </header>
+
+      <section class="mx-auto grid max-w-[80rem] items-center gap-14 px-4 pt-6 pb-20 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:pt-10 lg:pb-28" aria-labelledby="app-title">
+        <div class="grid gap-7">
+          <p class="flex w-fit flex-wrap items-center gap-x-2 gap-y-1 rounded-full bg-ink-2 px-3.5 py-1.5 text-[0.8125rem] font-[650] text-paper/80 ring-1 ring-paper/10">
+            <span class="text-mustard">App gratis</span><span aria-hidden="true">·</span>Android<span aria-hidden="true">·</span>iPhone<span aria-hidden="true">·</span>Windows<span aria-hidden="true">·</span>Mac
+          </p>
+          <h1 id="app-title" class="display text-[clamp(3.1rem,7.5vw,6.5rem)] leading-[0.86]">
+            Pedify en tu celular y en tu <span class="text-outline">computador</span>
+          </h1>
+          <p class="max-w-[34rem] text-[1.0625rem] leading-relaxed text-paper/75">
+            Instálala en un minuto, sin pasar por tiendas de apps. Tus pedidos llegan <strong class="font-[700] text-paper">en vivo a todos tus equipos al mismo tiempo</strong>: lo que
+            aceptas en el celular se ve al instante en el computador de la caja.
+          </p>
+
+          <!-- Botón de instalación según el equipo (public/js/app-page.js). -->
+          <div class="grid gap-4" data-install-box>
+            <div class="flex flex-wrap gap-3">
+              <a href="#instalar" class="btn btn-primary">Ver cómo instalarla</a>
+              <a href="/panel" class="btn btn-quiet text-paper hover:bg-ink-3">Entrar a mi panel</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Los dos equipos con el mismo pedido (ilustrativo) -->
+        <figure class="relative mx-auto w-full max-w-[40rem] pt-24 pb-10 sm:pt-14 sm:pb-14" aria-label="Ejemplo ilustrativo: el mismo pedido en el computador y en el celular">
+          <div class="device-laptop w-[88%]" aria-hidden="true">
+            <div class="device-laptop-screen grid text-ink sm:grid-cols-[22%_minmax(0,1fr)]">
+              <div class="hidden content-start gap-1.5 bg-ink p-2.5 text-[0.625rem] text-paper/70 sm:grid">
+                <span class="mb-1 flex items-center gap-1 font-[800] text-paper"><img src="/assets/icons/logo.svg" alt="" class="h-3.5 w-3.5" width="14" height="14" />Pedify</span>
+                <span class="rounded-[4px] px-1.5 py-1">Inicio</span>
+                <span class="rounded-[4px] bg-mustard px-1.5 py-1 font-[700] text-ink">Pedidos</span>
+                <span class="rounded-[4px] px-1.5 py-1">Mi menú</span>
+                <span class="rounded-[4px] px-1.5 py-1">Mi tienda</span>
+                <span class="mt-2 flex items-center gap-2 rounded-[4px] bg-ink-2 px-1.5 py-1 text-leaf"><span class="live-pulse h-1.5 w-1.5 flex-none rounded-full bg-leaf"></span>En vivo</span>
+              </div>
+              <div class="grid content-start gap-2 p-2.5 sm:p-3.5">
+                <p class="text-[0.75rem] font-[800] sm:text-[0.9375rem]">Pedidos</p>
+                <div class="grid grid-cols-2 gap-2 text-[0.5rem] sm:grid-cols-3 sm:text-[0.625rem]">
+                  <div class="grid content-start gap-1.5">
+                    <p class="font-[750]">Nuevos</p>
+                    <div class="ticket-shadow"><div class="ticket rounded-t-[5px] px-1.5 pt-1.5">
+                      <p class="font-[820]">#129 <span class="hidden font-[500] text-muted sm:inline">· Andrés M.</span></p>
+                      <p class="text-muted">2× Perro especial</p>
+                      <p class="num font-[780]">$28.000</p>
+                    </div></div>
+                  </div>
+                  <div class="grid content-start gap-1.5">
+                    <p class="font-[750]">En cocina</p>
+                    <div class="ticket-shadow"><div class="ticket rounded-t-[5px] px-1.5 pt-1.5 ring-2 ring-mustard">
+                      <p class="font-[820]">#128 <span class="hidden font-[500] text-muted sm:inline">· Laura V.</span></p>
+                      <p class="text-muted">1× Hamburguesa especial<br />2× Jugo natural</p>
+                      <p class="num font-[780]">$36.000</p>
+                    </div></div>
+                  </div>
+                  <div class="hidden content-start gap-1.5 sm:grid">
+                    <p class="font-[750]">Listos</p>
+                    <div class="ticket-shadow"><div class="ticket rounded-t-[5px] px-1.5 pt-1.5">
+                      <p class="font-[820]">#127 <span class="font-[500] text-muted">· Camila O.</span></p>
+                      <p class="text-muted">1× Pizza familiar</p>
+                      <p class="num font-[780]">$46.000</p>
+                    </div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="device-phone absolute right-0 bottom-0 w-[46%] max-w-[13rem] text-ink sm:w-[36%]" aria-hidden="true">
+            <div class="flex items-center justify-between bg-ink px-3 pt-6 pb-2 text-[0.5625rem] text-paper sm:text-[0.6875rem]">
+              <span class="font-[800]">Pedidos</span>
+              <span class="flex items-center gap-2 font-[650] text-leaf"><span class="live-pulse h-1.5 w-1.5 flex-none rounded-full bg-leaf"></span>En vivo</span>
+            </div>
+            <div class="grid gap-2 p-2.5 text-[0.5625rem] sm:text-[0.6875rem]">
+              <div class="ticket-shadow"><div class="ticket rounded-t-[6px] px-2 pt-2 ring-2 ring-mustard">
+                <div class="flex items-center justify-between"><span class="text-[0.875rem] font-[820] [font-stretch:75%] sm:text-[1rem]">#128</span><span class="rounded-full bg-sky-soft px-1.5 py-0.5 font-[700] whitespace-nowrap text-sky">En cocina</span></div>
+                <p class="text-muted">Laura V. · Domicilio</p>
+                <hr class="ticket-rule my-1.5" />
+                <p>1× Hamburguesa especial<br />2× Jugo natural</p>
+                <div class="num mt-1 flex justify-between font-[780]"><span>Total</span><span>$36.000</span></div>
+                <div class="mt-1.5 rounded-[5px] bg-ink py-1 text-center font-bold text-paper">Marcar como listo</div>
+              </div></div>
+              <div class="flex items-center gap-1.5 rounded-[8px] bg-ink px-2 py-1.5 text-paper">
+                <span class="grid h-4 w-4 flex-none place-items-center rounded-full bg-leaf"><svg class="icon h-2.5 w-2.5" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-check"></use></svg></span>
+                <span class="leading-tight">Aceptado en el computador</span>
+              </div>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[6px] px-2 pt-2">
+                <div class="flex items-center justify-between"><span class="text-[0.875rem] font-[820] [font-stretch:75%] sm:text-[1rem]">#129</span><span class="rounded-full bg-mustard px-1.5 py-0.5 font-[700] whitespace-nowrap">Nuevo</span></div>
+                <p class="text-muted">Andrés M. · Recoger</p>
+                <div class="num mt-1 flex justify-between pb-0.5 font-[780]"><span>Total</span><span>$28.000</span></div>
+              </div></div>
+            </div>
+          </div>
+          <figcaption class="absolute bottom-0 left-0 text-[0.75rem] text-paper/50">Ejemplo ilustrativo</figcaption>
+        </figure>
+      </section>
+    </div>
+
+    <!-- ═══════════════════════════ CÓMO INSTALARLA ═══════════════════════════ -->
+    <section id="instalar" class="scroll-mt-4 bg-ground px-4 py-20 sm:px-8 lg:py-28" aria-labelledby="install-title">
+      <div class="mx-auto grid max-w-[80rem] gap-10">
+        <div class="grid gap-3">
+          <h2 id="install-title" class="display text-[clamp(2.5rem,5.5vw,4.5rem)] leading-[0.88]">Instálala en <span class="text-outline-ink">un minuto</span></h2>
+          <p class="max-w-[40rem] text-[1.0625rem] text-muted">Es gratis, no ocupa espacio y siempre abre la versión más nueva. Instálala en cada equipo donde atiendes pedidos y entra con tu misma cuenta.</p>
+        </div>
+        <div class="grid gap-5 md:grid-cols-3">
+          <article class="panel grid content-start gap-5 p-6" data-platform="android-menu">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2.5 text-xl font-[780]"><svg class="icon text-ink" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-smartphone"></use></svg>Android</h3>
+              <span class="badge hidden bg-mustard text-ink" data-yours>Tu equipo</span>
+            </div>
+            <div data-steps="android-menu"></div>
+          </article>
+          <article class="panel grid content-start gap-5 p-6" data-platform="ios">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2.5 text-xl font-[780]"><svg class="icon text-ink" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-smartphone"></use></svg>iPhone</h3>
+              <span class="badge hidden bg-mustard text-ink" data-yours>Tu equipo</span>
+            </div>
+            <div data-steps="ios"></div>
+          </article>
+          <article class="panel grid content-start gap-5 p-6" data-platform="desktop-menu">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2.5 text-xl font-[780]"><svg class="icon text-ink" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-laptop"></use></svg>Computador</h3>
+              <span class="badge hidden bg-mustard text-ink" data-yours>Tu equipo</span>
+            </div>
+            <div data-steps="desktop-menu"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════ TODO CONECTADO ═══════════════════════════ -->
+    <section class="px-4 py-20 sm:px-8 lg:py-28" aria-labelledby="sync-title">
+      <div class="mx-auto grid max-w-[80rem] gap-10">
+        <h2 id="sync-title" class="display max-w-[16ch] text-[clamp(2.5rem,5.5vw,4.5rem)] leading-[0.88]">Todo conectado, <span class="text-outline-ink">en vivo</span></h2>
+        <dl class="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="border-t-2 border-ink py-5">
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Pedidos en vivo</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-muted">Cada pedido llega con sonido a todos tus equipos. Lo aceptas en uno y en los demás cambia al instante.</dd>
+          </div>
+          <div class="border-t-2 border-ink py-5">
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Avisos</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-muted">Te avisa de cada pedido nuevo aunque la app esté cerrada. Actívalos en cada celular y computador.</dd>
+          </div>
+          <div class="border-t-2 border-ink py-5">
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Menú y tienda</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-muted">Marca un producto agotado en el celular y el computador lo muestra enseguida. Igual con tu logo, tu portada y si estás recibiendo pedidos.</dd>
+          </div>
+          <div class="border-t-2 border-ink py-5">
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Tu plan</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-muted">Págalo desde cualquier equipo con Wompi (tarjeta, PSE, Nequi o Bancolombia) y queda activo en todos al momento.</dd>
+          </div>
+        </dl>
+        <div class="flex flex-wrap gap-3">
+          <a href="/registro" class="btn btn-primary">Crear mi tienda gratis</a>
+          <a href="/login" class="btn btn-ghost">Ya tengo cuenta</a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="bg-ink px-4 py-10 text-ink-soft sm:px-8">
+      <div class="mx-auto flex max-w-[80rem] flex-wrap items-center justify-between gap-6">
+        <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="Pedify, inicio">
+          <img src="/assets/icons/logo.svg" alt="" class="h-8 w-8" width="32" height="32" />
+          <span class="text-[1.4rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
+        </a>
+        <p class="text-sm">Pedidos digitales para negocios de comida en Colombia.</p>
+        <nav class="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold" aria-label="Pie de página">
+          <a href="/login" class="text-paper hover:text-mustard">Iniciar sesión</a>
+          <a href="/registro" class="text-paper hover:text-mustard">Registrar negocio</a>
+          <a href="/privacidad" class="text-paper hover:text-mustard">Tratamiento de datos</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

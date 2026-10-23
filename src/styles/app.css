@@ -896,6 +896,68 @@
     animation: ring-out 1.6s ease-out infinite;
   }
 
+  /* ─── La app en el celular y en el computador (/app): equipos ilustrativos ─── */
+  .device-laptop-screen {
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 9px solid #0c0b0f;
+    border-bottom-width: 12px;
+    border-radius: 16px 16px 4px 4px;
+    background: var(--color-ground);
+    box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.85);
+  }
+  /* Base del portátil. */
+  .device-laptop::after {
+    content: "";
+    display: block;
+    height: 12px;
+    margin: 0 -6%;
+    border-radius: 2px 2px 16px 16px;
+    background: linear-gradient(#4a4954, #23222a 70%);
+    box-shadow: 0 18px 30px -12px rgb(0 0 0 / 0.8);
+  }
+  .device-phone {
+    position: relative;
+    aspect-ratio: 9 / 19;
+    overflow: hidden;
+    border: 7px solid #0c0b0f;
+    border-radius: 30px;
+    background: var(--color-ground);
+    box-shadow:
+      0 0 0 1.5px #35343e,
+      0 40px 70px -24px rgb(0 0 0 / 0.9);
+  }
+  /* Cámara del celular. */
+  .device-phone::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    z-index: 2;
+    width: 30%;
+    height: 14px;
+    border-radius: 999px;
+    background: #0c0b0f;
+    translate: -50% 0;
+  }
+  /* Punto «En vivo» que late en los dos equipos al mismo tiempo. */
+  .live-pulse {
+    position: relative;
+  }
+  .live-pulse::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 999px;
+    border: 2px solid var(--color-leaf);
+    animation: ring-out 1.8s ease-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .live-pulse::after {
+      animation: none;
+    }
+  }
+
   /* Opción de rol al iniciar sesión ("Soy el dueño" / "Soy empleado"). */
   .role-option {
     position: relative;

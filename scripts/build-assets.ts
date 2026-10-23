@@ -13,10 +13,10 @@ import path from "node:path";
 const ICONS = [
   "arrow-down", "arrow-right", "arrow-up", "arrow-up-down", "archive", "archive-restore", "banknote", "bell", "bell-off", "bell-ring",
   "bike", "calendar", "camera", "chart-column", "check", "chef-hat", "chevron-down", "chevron-up", "chevrons-up-down",
-  "circle-alert", "circle-check", "circle-x", "credit-card", "clock", "copy", "download", "ellipsis", "external-link", "eye", "eye-off",
-  "flame", "folder-plus", "history", "house", "image", "image-plus", "info", "key-round", "link", "list-checks", "locate-fixed", "navigation-2", "loader-circle", "lock",
-  "log-out", "map-pin", "menu", "minus", "message-circle", "navigation", "package", "pencil", "phone", "plus", "qr-code",
-  "receipt", "search", "settings", "share-2", "shield", "shopping-bag", "smartphone", "store", "tag",
+  "circle-alert", "circle-check", "circle-x", "credit-card", "clock", "copy", "download", "ellipsis", "ellipsis-vertical", "external-link", "eye", "eye-off",
+  "flame", "folder-plus", "history", "house", "image", "image-plus", "info", "key-round", "laptop", "link", "list-checks", "locate-fixed", "navigation-2", "loader-circle", "lock",
+  "log-out", "map-pin", "menu", "minus", "message-circle", "monitor-down", "monitor-smartphone", "navigation", "package", "pencil", "phone", "plus", "qr-code",
+  "receipt", "refresh-cw", "search", "settings", "share", "share-2", "shield", "shopping-bag", "smartphone", "square-plus", "store", "tag",
   "trash-2", "trending-down", "trending-up", "truck", "upload", "user-plus", "users", "utensils", "wallet", "wifi-off", "x",
 ];
 

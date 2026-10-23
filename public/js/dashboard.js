@@ -5,6 +5,7 @@ import { elapsedLabel, nextAction, statusBadge } from "./order-ui.js";
 import { disablePush, enablePush, PUSH_COPY, sendTestPush } from "./push.js";
 import { handlePushClick, pushView, safePushState } from "./push-ui.js";
 import { openCourierLink } from "./courier-link.js";
+import { installApp, installLabel, installState, isPhone } from "./install.js";
 import { brand, copyText, formAlert, html, icon, initials, raw, readForm, render, setBusy, showErrors, toast } from "./ui.js";
 
 /**
@@ -219,6 +220,24 @@ function planLink(business) {
   </a>`;
 }
 
+/** «Instalar la app» en el menú lateral y en el cajón (se oculta si ya abriste Pedify como app). */
+function installLink() {
+  return html`<button type="button" class="hidden w-full items-center gap-2 rounded-[10px] px-3 py-2 text-left text-sm text-ink-soft hover:bg-ink-2 hover:text-paper" data-install-app>
+    ${icon(isPhone() ? "smartphone" : "monitor-down", "h-4 w-4")}<span class="min-w-0 flex-1 truncate">Instalar la app</span>
+  </button>`;
+}
+
+const INSTALLABLE = new Set(["ready", "ios", "android-menu", "desktop-menu", "mac-safari", "other-browser"]);
+
+function paintInstall(root) {
+  const available = INSTALLABLE.has(installState());
+  root.querySelectorAll("button[data-install-app]").forEach((button) => {
+    if (button.closest("[data-install-card]")) return;
+    button.classList.toggle("hidden", !available);
+    button.classList.toggle("flex", available);
+  });
+}
+
 function adminLink(me) {
   return me.user.isPlatformAdmin
     ? html`<a href="/admin" class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-sm text-ink-soft no-underline hover:bg-ink-2 hover:text-paper">
@@ -235,7 +254,7 @@ function shell(me, business, page) {
       ${business ? businessSwitcher(me, business, "business-menu") : ""}
       <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, business)}</nav>
       <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
-        <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5">${planLink(business)} ${adminLink(me)}</div>
+        <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5"><div class="contents" data-plan-link>${planLink(business)}</div> ${adminLink(me)} ${installLink()}</div>
         ${business ? liveControl() : ""} ${userBlock(me)}
       </div>
     </aside>
@@ -249,7 +268,7 @@ function shell(me, business, page) {
         ${business ? liveControl({ compact: true }) : ""}
       </header>
 
-      ${planBanner(business)}
+      <div data-plan-banner>${planBanner(business)}</div>
       <main id="main" tabindex="-1" class="mx-auto w-full max-w-[76rem] flex-1 px-4 pt-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-10 lg:pt-10 lg:pb-14"></main>
     </div>
 
@@ -265,7 +284,7 @@ function shell(me, business, page) {
         </div>
         <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, business)}</nav>
         <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
-          <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5">${planLink(business)} ${adminLink(me)}</div>
+          <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5"><div class="contents" data-plan-link>${planLink(business)}</div> ${adminLink(me)} ${installLink()}</div>
           ${business ? liveControl() : ""} ${userBlock(me)}
         </div>
       </div>
@@ -290,6 +309,8 @@ function positionPopovers(root) {
 function bindShell(root) {
   positionPopovers(root);
   const drawer = root.querySelector("#drawer");
+  paintInstall(root);
+  window.addEventListener("pedify:install", () => paintInstall(root));
 
   root.addEventListener("click", async (event) => {
     const target = event.target.closest("button");
@@ -297,6 +318,10 @@ function bindShell(root) {
 
     if (target.matches("[data-open-drawer]")) drawer.showModal();
     if (target.matches("[data-close-drawer]")) drawer.close();
+    if (target.matches("[data-install-app]")) {
+      if (drawer.open) drawer.close();
+      void installApp();
+    }
 
     if (target.matches("[data-logout]")) {
       setBusy(target, true);
@@ -467,9 +492,29 @@ async function startPush(root) {
   });
 }
 
+/**
+ * El plan o los datos del negocio cambiaron en otro dispositivo (o Wompi aprobó un pago): se
+ * actualizan el aviso del plan, el plan del menú lateral y el nombre y logo del negocio.
+ */
+async function refreshBusiness(root) {
+  let business;
+  try {
+    business = await api("/businesses/current");
+  } catch {
+    return; // Sin conexión: al reconectarse, cada pantalla vuelve a consultar.
+  }
+  root.querySelectorAll("[data-plan-banner]").forEach((slot) => render(slot, planBanner(business)));
+  root.querySelectorAll("[data-plan-link]").forEach((slot) => render(slot, planLink(business)));
+  root.querySelectorAll("[data-business-name]").forEach((name) => (name.textContent = business.name));
+  root.querySelectorAll("[data-business-logo]").forEach((logo) => business.logoUrl && (logo.src = business.logoUrl));
+}
+
 function startLive(root) {
   connectLive();
   void startPush(root);
+  onLive("changed", ({ scope }) => {
+    if (scope === "subscription" || scope === "business") void refreshBusiness(root);
+  });
   let liveState = "connecting";
   onLive("status", (status) => {
     liveState = status;
@@ -498,6 +543,26 @@ function startLive(root) {
     }
     paintLive(root, liveState);
   });
+}
+
+/**
+ * Aviso de que otro dispositivo guardó cambios en esta sección, con un botón para verlos. Se usa donde
+ * redibujar solo podría borrar lo que la persona está escribiendo (p. ej. Configuración).
+ */
+export function showChangedElsewhere(text = "Se guardaron cambios desde otro dispositivo.") {
+  if (document.querySelector("[data-changed-elsewhere]")) return;
+  const bar = document.createElement("div");
+  bar.dataset.changedElsewhere = "";
+  bar.setAttribute("role", "status");
+  bar.className =
+    "fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-[30rem] items-center gap-3 rounded-[14px] bg-ink py-2.5 pr-2.5 pl-4 text-[0.9375rem] text-paper shadow-[var(--shadow-pop)] lg:bottom-6 lg:left-[calc(17rem+1.5rem)]";
+  render(
+    bar,
+    html`${icon("monitor-smartphone", "flex-none text-mustard")}<p class="min-w-0 flex-1">${text}</p>
+      <button type="button" class="btn btn-primary btn-sm flex-none" data-reload>${icon("refresh-cw", "h-4 w-4")} Actualizar</button>`,
+  );
+  bar.querySelector("[data-reload]").addEventListener("click", () => location.reload());
+  document.body.append(bar);
 }
 
 function fatalError(error) {
@@ -783,6 +848,43 @@ function homeSkeleton() {
   </div>`;
 }
 
+const INSTALL_CARD_KEY = "pedify:install-card";
+
+/**
+ * Tarjeta de Inicio para instalar Pedify como app en este equipo. En el computador trae además el
+ * código QR de /app para instalarla en el celular. No aparece si ya abriste Pedify como app.
+ */
+function installCard() {
+  if (!INSTALLABLE.has(installState()) || storageGet(INSTALL_CARD_KEY) === "hidden") return "";
+  const phone = isPhone();
+  return html`<section class="panel grid gap-5 p-5 sm:p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center" data-install-card aria-labelledby="install-card-title">
+    <div class="grid gap-4">
+      <div class="flex items-start gap-4">
+        <span class="grid h-11 w-11 flex-none place-items-center rounded-full bg-mustard text-ink">${icon("monitor-smartphone", "h-5 w-5")}</span>
+        <div class="grid gap-1.5">
+          <h2 id="install-card-title" class="text-[1.125rem] leading-tight font-[780]">Pedify como app, en tu celular y en tu computador</h2>
+          <p class="max-w-[60ch] text-[0.9375rem] text-muted">
+            Ábrela con un toque desde su ícono. Todo queda conectado: lo que aceptas en un equipo se ve al instante en el otro.
+          </p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2 sm:pl-15">
+        <button type="button" class="btn btn-ink" data-install-app>${icon("download")} ${installLabel()}</button>
+        <button type="button" class="btn btn-quiet" data-install-dismiss>Ahora no</button>
+      </div>
+    </div>
+    ${phone
+      ? ""
+      : html`<a href="/app" class="hidden items-center gap-3 rounded-[14px] border border-line p-2.5 pr-4 text-ink no-underline hover:border-line-strong md:flex">
+          <img src="/app/qr.svg" alt="" class="h-[5.5rem] w-[5.5rem] rounded-[8px]" width="88" height="88" />
+          <span class="grid max-w-[11rem] gap-0.5 text-sm">
+            <span class="font-[720]">¿Y en tu celular?</span>
+            <span class="text-muted">Escanea el código con la cámara y sigue los pasos.</span>
+          </span>
+        </a>`}
+  </section>`;
+}
+
 async function copyStoreLink(button, business) {
   const url = button.dataset.copyLink;
   if (await copyText(url)) {
@@ -794,7 +896,8 @@ async function copyStoreLink(button, business) {
 }
 
 async function renderHome(context) {
-  const { me, business, main } = context;
+  const { me, main } = context;
+  let { business } = context;
   if (!business) return renderNoBusiness(main);
 
   render(main, homeSkeleton());
@@ -838,7 +941,8 @@ async function renderHome(context) {
           </div>
         </header>
 
-        ${pushView(pushStatus, "card")}
+        ${installCard()}
+        ${pushStatus === "ios-install" && installCard() ? "" : pushView(pushStatus, "card")}
 
         <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
           <div class="grid gap-6">${seesSales ? summary(today) : ""} ${liveOrders(orders)} ${seesSales ? featuredProducts(today) : ""}</div>
@@ -863,6 +967,16 @@ async function renderHome(context) {
   onLive("created", refresh);
   onLive("updated", refresh);
   onLive("resync", refresh);
+  // El menú o la tienda cambiaron en otro dispositivo (p. ej. pausaste los pedidos desde el celular).
+  onLive("changed", async ({ scope }) => {
+    if (scope !== "catalog" && scope !== "business") return;
+    try {
+      [settings, catalog, business] = await Promise.all([api("/businesses/current/settings"), api("/products/summary"), api("/businesses/current")]);
+      draw();
+    } catch {
+      // Sin conexión: se actualiza al reconectarse.
+    }
+  });
   setInterval(() => main.querySelector("[data-live-orders]") && draw(), 60_000);
 
   window.addEventListener("pedify:push", (event) => {
@@ -870,7 +984,14 @@ async function renderHome(context) {
     pushStatus = event.detail;
     draw();
   });
+  // El navegador ofreció instalarla o ya quedó instalada: la tarjeta cambia o se va.
+  window.addEventListener("pedify:install", draw);
   main.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-install-dismiss]")) {
+      storageSet(INSTALL_CARD_KEY, "hidden");
+      draw();
+      return;
+    }
     const pushNext = await handlePushClick(event, pushStatus);
     if (pushNext !== null) {
       pushStatus = pushNext;

@@ -2,6 +2,7 @@
 // (sección 6 del documento: "Mi tienda — Personalizar catálogo y compartir el enlace").
 import { api, upload } from "./api.js";
 import { initPanel, renderNoBusiness } from "./dashboard.js";
+import { onLive } from "./notifications.js";
 import { checkImageFile, copyText, html, icon, render, setBusy, shrinkPhoto, toast } from "./ui.js";
 
 const state = { business: null, isOwner: false };
@@ -275,6 +276,23 @@ function bindPage() {
   });
 }
 
+/** La tienda o el menú cambiaron en otro dispositivo: logo, portada y vista previa al día. */
+function followOtherDevices() {
+  onLive("changed", async ({ scope }) => {
+    if (scope === "catalog") return reloadPreview();
+    if (scope !== "business") return;
+    // Mientras se sube una foto aquí, se espera: al terminar esta misma pantalla se redibuja.
+    if (main.querySelector("[data-busy-overlay].grid")) return;
+    try {
+      state.business = await api("/businesses/current");
+    } catch {
+      return;
+    }
+    redrawAppearance();
+    reloadPreview();
+  });
+}
+
 // ───────────────────────────── Arranque ─────────────────────────────
 
 const context = await initPanel("tienda");
@@ -287,5 +305,6 @@ if (context) {
     state.isOwner = context.business.role === "OWNER";
     render(main, page());
     bindPage();
+    followOtherDevices();
   }
 }

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { prisma } from "../../config/database.js";
 import { environmentName, isProduction } from "../../config/env.js";
 import { productionWarnings } from "../../config/readiness.js";
+import { notifications } from "../../services/notification.service.js";
 import { clock } from "../../utils/clock.js";
 import { notFound } from "../../utils/errors.js";
 import { logger } from "../../utils/logger.js";
@@ -84,6 +85,7 @@ export const adminService = {
       if (input.extendTrialDays) changes.trialEndsAt = new Date(latest(clock.now(), subscription.trialEndsAt).getTime() + input.extendTrialDays * DAY);
       if (Object.keys(changes).length > 0) await subscriptionsRepository.update(id, changes, tx);
     });
+    notifications.businessChanged({ businessId: id, scope: "subscription", clientId: null });
     logger.info({ adminId, businessId: id, changes: input }, "Cambio administrativo en un negocio");
     return adminService.getBusiness(id);
   },
@@ -103,6 +105,7 @@ export const adminService = {
         recordedById: adminId,
       }),
     );
+    notifications.businessChanged({ businessId: id, scope: "subscription", clientId: null });
     logger.info({ adminId, businessId: id, plan: plan.code, months: input.months }, "Pago de suscripción registrado");
     const updated = await adminService.getBusiness(id);
     return { ...updated, subscription: { ...updated.subscription, ...subscriptionState(updated.subscription, clock.now()) } };

@@ -1,14 +1,16 @@
 // Pedidos en vivo en el panel (sección 7 del documento): Socket.IO, sonido de alerta,
-// notificación visual y actualización de listas. Socket.IO solo avisa: cada pantalla vuelve
-// a consultar la API al recibir un evento o al reconectarse (PostgreSQL es la fuente de verdad).
+// notificación visual y actualización de listas. También llegan los cambios del menú, la tienda y el
+// plan hechos en otro dispositivo, para que el computador y el celular muestren siempre lo mismo.
+// Socket.IO solo avisa: cada pantalla vuelve a consultar la API al recibir un evento o al
+// reconectarse (PostgreSQL es la fuente de verdad).
 import { io } from "/socket.io/socket.io.esm.min.js";
 import { pushRemembered } from "./push.js";
-import { formatCOP } from "./api.js";
+import { CLIENT_ID, formatCOP } from "./api.js";
 import { escapeHtml, icon } from "./ui.js";
 
 const SOUND_KEY = "pedify:sound";
 
-const listeners = { created: new Set(), updated: new Set(), resync: new Set(), status: new Set() };
+const listeners = { created: new Set(), updated: new Set(), changed: new Set(), resync: new Set(), status: new Set() };
 let socket = null;
 let audio = null;
 let connection = "connecting";
@@ -208,6 +210,10 @@ export function connectLive() {
     emit("created", order);
   });
   socket.on("order:updated", (update) => emit("updated", update));
+  // Cambio del menú, la tienda o el plan hecho en otro dispositivo (el computador o el celular).
+  socket.on("business:changed", ({ scope, clientId }) => {
+    if (clientId !== CLIENT_ID) emit("changed", { scope });
+  });
 
   // Volver a la pestaña después de un rato: se refrescan los datos.
   document.addEventListener("visibilitychange", () => {
@@ -217,7 +223,8 @@ export function connectLive() {
 }
 
 /**
- * Suscribe a eventos en vivo: "created" | "updated" | "resync" | "status".
+ * Suscribe a eventos en vivo: "created" | "updated" | "changed" ({ scope: "catalog" | "business" |
+ * "subscription" }, hecho en otro dispositivo) | "resync" | "status".
  * Devuelve la función para cancelar la suscripción.
  */
 export function onLive(event, listener) {

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../src/config/database.js";
 import { env } from "../src/config/env.js";
 import { addMonths } from "../src/modules/subscriptions/subscription-state.js";
+import { notifications } from "../src/services/notification.service.js";
 import { wompi } from "../src/services/wompi.service.js";
 import { login, newAgent, PASSWORD, registerMerchant, uniqueEmail } from "./helpers/app.js";
 import { resetDatabase } from "./helpers/db.js";
@@ -124,8 +125,11 @@ describe("Pago del plan en línea con Wompi", () => {
     const { trialEndsAt } = await prisma.subscription.findUniqueOrThrow({ where: { businessId } });
     const checkout = await startCheckout(agent);
     const transaction = transactionFor(checkout);
+    const changed = vi.spyOn(notifications, "businessChanged");
 
     expect((await sendEvent(signedEvent(transaction)).expect(200)).body.data).toEqual({ received: true });
+    // El panel abierto en el computador y en el celular se entera al instante.
+    expect(changed).toHaveBeenCalledWith({ businessId, scope: "subscription", clientId: null });
     const subscription = await prisma.subscription.findUniqueOrThrow({ where: { businessId } });
     // Los días de prueba no se pierden: el mes pagado empieza cuando termina la prueba.
     expect(subscription).toMatchObject({ plan: "EMPRENDEDOR", paidUntil: addMonths(trialEndsAt, 1) });

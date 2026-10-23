@@ -2,6 +2,7 @@
 // Crear, editar, desactivar, marcar agotados y ordenar productos; fotos procesadas en el servidor.
 import { api, formatCOP, formatThousands, parseMoney, upload } from "./api.js";
 import { can, initPanel, renderNoBusiness } from "./dashboard.js";
+import { onLive } from "./notifications.js";
 import {
   checkImageFile,
   clearFieldErrors,
@@ -518,6 +519,32 @@ function drawMenu() {
           : ""}
         ${blocks}`,
   );
+}
+
+/**
+ * El menú cambió en otro dispositivo (el computador o el celular): se vuelve a cargar. Si estás
+ * editando un producto u ordenando, se espera a que termines para no borrar lo que estás haciendo.
+ */
+let menuOutdated = false;
+async function catchUp() {
+  if (state.ordering || main.querySelector("dialog[open]")) {
+    menuOutdated = true;
+    return;
+  }
+  menuOutdated = false;
+  try {
+    await loadMenu();
+    drawMenu();
+  } catch {
+    menuOutdated = true; // Sin conexión: se intenta al reconectarse.
+  }
+}
+
+function followOtherDevices() {
+  onLive("changed", ({ scope }) => scope === "catalog" && catchUp());
+  onLive("resync", () => menuOutdated && catchUp());
+  // El evento close de <dialog> no burbujea: se escucha en la fase de captura.
+  main.addEventListener("close", () => menuOutdated && catchUp(), true);
 }
 
 function refocus(selector) {
@@ -1066,6 +1093,7 @@ function bindPage() {
       state.ordering = !state.ordering;
       drawMenu();
       if (!state.ordering) toast("Orden guardado. Así se verá tu menú en la tienda.");
+      if (!state.ordering && menuOutdated) catchUp();
     }
     if (target.matches("[data-show-category-form]")) toggleCategoryForm(true);
     if (target.matches("[data-hide-category-form]")) toggleCategoryForm(false);
@@ -1197,6 +1225,7 @@ if (context) {
       bindPage();
       bindEditor();
       bindPicker();
+      followOtherDevices();
     } catch (error) {
       render(main, html`<p class="text-tomato">${error.message}</p>`);
     }

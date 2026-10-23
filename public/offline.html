@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Sin conexión · Pedify</title>
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#17161c" />
+    <!-- Vuelve a intentar sola cada 15 s: con internet, se abre la página que pediste. -->
+    <meta http-equiv="refresh" content="15" />
+    <!--
+      Pantalla que muestra el service worker (public/sw.js) cuando no hay internet, también en la app
+      instalada. Va sin archivos externos (estilos y logo dentro de la página) porque se abre sin conexión,
+      y sin JavaScript (la política de seguridad no permite scripts dentro de la página).
+    -->
+    <style>
+      /* La letra la guarda el service worker junto con esta página. */
+      @font-face {
+        font-family: "Archivo";
+        src: url("/assets/fonts/archivo-latin-wdth.woff2") format("woff2");
+        font-weight: 100 900;
+        font-stretch: 62% 125%;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        --ink: #17161c;
+        --ink-2: #23222a;
+        --ink-soft: #a9a7b3;
+        --paper: #ffffff;
+        --mustard: #ffc72c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--ink);
+        color: var(--paper);
+        font-family: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        min-height: 100dvh;
+        display: grid;
+        place-content: center;
+        gap: 28px;
+        max-width: 30rem;
+        margin: 0 auto;
+        padding: max(32px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom));
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.6rem;
+        font-weight: 850;
+        font-stretch: 72%;
+        letter-spacing: -0.02em;
+      }
+      .ticket {
+        background: var(--paper);
+        color: var(--ink);
+        border-radius: 14px 14px 0 0;
+        padding: 26px 24px 34px;
+        /* Borde dentado de comanda (igual que .ticket en src/styles/app.css) */
+        -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
+        mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
+      }
+      /* Se inclina el contenedor y no el tiquete: girar la máscara deja rayas en algunos navegadores. */
+      .tilt {
+        transform: rotate(-1deg);
+        filter: drop-shadow(0 14px 22px rgb(0 0 0 / 0.35));
+      }
+      .tag {
+        margin: 0;
+        font-size: 0.8125rem;
+        font-weight: 650;
+        color: #5c5a63;
+        letter-spacing: 0.04em;
+      }
+      h1 {
+        margin: 8px 0 0;
+        font-size: clamp(2.75rem, 12vw, 3.75rem);
+        line-height: 0.9;
+        font-weight: 860;
+        font-stretch: 66%;
+        text-transform: uppercase;
+        letter-spacing: -0.005em;
+      }
+      hr {
+        border: 0;
+        border-top: 2px dashed #c9c6bd;
+        margin: 18px 0;
+      }
+      p {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.5;
+      }
+      .muted {
+        color: #5c5a63;
+      }
+      .retry {
+        margin-top: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        border-radius: 10px;
+        background: var(--ink);
+        color: var(--paper);
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .retry:focus-visible {
+        outline: 3px solid var(--mustard);
+        outline-offset: 2px;
+      }
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--ink-soft);
+        font-size: 0.9375rem;
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--mustard);
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.3;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .dot {
+          animation: none;
+        }
+        .tilt {
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="brand">
+        <svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M8 2.5h16a3 3 0 0 1 3 3V29l-2.75-2.6-2.75 2.6-2.75-2.6L16 29l-2.75-2.6-2.75 2.6-2.75-2.6L5 29V5.5a3 3 0 0 1 3-3z" fill="#FFC72C" stroke="#17161C" stroke-width="1.6" stroke-linejoin="round" />
+          <path d="M12.4 21.5V8.5H17a4 4 0 0 1 0 8h-4.6" fill="none" stroke="#17161C" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Pedify
+      </span>
+      <div class="tilt">
+      <div class="ticket">
+        <p class="tag">SIN CONEXIÓN</p>
+        <h1>Se fue el internet</h1>
+        <hr />
+        <p class="muted">Pedify necesita internet para mostrarte los pedidos en vivo. Revisa el wifi o los datos del celular: apenas vuelva la conexión, esta pantalla se recarga sola.</p>
+        <a class="retry" href="">Reintentar</a>
+      </div>
+      </div>
+      <p class="status" role="status"><span class="dot" aria-hidden="true"></span> Esperando la conexión…</p>
+    </main>
+  </body>
+</html>

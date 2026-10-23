@@ -110,6 +110,40 @@ describe("Pedidos en vivo (Socket.IO)", () => {
     expect(leaked).toBe(false);
   });
 
+  it("avisa a los demás dispositivos los cambios del menú y de la tienda", async () => {
+    const a = await merchant("Sabores del Caribe", "300 123 4567");
+    const b = await merchant("Pizzería Napoli", "315 555 0101");
+    // El mismo negocio abierto en el computador y en el celular, y otro negocio aparte.
+    const computer = open({ cookie: a.cookie });
+    const phone = open({ cookie: a.cookie });
+    const other = open({ cookie: b.cookie });
+    await Promise.all([once(computer, "ready"), once(phone, "ready"), once(other, "ready")]);
+    const received: unknown[] = [];
+    phone.on("business:changed", (payload) => received.push(payload));
+    let leaked = false;
+    other.on("business:changed", () => (leaked = true));
+
+    // Las consultas y los cambios rechazados no avisan nada.
+    await a.agent.get("/api/v1/products").expect(200);
+    await a.agent.post("/api/v1/products").set("X-Pedify-Client", "pestana-computador").send({ name: "" }).expect(400);
+
+    const catalog = once(computer, "business:changed");
+    await a.agent.patch(`/api/v1/products/${a.productId}`).set("X-Pedify-Client", "pestana-computador").send({ isAvailable: false }).expect(200);
+    // La pestaña que hizo el cambio viene identificada para que no se recargue a sí misma.
+    expect(await catalog).toEqual({ scope: "catalog", clientId: "pestana-computador" });
+
+    const business = once(computer, "business:changed");
+    await a.agent.patch("/api/v1/businesses/current/settings").send({ acceptingOrders: false }).expect(200);
+    expect(await business).toEqual({ scope: "business", clientId: null });
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(received).toEqual([
+      { scope: "catalog", clientId: "pestana-computador" },
+      { scope: "business", clientId: null },
+    ]);
+    expect(leaked).toBe(false);
+  });
+
   it("una sesión cerrada ya no puede conectarse", async () => {
     const { agent, cookie } = await merchant("Sabores del Caribe", "300 123 4567");
     await agent.post("/api/v1/auth/logout").expect(204);

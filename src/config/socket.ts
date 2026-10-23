@@ -4,7 +4,7 @@ import { authService } from "../modules/auth/auth.service.js";
 import { readSessionToken } from "../modules/auth/session-cookie.js";
 import { businessesRepository } from "../modules/businesses/businesses.repository.js";
 import { metrics } from "../services/metrics.service.js";
-import { notifications } from "../services/notification.service.js";
+import { notifications, type ChangeScope } from "../services/notification.service.js";
 import { logger } from "../utils/logger.js";
 import { allowedOrigins, isAllowedOrigin } from "./cors.js";
 
@@ -16,6 +16,8 @@ import { allowedOrigins, isAllowedOrigin } from "./cors.js";
  * - Rechaza conexiones desde otros sitios (cabecera Origin), igual que la API.
  * - Cada cierto tiempo vuelve a validar la sesión y la membresía: si la persona cerró sesión,
  *   la quitaron del equipo o cambió de negocio, se desconecta.
+ * - Además de los pedidos, avisa los cambios del menú, la tienda y el plan (`business:changed`) para que
+ *   el panel abierto en el computador y en el celular muestre lo mismo al mismo tiempo.
  * - Socket.IO solo avisa; PostgreSQL sigue siendo la fuente de verdad: al recibir un evento o al
  *   reconectarse, el panel vuelve a consultar la API.
  */
@@ -26,6 +28,7 @@ interface ServerToClientEvents {
   ready: (payload: { businessId: string }) => void;
   "order:created": (payload: { orderId: string; number: number; total: number; customerName: string; deliveryType: string; createdAt: Date }) => void;
   "order:updated": (payload: { orderId: string; number: number; status: string; paidAt: Date | null; changedBy: string | null }) => void;
+  "business:changed": (payload: { scope: ChangeScope; clientId: string | null }) => void;
 }
 
 interface SocketData {
@@ -110,11 +113,16 @@ export function attachSocket(server: http.Server) {
     });
   });
 
+  const offChanged = notifications.onBusinessChanged((event) => {
+    io.to(businessRoom(event.businessId)).emit("business:changed", { scope: event.scope, clientId: event.clientId });
+  });
+
   return {
     io,
     async close() {
       offCreated();
       offUpdated();
+      offChanged();
       await io.close();
     },
   };

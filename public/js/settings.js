@@ -1,6 +1,7 @@
 // Página de Configuración: datos del negocio, WhatsApp, horario, entrega, pagos, equipo y cuenta.
 import { api, formatPhone, parseMoney } from "./api.js";
-import { initPanel, renderNoBusiness, ROLE_LABEL } from "./dashboard.js";
+import { initPanel, renderNoBusiness, ROLE_LABEL, showChangedElsewhere } from "./dashboard.js";
+import { onLive } from "./notifications.js";
 import { mountPaymentAccounts } from "./payment-accounts-ui.js";
 import { mountPush } from "./push-ui.js";
 import {
@@ -841,6 +842,11 @@ if (context) {
       updateCounter(main.querySelector("#b-description"));
       bindPage(main);
       trackSections(main);
+      // Otro dispositivo guardó cambios: se ofrece actualizar (redibujar podría borrar lo que escribes).
+      onLive("changed", ({ scope }) => {
+        if (scope === "business") showChangedElsewhere();
+        if (scope === "subscription") showChangedElsewhere("Tu plan se actualizó.");
+      });
       if (location.hash) main.querySelector(location.hash)?.scrollIntoView();
     } catch (error) {
       render(main, html`<p class="text-tomato">${error.message}</p>`);

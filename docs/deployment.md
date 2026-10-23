@@ -149,6 +149,10 @@ Con las llaves VAPID, cada persona del equipo activa los avisos en su celular o 
 - iPhone y iPad (iOS 16.4 o más): primero hay que **agregar Pedify a la pantalla de inicio** (Compartir → «Agregar a pantalla de inicio») y activar los avisos desde ese ícono. El panel lo explica.
 - Al cerrar sesión en un dispositivo, ese dispositivo deja de recibir avisos; «Cerrar sesión en todos» y el cambio de contraseña los quitan todos.
 
+### La app en el celular y en el computador
+
+Pedify se instala como app desde el navegador (Chrome o Edge en Android, Windows y Mac; Safari en iPhone y Mac) en **`https://<tu-dominio>/app`**. Necesita la dirección segura (HTTPS, la de Caddy): con `http://` solo se instala en `localhost`. Todos los dispositivos que entran con la misma cuenta ven los pedidos, el menú, la tienda y el plan en vivo porque se conectan al mismo servidor; por eso la app del celular y la del computador deben usar el mismo dominio.
+
 ### Pago de los planes con Wompi
 
 Wompi (de Bancolombia) cobra los planes y consigna el dinero en tu cuenta bancaria, de cualquier banco.

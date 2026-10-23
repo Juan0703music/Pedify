@@ -30,6 +30,7 @@
           <span class="text-[1.6rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
         </a>
         <nav class="flex items-center gap-1 sm:gap-2" aria-label="Cuenta">
+          <a href="/app" class="btn btn-quiet hidden px-3 text-paper hover:bg-ink-3 md:inline-flex md:px-4">La app</a>
           <a href="#planes" class="btn btn-quiet hidden px-3 text-paper hover:bg-ink-3 sm:inline-flex sm:px-4">Planes</a>
           <a href="/login" class="btn btn-quiet px-3 text-paper hover:bg-ink-3 sm:px-4">Iniciar sesión</a>
           <a href="/registro" class="btn btn-primary hidden sm:inline-flex">Crear mi tienda</a>
@@ -544,6 +545,50 @@
       </div>
     </section>
 
+    <!-- ═══════════════════════════ LA APP (celular y computador, ver /app) ═══════════════════════════ -->
+    <section class="px-4 py-24 sm:px-8 lg:py-32" aria-labelledby="app-title">
+      <div class="mx-auto grid max-w-[80rem] items-center gap-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <div class="grid gap-6" data-reveal>
+          <h2 id="app-title" class="display text-[clamp(2.75rem,6vw,5.25rem)] leading-[0.88]">Tu panel en el celular <span class="text-outline-ink">y en la caja</span></h2>
+          <p class="max-w-[34rem] text-[1.0625rem] leading-relaxed text-muted">
+            Instala la app de Pedify gratis, sin pasar por tiendas de apps. Los pedidos llegan en vivo a todos tus equipos al mismo tiempo: lo que aceptas en
+            el celular se ve al instante en el computador, con avisos aunque la app esté cerrada.
+          </p>
+          <ul class="flex flex-wrap gap-2 text-sm font-[650]" aria-label="Funciona en">
+            <li class="flex items-center gap-1.5 rounded-full bg-ground px-3 py-1.5"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-smartphone"></use></svg>Android</li>
+            <li class="flex items-center gap-1.5 rounded-full bg-ground px-3 py-1.5"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-smartphone"></use></svg>iPhone</li>
+            <li class="flex items-center gap-1.5 rounded-full bg-ground px-3 py-1.5"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-laptop"></use></svg>Windows</li>
+            <li class="flex items-center gap-1.5 rounded-full bg-ground px-3 py-1.5"><svg class="icon h-4 w-4" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-laptop"></use></svg>Mac</li>
+          </ul>
+          <a href="/app" class="btn btn-ink w-fit"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-download"></use></svg>Instalar la app</a>
+        </div>
+
+        <!-- Pantalla de inicio de un celular con el ícono de Pedify y un aviso de pedido (ilustrativo) -->
+        <figure class="dots relative mx-auto grid w-full max-w-[28rem] place-items-center overflow-hidden rounded-[30px] bg-mustard px-6 pt-24 pb-14" aria-label="Ejemplo ilustrativo: aviso de pedido nuevo de la app" data-reveal>
+          <div class="absolute inset-x-5 top-5 flex items-start gap-3 rounded-[18px] bg-paper/95 p-3.5 shadow-[var(--shadow-pop)]" aria-hidden="true">
+            <img src="/assets/icons/icon-192.png" alt="" class="h-10 w-10 flex-none rounded-[10px]" width="40" height="40" />
+            <div class="min-w-0 flex-1 text-[0.875rem]">
+              <p class="flex justify-between gap-3"><span class="font-[760]">Pedify</span><span class="text-muted">ahora</span></p>
+              <p class="font-[650]">Nuevo pedido #128</p>
+              <p class="truncate text-muted">Laura V. · Domicilio · <span class="num">$36.000</span></p>
+            </div>
+          </div>
+          <div class="mt-10 grid grid-cols-4 gap-x-6 gap-y-5" aria-hidden="true">
+            <span class="h-14 w-14 rounded-[16px] bg-ink/10"></span><span class="h-14 w-14 rounded-[16px] bg-ink/10"></span>
+            <span class="h-14 w-14 rounded-[16px] bg-ink/10"></span><span class="h-14 w-14 rounded-[16px] bg-ink/10"></span>
+            <span class="h-14 w-14 rounded-[16px] bg-ink/10"></span>
+            <span class="relative grid justify-items-center gap-1.5">
+              <img src="/assets/icons/icon-192.png" alt="" class="h-14 w-14 rounded-[16px] shadow-[0_12px_24px_-10px_rgb(23_22_28/0.6)]" width="56" height="56" />
+              <span class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-tomato px-1 text-[0.6875rem] font-[800] text-paper">1</span>
+              <span class="text-[0.75rem] font-[700]">Pedify</span>
+            </span>
+            <span class="h-14 w-14 rounded-[16px] bg-ink/10"></span><span class="h-14 w-14 rounded-[16px] bg-ink/10"></span>
+          </div>
+          <figcaption class="absolute bottom-4 left-6 text-[0.75rem] font-medium text-ink/60">Ejemplo ilustrativo</figcaption>
+        </figure>
+      </div>
+    </section>
+
     <!-- ═══════════════════════════ PLANES (precios en src/modules/subscriptions/plans.ts; una prueba verifica que coincidan) ═══════════════════════════ -->
     <section id="planes" class="scroll-mt-4 bg-ground px-4 py-24 sm:px-8 lg:py-32" aria-labelledby="plans-title">
       <div class="mx-auto grid max-w-[80rem] gap-12">
@@ -647,9 +692,10 @@
           <span class="text-[1.4rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
         </a>
         <p class="text-sm">Pedidos digitales para negocios de comida en Colombia.</p>
-        <nav class="flex gap-5 text-sm font-semibold" aria-label="Pie de página">
+        <nav class="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold" aria-label="Pie de página">
           <a href="/login" class="text-paper hover:text-mustard">Iniciar sesión</a>
           <a href="/registro" class="text-paper hover:text-mustard">Registrar negocio</a>
+          <a href="/app" class="text-paper hover:text-mustard">La app</a>
           <a href="/privacidad" class="text-paper hover:text-mustard">Tratamiento de datos</a>
         </nav>
       </div>

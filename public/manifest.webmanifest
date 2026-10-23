@@ -1,16 +1,30 @@
 {
+  "id": "/panel/pedidos",
   "name": "Pedify",
   "short_name": "Pedify",
-  "description": "Recibe y atiende los pedidos de tu negocio de comida.",
+  "description": "Recibe y atiende los pedidos de tu negocio de comida en vivo, en el celular y en el computador.",
   "lang": "es-CO",
+  "dir": "ltr",
   "start_url": "/panel/pedidos",
   "scope": "/",
   "display": "standalone",
   "background_color": "#17161c",
   "theme_color": "#17161c",
+  "categories": ["business", "food", "productivity"],
+  "launch_handler": { "client_mode": ["focus-existing", "auto"] },
   "icons": [
     { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Pedidos", "short_name": "Pedidos", "description": "Pedidos en vivo", "url": "/panel/pedidos", "icons": [{ "src": "/assets/icons/shortcut-orders-96.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "Mi menú", "short_name": "Menú", "description": "Productos, precios y agotados", "url": "/panel/menu", "icons": [{ "src": "/assets/icons/shortcut-menu-96.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "Inicio", "short_name": "Inicio", "description": "Ventas del día y tu tienda", "url": "/panel", "icons": [{ "src": "/assets/icons/shortcut-home-96.png", "sizes": "96x96", "type": "image/png" }] }
+  ],
+  "screenshots": [
+    { "src": "/assets/images/app/pedidos-celular.jpg", "sizes": "780x1688", "type": "image/jpeg", "form_factor": "narrow", "label": "Pedidos en vivo en el celular" },
+    { "src": "/assets/images/app/menu-celular.jpg", "sizes": "780x1688", "type": "image/jpeg", "form_factor": "narrow", "label": "Tu menú con fotos, precios y agotados" },
+    { "src": "/assets/images/app/pedidos-computador.jpg", "sizes": "1440x900", "type": "image/jpeg", "form_factor": "wide", "label": "Pedidos en vivo en el computador" }
   ]
 }

@@ -1,8 +1,10 @@
 // Mi plan (fase 5: comercialización): estado de la suscripción, uso frente a los límites,
 // planes disponibles, cómo pagar y pagos registrados. Con Wompi configurado, el plan se paga en
 // línea: Pedify crea el cobro, el negocio paga en Wompi y al volver aquí se confirma el pago.
+// El pago se ve en vivo en todos los dispositivos: si pagas en el celular, el computador lo muestra.
 import { api, formatCOP } from "./api.js";
 import { initPanel, renderNoBusiness } from "./dashboard.js";
+import { onLive } from "./notifications.js";
 import { html, icon, render, setBusy, toast } from "./ui.js";
 
 const longDate = (value) =>
@@ -237,11 +239,54 @@ function page(plan, business, notice) {
   </div>`;
 }
 
+// ─── Pago en curso ───
+// En la app instalada, Wompi puede abrirse en una ventana aparte (iPhone) y el regreso no llega a esta
+// pantalla: el cobro se recuerda en el dispositivo y se revisa al volver o cuando Wompi avisa.
+const PENDING_KEY = "pedify:plan-payment";
+const PENDING_MAX_MS = 6 * 60 * 60 * 1000;
+
+function rememberPayment(id) {
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify({ id, at: Date.now() }));
+  } catch {
+    // Sin almacenamiento: el aviso de Wompi igual activa el plan.
+  }
+}
+
+function pendingPayment() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PENDING_KEY) ?? "null");
+    if (saved?.id && Date.now() - saved.at < PENDING_MAX_MS) return saved.id;
+    localStorage.removeItem(PENDING_KEY);
+  } catch {
+    // Sin almacenamiento o dato dañado.
+  }
+  return null;
+}
+
+function forgetPayment() {
+  try {
+    localStorage.removeItem(PENDING_KEY);
+  } catch {
+    // Sin almacenamiento.
+  }
+}
+
+/** Aviso del resultado de un cobro ya resuelto (aprobado o no). */
+function settledNotice(checkout, plan) {
+  const period = `${checkout.planName} · ${checkout.months === 12 ? "1 año" : "1 mes"} (${formatCOP(checkout.amount)})`;
+  if (checkout.status === "APPROVED") {
+    return { kind: "APPROVED", title: "¡Pago aprobado!", text: `${period}. Tu plan está pagado hasta el ${longDate(plan.endsAt)}.` };
+  }
+  return { kind: "FAILED", title: "Wompi no aprobó el pago.", text: "No se hizo ningún cobro. Puedes intentarlo de nuevo, si quieres con otro medio de pago." };
+}
+
 /** Crea el cobro y lleva al negocio a pagar en Wompi. */
 async function startPayment(button) {
   setBusy(button, true);
   try {
-    const { url } = await api("/subscription/checkouts", { method: "POST", body: { plan: button.dataset.pay, months: Number(button.dataset.months) } });
+    const { id, url } = await api("/subscription/checkouts", { method: "POST", body: { plan: button.dataset.pay, months: Number(button.dataset.months) } });
+    rememberPayment(id);
     location.assign(url);
   } catch (error) {
     setBusy(button, false);
@@ -256,9 +301,15 @@ const POLL_TRIES = 30;
  * De vuelta de Wompi (/panel/plan?pago=<cobro>&id=<transacción>): confirma el pago y, mientras
  * siga pendiente (PSE o Nequi pueden tardar), vuelve a consultar cada pocos segundos.
  */
+/** Lo que muestra la pantalla además del plan: el aviso del último pago y si se está siguiendo uno. */
+const view = { notice: null, following: false };
+
 async function followPayment(main, business, checkoutId, transactionId) {
   let plan = await api("/subscription");
-  const draw = (notice) => render(main, page(plan, business, notice));
+  const draw = (notice) => {
+    view.notice = notice;
+    render(main, page(plan, business, notice));
+  };
   draw({ kind: "PENDING", busy: true, title: "Confirmando tu pago…", text: "Un momento, estamos consultando a Wompi." });
 
   for (let attempt = 1; ; attempt += 1) {
@@ -267,17 +318,15 @@ async function followPayment(main, business, checkoutId, transactionId) {
       checkout = await api(`/subscription/checkouts/${checkoutId}/confirm`, { method: "POST", body: transactionId ? { transactionId } : {} });
     } catch (error) {
       history.replaceState(null, "", "/panel/plan");
+      forgetPayment();
       return draw({ kind: "FAILED", title: "No pudimos revisar el pago.", text: error.message });
     }
     const period = `${checkout.planName} · ${checkout.months === 12 ? "1 año" : "1 mes"} (${formatCOP(checkout.amount)})`;
-    if (checkout.status === "APPROVED") {
-      history.replaceState(null, "", "/panel/plan");
-      plan = await api("/subscription");
-      return draw({ kind: "APPROVED", title: "¡Pago aprobado!", text: `${period}. Tu plan está pagado hasta el ${longDate(plan.endsAt)}.` });
-    }
     if (checkout.status !== "PENDING") {
       history.replaceState(null, "", "/panel/plan");
-      return draw({ kind: "FAILED", title: "Wompi no aprobó el pago.", text: "No se hizo ningún cobro. Puedes intentarlo de nuevo, si quieres con otro medio de pago." });
+      forgetPayment();
+      if (checkout.status === "APPROVED") plan = await api("/subscription");
+      return draw(settledNotice(checkout, plan));
     }
     if (!transactionId) {
       // Volvió sin pagar (cerró Wompi o regresó con el botón atrás).
@@ -296,6 +345,35 @@ async function followPayment(main, business, checkoutId, transactionId) {
   }
 }
 
+/**
+ * Mantiene la pantalla al día con lo que pasa en otros dispositivos y en Wompi: un pago aprobado desde
+ * el celular aparece aquí al instante, y al volver a la app se revisa el cobro que quedó en curso.
+ */
+function followPlan(main, business) {
+  let checking = false;
+  const refresh = async ({ quiet = true } = {}) => {
+    // Mientras se confirma el regreso de Wompi, esa misma consulta actualiza la pantalla.
+    if (checking || view.following) return;
+    checking = true;
+    try {
+      const pending = pendingPayment();
+      const checkout = pending ? await api(`/subscription/checkouts/${pending}/confirm`, { method: "POST", body: {} }).catch(() => null) : null;
+      if (pending && (!checkout || checkout.status !== "PENDING")) forgetPayment();
+      const plan = await api("/subscription");
+      if (checkout && checkout.status !== "PENDING") view.notice = settledNotice(checkout, plan);
+      render(main, page(plan, business, view.notice));
+    } catch (error) {
+      // Sin conexión: se intenta de nuevo al reconectarse (la primera carga sí muestra el error).
+      if (!quiet) throw error;
+    } finally {
+      checking = false;
+    }
+  };
+  onLive("changed", ({ scope }) => scope === "subscription" && refresh());
+  onLive("resync", () => refresh());
+  return refresh;
+}
+
 const context = await initPanel("plan");
 if (context) {
   const { main, business } = context;
@@ -309,11 +387,18 @@ if (context) {
       if (button) startPayment(button);
     });
     const params = new URLSearchParams(location.search);
+    const refresh = followPlan(main, business);
     try {
-      if (params.get("pago")) await followPayment(main, business, params.get("pago"), params.get("id"));
-      else render(main, page(await api("/subscription"), business));
+      if (params.get("pago")) {
+        view.following = true;
+        await followPayment(main, business, params.get("pago"), params.get("id"));
+      } else {
+        await refresh({ quiet: false });
+      }
     } catch (error) {
       render(main, html`<p class="text-tomato">${error.message}</p>`);
+    } finally {
+      view.following = false;
     }
   }
 }

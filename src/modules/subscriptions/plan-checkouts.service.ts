@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import type { PlanCheckoutStatus, PlanCode } from "../../generated/prisma/enums.js";
 import { paymentMethodLabel, transactionSchema, WOMPI_STATUSES, wompi, type WompiEvent, type WompiTransaction } from "../../services/wompi.service.js";
 import type { TenantContext } from "../../types/common.js";
+import { notifications } from "../../services/notification.service.js";
 import { AppError, conflict, notFound } from "../../utils/errors.js";
 import { logger } from "../../utils/logger.js";
 import { planOf, priceFor } from "./plans.js";
@@ -43,6 +44,9 @@ const view = (checkout: Checkout) => ({
   paymentMethod: checkout.paymentMethod ? paymentMethodLabel(checkout.paymentMethod) : null,
 });
 
+/** El plan cambió: el panel abierto en el computador y en el celular lo muestra al instante. */
+const announce = (businessId: string) => notifications.businessChanged({ businessId, scope: "subscription", clientId: null });
+
 /**
  * Aplica a un pago del plan el estado de su transacción en Wompi. Es idempotente: el aviso de Wompi
  * y la consulta al volver a Pedify pueden llegar juntos o repetidos y el plan se extiende una sola vez.
@@ -62,6 +66,7 @@ async function settle(checkout: Checkout, transaction: WompiTransaction) {
   if (status !== "APPROVED") {
     // Un pago aprobado no se revierte con avisos posteriores (p. ej. un intento rechazado antes de pagar).
     const { count } = await prisma.planCheckout.updateMany({ where: { id: checkout.id, status: { not: "APPROVED" } }, data });
+    if (count > 0) announce(checkout.businessId);
     if (count === 0 && status === "VOIDED") {
       logger.warn({ checkoutId: checkout.id, transactionId: transaction.id }, "Wompi anuló un pago del plan ya aplicado: revisa la suscripción en /admin");
     }
@@ -87,6 +92,7 @@ async function settle(checkout: Checkout, transaction: WompiTransaction) {
     return "applied";
   });
   if (result === "applied") {
+    announce(checkout.businessId);
     logger.info({ businessId: checkout.businessId, checkoutId: checkout.id, plan: checkout.plan, months: checkout.months }, "Pago del plan aprobado en Wompi");
   } else if (result === "duplicate") {
     logger.warn({ checkoutId: checkout.id, transactionId: transaction.id }, "Segundo pago aprobado para el mismo cobro del plan: revísalo y reembólsalo en Wompi");

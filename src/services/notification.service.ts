@@ -27,6 +27,19 @@ export interface OrderUpdatedEvent {
   changedBy: string | null;
 }
 
+/**
+ * Qué cambió en el negocio fuera de los pedidos, para que los demás dispositivos abiertos (el panel en
+ * el computador y en el celular) se pongan al día: el menú, los datos de la tienda o el plan.
+ */
+export type ChangeScope = "catalog" | "business" | "subscription";
+
+export interface BusinessChangedEvent {
+  businessId: string;
+  scope: ChangeScope;
+  /** Pestaña del panel que hizo el cambio (cabecera X-Pedify-Client): ella no necesita el aviso. */
+  clientId: string | null;
+}
+
 const emitter = new EventEmitter();
 
 export const notifications = {
@@ -39,6 +52,10 @@ export const notifications = {
     emitter.emit("order.updated", event);
   },
 
+  businessChanged(event: BusinessChangedEvent) {
+    emitter.emit("business.changed", event);
+  },
+
   /** Suscribe un oyente; devuelve la función para cancelar la suscripción. */
   onOrderCreated(listener: (event: OrderCreatedEvent) => void) {
     emitter.on("order.created", listener);
@@ -48,5 +65,10 @@ export const notifications = {
   onOrderUpdated(listener: (event: OrderUpdatedEvent) => void) {
     emitter.on("order.updated", listener);
     return () => emitter.off("order.updated", listener);
+  },
+
+  onBusinessChanged(listener: (event: BusinessChangedEvent) => void) {
+    emitter.on("business.changed", listener);
+    return () => emitter.off("business.changed", listener);
   },
 };

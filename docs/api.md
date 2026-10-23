@@ -421,8 +421,9 @@ Mismo servidor y misma cookie de sesión. Al conectar, el servidor verifica la s
 | `ready` | `{ businessId }` |
 | `order:created` | `{ orderId, number, total, customerName, deliveryType, createdAt }` |
 | `order:updated` | `{ orderId, number, status, paidAt, changedBy }` |
+| `business:changed` | `{ scope, clientId }`: `scope` = `catalog` (productos y categorías), `business` (datos y configuración de la tienda, equipo, cuentas de pago) o `subscription` (plan: pago aprobado en Wompi o cambio desde /admin) |
 
-Los eventos solo avisan: el panel vuelve a consultar la API (también al reconectarse).
+Los eventos solo avisan: el panel vuelve a consultar la API (también al reconectarse). `business:changed` se envía tras cada `POST`/`PUT`/`PATCH`/`DELETE` exitoso a `/products`, `/categories`, `/businesses` y `/businesses/current/payment-accounts`; el panel envía en cada petición la cabecera `X-Pedify-Client` (un id por pestaña) y el evento la repite en `clientId`, para que la pestaña que hizo el cambio no se recargue a sí misma.
 
 ## Suscripción — `/subscription`
 

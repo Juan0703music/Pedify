@@ -3,10 +3,12 @@ import { timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import express, { Router, type RequestHandler } from "express";
 import helmet from "helmet";
+import QRCode from "qrcode";
 import { z } from "zod";
 import { corsMiddleware, originGuard } from "./config/cors.js";
 import { prisma } from "./config/database.js";
 import { env, environmentName, isProduction, isStaging } from "./config/env.js";
+import { announceChanges } from "./middlewares/announceChanges.js";
 import { apiNotFound, errorHandler } from "./middlewares/errorHandler.js";
 import { apiLimiter } from "./middlewares/rateLimiter.js";
 import { requestContext } from "./middlewares/requestContext.js";
@@ -45,6 +47,8 @@ const PUBLIC_PAGES: Record<string, string> = {
   "/privacidad": "pages/legal/privacy.html",
   // Página del domiciliario (la clave del pedido va después de "#").
   "/domicilio": "pages/courier/index.html",
+  // Instalar Pedify como app en el celular y en el computador.
+  "/app": "pages/app/index.html",
 };
 
 /** Páginas del panel: requieren cookie de sesión (la API valida la sesión en cada llamada). */
@@ -61,6 +65,8 @@ const PANEL_PAGES: Record<string, string> = {
 };
 
 const version = (JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string }).version;
+
+let appQr: string | undefined;
 
 /**
  * robots.txt: el entorno de pruebas no se indexa; en producción solo las tiendas y las páginas públicas.
@@ -114,10 +120,11 @@ function apiRouter(): Router {
   api.use("/client-errors", clientErrorsRoutes);
 
   api.use("/auth", authRoutes);
-  api.use("/businesses/current/payment-accounts", paymentAccountsRoutes);
-  api.use("/businesses", businessesRoutes);
-  api.use("/products", productsRoutes);
-  api.use("/categories", categoriesRoutes);
+  // Los cambios del menú y de la tienda llegan en vivo a los demás dispositivos del negocio.
+  api.use("/businesses/current/payment-accounts", announceChanges("business"), paymentAccountsRoutes);
+  api.use("/businesses", announceChanges("business"), businessesRoutes);
+  api.use("/products", announceChanges("catalog"), productsRoutes);
+  api.use("/categories", announceChanges("catalog"), categoriesRoutes);
   api.use("/orders", ordersRoutes);
   api.use("/customers", customersRoutes);
   api.use("/analytics", analyticsRoutes);
@@ -201,6 +208,11 @@ export function createApp() {
   app.get("/manifest.webmanifest", (_req, res) => {
     res.set("Cache-Control", "no-cache").type("application/manifest+json");
     res.sendFile(path.join(publicDir, "manifest.webmanifest"));
+  });
+  // Código QR de /app: desde el computador, la persona lo escanea para instalar la app en su celular.
+  app.get("/app/qr.svg", async (_req, res) => {
+    appQr ??= await QRCode.toString(`${env.APP_URL}/app`, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#17161c", light: "#ffffff" } });
+    res.set("Cache-Control", "public, max-age=86400").type("image/svg+xml").send(appQr);
   });
 
   // Tienda pública de cada negocio (las etiquetas para compartir se generan en el servidor).

@@ -1,6 +1,12 @@
 // Cliente de la API de Pedify. La sesión viaja en una cookie httpOnly:
 // el navegador la envía sola y el JavaScript nunca la ve.
 
+/**
+ * Identifica esta pestaña ante el servidor (cabecera X-Pedify-Client). Cuando la pestaña cambia el menú o
+ * la tienda, el servidor avisa a los demás dispositivos del negocio y esta sabe que el aviso es suyo.
+ */
+export const CLIENT_ID = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+
 export class ApiError extends Error {
   constructor(status, code, message, fields = {}) {
     super(message);
@@ -42,7 +48,7 @@ export async function upload(path, file) {
 async function request(path, init) {
   let response;
   try {
-    response = await fetch(`/api/v1${path}`, { credentials: "same-origin", ...init });
+    response = await fetch(`/api/v1${path}`, { credentials: "same-origin", ...init, headers: { ...init.headers, "X-Pedify-Client": CLIENT_ID } });
   } catch (error) {
     if (error?.name === "AbortError") throw error;
     throw new ApiError(0, "NETWORK_ERROR", "Sin conexión. Revisa tu internet e intenta de nuevo.");

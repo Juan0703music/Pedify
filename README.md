@@ -103,7 +103,7 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 ### Notificaciones push
 
 - Cada persona del equipo activa **avisos en su celular o computador** (tarjeta en Inicio, botón del menú o Configuración → Pedidos): con cada pedido nuevo le llega una notificación aunque tenga el panel cerrado, y al tocarla se abre el pedido. Incluye aviso de prueba.
-- Web Push estándar con llaves VAPID (`npm run push:keys`), service worker `/sw.js` y manifiesto para instalar Pedify en la pantalla de inicio (necesario en iPhone).
+- Web Push estándar con llaves VAPID (`npm run push:keys`), service worker `/sw.js` y manifiesto para instalar Pedify como app (necesario en iPhone; ver «La app en el celular y en el computador»).
 - Al salir del equipo, cerrar sesión o cambiar la contraseña, los dispositivos dejan de recibir avisos.
 - 141 pruebas en total.
 
@@ -130,6 +130,15 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - En el panel, el pedido llega con **«Revisar comprobante»**: el negocio abre la imagen, confirma en su app que llegó el valor y lo marca como **Pagado**. El cliente ve «Comprobante enviado» y luego «Pago confirmado»; el domiciliario ve «Pagó por adelantado: no cobres».
 - Los comprobantes son privados (solo los ve el equipo del negocio). Efectivo y datáfono siguen pagándose al recibir; si el negocio solo quiere pedidos pagados, desmarca esos métodos. Para pedidos en efectivo, el domiciliario también puede mostrar el QR al entregar («Mostrar QR para pagar»).
 - El QR de la llave Bre-B se paga desde cualquier banco o billetera. Como es el QR fijo del negocio, no trae el valor: el cliente escribe el total que le mostramos. 165 pruebas en total.
+
+### La app en el celular y en el computador
+
+- Pedify se **instala como app** (aplicación web instalable) en Android, iPhone, Windows y Mac, sin tiendas de apps: abre en su propia ventana desde su ícono, con accesos directos a Pedidos, Mi menú e Inicio. Siempre abre la versión más nueva.
+- **`/app`** explica cómo instalarla según el equipo (botón de instalar en Chrome y Edge; pasos en iPhone, Mac y Firefox) y, en el computador, trae un código QR para instalarla también en el celular. En el panel: «Instalar la app» en el menú y una tarjeta en Inicio.
+- **Todo conectado en vivo**: además de los pedidos, los cambios del menú (agotados, precios, orden), de la tienda (pausar pedidos, logo, portada) y del plan llegan al instante a todos los dispositivos con la misma cuenta. Socket.IO avisa `business:changed` y cada pantalla vuelve a consultar la API; la pestaña que hizo el cambio se reconoce por la cabecera `X-Pedify-Client`. En Configuración, en vez de redibujar lo que estás escribiendo, aparece «Se guardaron cambios desde otro dispositivo · Actualizar».
+- **El pago del plan con Wompi** funciona igual en la app del celular y la del computador: al aprobarse, el plan se actualiza en todos los dispositivos abiertos. Si Wompi se abre aparte (iPhone), el cobro en curso se revisa al volver a la app.
+- Sin internet, la app muestra una pantalla propia («Se fue el internet») que se recarga sola al volver la conexión.
+- 184 pruebas en total.
 
 ## Requisitos
 
