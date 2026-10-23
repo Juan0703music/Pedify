@@ -1,10 +1,12 @@
 import { prisma, type DbClient } from "../../config/database.js";
 import { env } from "../../config/env.js";
+import type { PlanCode } from "../../generated/prisma/enums.js";
+import { wompi } from "../../services/wompi.service.js";
 import type { TenantContext } from "../../types/common.js";
 import { clock } from "../../utils/clock.js";
 import { conflict } from "../../utils/errors.js";
 import { planOf, PLANS, TRIAL_DAYS, UPGRADE } from "./plans.js";
-import { subscriptionState } from "./subscription-state.js";
+import { addMonths, latest, subscriptionState } from "./subscription-state.js";
 import { subscriptionsRepository } from "./subscriptions.repository.js";
 
 export const newTrialEnd = () => new Date(clock.now().getTime() + TRIAL_DAYS * 86_400_000);
@@ -53,10 +55,30 @@ export const subscriptionsService = {
       limits: { products: plan.maxProducts, members: plan.maxMembers },
       plans: Object.values(PLANS),
       payments,
+      // Pago en línea con Wompi (sandbox = llaves de prueba, sin cobros reales).
+      onlinePayment: wompi.enabled() ? { provider: "WOMPI", sandbox: wompi.sandbox() } : null,
       support: env.SUPPORT_WHATSAPP
         ? { whatsapp: env.SUPPORT_WHATSAPP, url: `https://wa.me/${env.SUPPORT_WHATSAPP}?text=${encodeURIComponent(message)}` }
         : null,
     };
+  },
+
+  /**
+   * Registra un pago y extiende la suscripción desde la fecha más tardía entre hoy, el fin de lo ya
+   * pagado y el fin de la prueba (no se pierden días). Lo usan el panel central y los pagos en línea.
+   */
+  async applyPayment(
+    tx: DbClient,
+    businessId: string,
+    input: { plan: PlanCode; months: number; amount: number; method: string; reference: string | null; note: string | null; recordedById: string | null },
+  ) {
+    // Bloquea la suscripción: dos pagos al mismo tiempo no calculan el periodo desde la misma fecha.
+    await tx.$queryRaw`SELECT 1 FROM subscriptions WHERE business_id = ${businessId}::uuid FOR UPDATE`;
+    const { subscription } = await current(businessId, tx);
+    const periodStart = latest(clock.now(), subscription.paidUntil, subscription.trialEndsAt);
+    const periodEnd = addMonths(periodStart, input.months);
+    await subscriptionsRepository.update(businessId, { plan: input.plan, paidUntil: periodEnd }, tx);
+    return subscriptionsRepository.createPayment({ businessId, ...input, periodStart, periodEnd }, tx);
   },
 
   /** Verifica el límite del plan antes de agregar un producto o una persona al equipo. */

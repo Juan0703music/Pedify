@@ -17,6 +17,10 @@ export function productionWarnings(env: Env = currentEnv): string[] {
   if (env.STORAGE_DRIVER === "local") warnings.push("Las fotos se guardan en el disco del servidor; el documento pide almacenamiento externo (STORAGE_DRIVER=s3).");
   if (!env.SMTP_URL) warnings.push("Sin SMTP_URL no se envían los correos para recuperar la contraseña.");
   if (!env.SUPPORT_WHATSAPP) warnings.push("Sin SUPPORT_WHATSAPP, «Mi plan» no muestra el WhatsApp para pagar el plan.");
+  if (!env.WOMPI_PUBLIC_KEY) warnings.push("Sin las llaves de Wompi (WOMPI_*), los negocios no pueden pagar el plan en línea.");
+  else if (env.APP_ENV === "production" && env.WOMPI_PUBLIC_KEY.startsWith("pub_test_")) {
+    warnings.push("Wompi tiene llaves de prueba (pub_test_…): los pagos de los planes no son reales.");
+  }
   if (!env.VAPID_PUBLIC_KEY) warnings.push("Sin VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY no hay notificaciones push de pedidos nuevos.");
   if (!env.METRICS_TOKEN) warnings.push("Sin METRICS_TOKEN no hay métricas en /metrics.");
   return warnings;

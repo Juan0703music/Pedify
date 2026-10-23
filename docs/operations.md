@@ -12,6 +12,7 @@ La sección 15 pide implementar **y probar** migraciones, validaciones, controle
 - [ ] Imágenes en almacenamiento externo (`STORAGE_DRIVER=s3`) con el bucket **versionado**.
 - [ ] Correo configurado (`SMTP_URL`) y probada la recuperación de contraseña.
 - [ ] `SUPPORT_WHATSAPP` con el número del equipo (pagos de planes y soporte).
+- [ ] Cuenta de Wompi aprobada, con la cuenta bancaria donde quieres recibir los pagos, sus llaves de producción en `WOMPI_*`, la URL de eventos configurada y un pago real pequeño probado ([`deployment.md`](deployment.md), sección 6).
 - [ ] Llaves VAPID (`npm run push:keys`) para los avisos push, y probado un aviso desde Configuración → Pedidos.
 - [ ] Copias automáticas activas y **una restauración probada** (ver 4).
 - [ ] Monitoreo de `/api/v1/health` y de `/metrics` (ver 5).
@@ -29,6 +30,7 @@ En desarrollo están en [`.env.example`](../.env.example); en el servidor, en [`
 | `APP_ENV` | `production` o `staging` (entorno de pruebas: franja visible, «[Pruebas]» en títulos y correos, sin indexar). |
 | `SMTP_URL`, `MAIL_FROM` | Correos de recuperación de contraseña. Sin `SMTP_URL`, en desarrollo el enlace aparece en el registro; en producción no se envía (y se registra una advertencia). |
 | `SUPPORT_WHATSAPP` | WhatsApp del equipo (57XXXXXXXXXX). Lo usan "Mi plan" y los botones de pago. |
+| `WOMPI_PUBLIC_KEY`, `WOMPI_PRIVATE_KEY`, `WOMPI_EVENTS_SECRET`, `WOMPI_INTEGRITY_SECRET` | Pago de los planes en línea con Wompi (las cuatro juntas; de prueba o de producción, sin mezclar). Sin ellas, «Mi plan» lleva al WhatsApp. La privada y los secretos son secretos. |
 | `METRICS_TOKEN` | Activa `/metrics` (mínimo 16 caracteres). Sin token, la ruta no existe. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Avisos push de pedidos nuevos en los dispositivos del negocio. Se generan con `npm run push:keys`; la privada es un secreto. Si se cambian, cada dispositivo debe volver a activar los avisos. |
 
@@ -36,7 +38,8 @@ En desarrollo están en [`.env.example`](../.env.example); en el servidor, en [`
 
 - Planes y precios: [`src/modules/subscriptions/plans.ts`](../src/modules/subscriptions/plans.ts) (**Emprendedor** $99.900/mes o $1.078.920/año (−10 %) · 5 productos · 1 persona (solo el dueño); **Negocio** $399.900/mes o $4.414.896/año (−8 %) · 30 productos · 6 personas; **Empresa** $799.900/mes o $9.118.860/año (−5 %) · productos y personas ilimitados). El valor anual ya trae el descuento y es el que se cobra al registrar un pago de 12 meses. Si cambias un precio, cambia también la portada (`public/index.html`): una prueba verifica que coincidan.
 - Cada negocio nuevo empieza con **7 días de prueba** del plan que eligió al registrarse (desde la portada, `/registro?plan=EMPRESA`; si no elige, Negocio), con los límites de ese plan. Las pruebas que ya estaban en curso conservan su fecha. Para dar más días, usa «Ampliar prueba» en la administración. Estados: prueba → activo (pagado) → vencido con **5 días de gracia** (sigue recibiendo pedidos) → vencido (la tienda se ve pero no recibe pedidos en línea; el panel sigue funcionando). El estado se calcula con fechas; no hay tareas programadas.
-- Los pagos se reciben por Nequi, Daviplata o transferencia y se **registran en el panel central** (`/admin`): extiende el periodo desde la fecha más tardía entre hoy, lo ya pagado y el fin de la prueba.
+- Con Wompi configurado, el propietario **paga en línea** desde «Mi plan» (un mes o el año, con tarjeta, PSE, Nequi o botón Bancolombia) y el plan se extiende solo cuando Wompi aprueba el pago; Wompi consigna el dinero en la cuenta bancaria registrada en tu cuenta de Wompi. El pago aparece en `/admin` como «Wompi (medio)» con la referencia de la transacción. Si Wompi anula un pago ya aplicado, queda una advertencia en el registro para revisarlo a mano.
+- Los pagos que llegan por fuera (Nequi, Daviplata o transferencia) se **registran en el panel central** (`/admin`). Ambos extienden el periodo desde la fecha más tardía entre hoy, lo ya pagado y el fin de la prueba.
 - Administradores: solo por consola, nunca desde la web.
 
   ```bash

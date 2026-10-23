@@ -47,3 +47,7 @@ export function addMonths(date: Date, months: number): Date {
   result.setUTCDate(Math.min(day, lastDay));
   return result;
 }
+
+/** La fecha más tardía (ignora las vacías). */
+export const latest = (...dates: (Date | null | undefined)[]) =>
+  new Date(Math.max(...dates.filter((date): date is Date => Boolean(date)).map((date) => date.getTime())));

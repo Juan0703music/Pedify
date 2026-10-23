@@ -26,7 +26,7 @@ import { paymentAccountsRoutes } from "./modules/payment-accounts/payment-accoun
 import { storePaymentProofRoutes, storePaymentQrRoutes } from "./modules/payment-accounts/payment-proofs.routes.js";
 import { pushRoutes } from "./modules/push/push.routes.js";
 import { pushService } from "./modules/push/push.service.js";
-import { subscriptionRoutes } from "./modules/subscriptions/subscriptions.routes.js";
+import { subscriptionRoutes, wompiWebhookRoutes } from "./modules/subscriptions/subscriptions.routes.js";
 import { metrics } from "./services/metrics.service.js";
 import { imageOrigin, PRIVATE_PREFIX } from "./services/storage.service.js";
 import { publicDir, sendPage } from "./utils/pages.js";
@@ -122,6 +122,7 @@ function apiRouter(): Router {
   api.use("/customers", customersRoutes);
   api.use("/analytics", analyticsRoutes);
   api.use("/subscription", subscriptionRoutes);
+  api.use("/webhooks/wompi", wompiWebhookRoutes);
   api.use("/push", pushRoutes);
   api.use("/courier", courierRoutes);
   api.use("/admin", adminRoutes);

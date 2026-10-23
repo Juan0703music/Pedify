@@ -102,6 +102,7 @@ Completa `.env` (cada variable está explicada en el archivo):
 | `STORAGE_DRIVER`, `S3_*` | bucket `pedifyai-fotos` | bucket `pedifyai-fotos-pruebas` |
 | `SMTP_URL` | p. ej. `smtp://usuario:clave@smtp-relay.brevo.com:587` | el mismo proveedor |
 | `SUPPORT_WHATSAPP`, `METRICS_TOKEN` | `57XXXXXXXXXX`, `openssl rand -hex 24` | igual |
+| `WOMPI_PUBLIC_KEY`, `WOMPI_PRIVATE_KEY`, `WOMPI_EVENTS_SECRET`, `WOMPI_INTEGRITY_SECRET` | llaves de producción de Wompi | llaves de prueba (sandbox) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | `npm run push:keys` | otras distintas |
 | `MAP_TILE_URL`, `MAP_TILE_ATTRIBUTION` | vacías (OpenStreetMap) o un proveedor de mapas con llave | igual |
 | `COMPOSE_PROFILES=offsite` y `OFFSITE_*` | bucket `pedifyai-copias` | bucket `pedifyai-copias-pruebas` |
@@ -147,6 +148,18 @@ Con las llaves VAPID, cada persona del equipo activa los avisos en su celular o 
 - Android, Windows, Mac y Linux: Chrome, Edge, Firefox o Safari actualizados.
 - iPhone y iPad (iOS 16.4 o más): primero hay que **agregar Pedify a la pantalla de inicio** (Compartir → «Agregar a pantalla de inicio») y activar los avisos desde ese ícono. El panel lo explica.
 - Al cerrar sesión en un dispositivo, ese dispositivo deja de recibir avisos; «Cerrar sesión en todos» y el cambio de contraseña los quitan todos.
+
+### Pago de los planes con Wompi
+
+Wompi (de Bancolombia) cobra los planes y consigna el dinero en tu cuenta bancaria, de cualquier banco.
+
+1. Crea la cuenta en [comercios.wompi.co](https://comercios.wompi.co) (persona natural con RUT o empresa) y registra la cuenta bancaria donde quieres recibir los pagos. Wompi revisa los datos antes de activar los cobros reales.
+2. En **Desarrolladores** copia las llaves: en el servidor de pruebas, las de prueba (`pub_test_…`, `prv_test_…` y los secretos `test_events_…`, `test_integrity_…`); en producción, las de producción (`…prod…`). Ponlas en `.env` y ejecuta `scripts/deploy.sh --no-pull`.
+3. En la misma sección, en **URL de eventos**, escribe `https://<tu-dominio>/api/v1/webhooks/wompi` (una para pruebas y otra para producción).
+4. Prueba en el entorno de pruebas desde «Mi plan»: tarjeta `4242 4242 4242 4242` (aprobada) o `4111 1111 1111 1111` (rechazada), con cualquier fecha futura y CVC; Nequi `3991111111` (aprobada) o `3992222222` (rechazada).
+5. En producción, haz un pago real con tu propio negocio, revisa que el plan se extienda y que aparezca en `/admin`, y confirma en el panel de Wompi cuándo te consigna.
+
+Cada pago aprobado extiende el plan aunque el aviso de Wompi tarde: al volver a Pedify, «Mi plan» consulta la transacción con la llave privada. Si Wompi no puede entregar el aviso (por ejemplo, la URL de eventos está mal), lo reintenta durante 24 horas.
 
 ### Mapa del domicilio
 

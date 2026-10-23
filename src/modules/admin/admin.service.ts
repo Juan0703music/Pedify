@@ -8,7 +8,7 @@ import { logger } from "../../utils/logger.js";
 import { buildPage } from "../../utils/pagination.js";
 import { storeUrl } from "../businesses/businesses.controller.js";
 import { planOf, PLANS, priceFor } from "../subscriptions/plans.js";
-import { addMonths, subscriptionState } from "../subscriptions/subscription-state.js";
+import { latest, subscriptionState } from "../subscriptions/subscription-state.js";
 import { subscriptionsRepository } from "../subscriptions/subscriptions.repository.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { adminRepository } from "./admin.repository.js";
@@ -16,9 +16,6 @@ import type { ListBusinessesQuery, RecordPaymentInput, UpdateBusinessAdminInput 
 
 const DAY = 86_400_000;
 const version = (JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")) as { version: string }).version;
-
-const latest = (...dates: (Date | null | undefined)[]) =>
-  new Date(Math.max(...dates.filter((date): date is Date => Boolean(date)).map((date) => date.getTime())));
 
 export const adminService = {
   /** Métricas globales de la plataforma y estado del sistema. */
@@ -91,33 +88,21 @@ export const adminService = {
     return adminService.getBusiness(id);
   },
 
-  /**
-   * Registra un pago recibido (Nequi, transferencia…) y extiende la suscripción desde la fecha
-   * más tardía entre hoy, el fin de lo ya pagado y el fin de la prueba (no se pierden días).
-   */
+  /** Registra un pago recibido (Nequi, transferencia…) y extiende la suscripción sin perder días. */
   async recordPayment(adminId: string, id: string, input: RecordPaymentInput) {
     const { subscription } = await subscriptionsService.current(id);
     const plan = planOf(input.plan ?? subscription.plan);
-    const periodStart = latest(clock.now(), subscription.paidUntil, subscription.trialEndsAt);
-    const periodEnd = addMonths(periodStart, input.months);
-    await prisma.$transaction(async (tx) => {
-      await subscriptionsRepository.update(id, { plan: plan.code, paidUntil: periodEnd }, tx);
-      await subscriptionsRepository.createPayment(
-        {
-          businessId: id,
-          plan: plan.code,
-          amount: input.amount ?? priceFor(plan, input.months),
-          months: input.months,
-          method: input.method,
-          reference: input.reference || null,
-          note: input.note || null,
-          periodStart,
-          periodEnd,
-          recordedById: adminId,
-        },
-        tx,
-      );
-    });
+    await prisma.$transaction((tx) =>
+      subscriptionsService.applyPayment(tx, id, {
+        plan: plan.code,
+        amount: input.amount ?? priceFor(plan, input.months),
+        months: input.months,
+        method: input.method,
+        reference: input.reference || null,
+        note: input.note || null,
+        recordedById: adminId,
+      }),
+    );
     logger.info({ adminId, businessId: id, plan: plan.code, months: input.months }, "Pago de suscripción registrado");
     const updated = await adminService.getBusiness(id);
     return { ...updated, subscription: { ...updated.subscription, ...subscriptionState(updated.subscription, clock.now()) } };

@@ -426,7 +426,19 @@ Los eventos solo avisan: el panel vuelve a consultar la API (también al reconec
 
 ## Suscripción — `/subscription`
 
-`GET /subscription` (OWNER) → plan, `priceMonthly`, `priceYearly` (12 meses con el descuento ya aplicado), `annualDiscountPercent`, estado (`TRIAL`, `ACTIVE`, `PAST_DUE`, `EXPIRED`), `endsAt`, `daysLeft`, `graceEndsAt`, `usage { products, members }`, `limits` (`null` = ilimitado, como en el plan Empresa), catálogo `plans`, `payments` y `support { whatsapp, url }` (si `SUPPORT_WHATSAPP` está configurado).
+`GET /subscription` (OWNER) → plan, `priceMonthly`, `priceYearly` (12 meses con el descuento ya aplicado), `annualDiscountPercent`, estado (`TRIAL`, `ACTIVE`, `PAST_DUE`, `EXPIRED`), `endsAt`, `daysLeft`, `graceEndsAt`, `usage { products, members }`, `limits` (`null` = ilimitado, como en el plan Empresa), catálogo `plans`, `payments`, `onlinePayment` (`{ provider: "WOMPI", sandbox }` con las llaves de Wompi, si no `null`) y `support { whatsapp, url }` (si `SUPPORT_WHATSAPP` está configurado).
+
+Pago en línea con Wompi (OWNER):
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| POST | `/subscription/checkouts` | `plan` (EMPRENDEDOR, NEGOCIO, EMPRESA), `months` (1 o 12; 12 = precio anual con descuento) | 201 `{ id, amount, url }`: `url` es el Web Checkout de Wompi con el valor firmado (firma de integridad) y regreso a `/panel/plan?pago=<id>` |
+| POST | `/subscription/checkouts/:id/confirm` | `transactionId?` (el `id` que Wompi agrega al regresar) | `{ id, status, plan, planName, months, amount, paymentMethod }`; consulta la transacción en Wompi con la llave privada y, si está aprobada, extiende el plan |
+
+- `status`: `PENDING`, `APPROVED`, `DECLINED`, `VOIDED`, `ERROR` (los de Wompi). Aprobado, el plan se extiende como un pago registrado (desde la fecha más tardía entre hoy, lo ya pagado y el fin de la prueba) con `method: "WOMPI"`, `reference` = transacción y `note` = medio (Tarjeta, Nequi, PSE…). Se aplica una sola vez aunque el aviso y la confirmación lleguen juntos o repetidos.
+- 409 `ONLINE_PAYMENT_UNAVAILABLE` sin las llaves de Wompi; 409 `PLAN_TOO_SMALL` si el menú o el equipo no caben en el plan elegido; 404 `CHECKOUT_NOT_FOUND` para cobros de otro negocio.
+
+`POST /webhooks/wompi` (sin sesión): avisos de Wompi (`transaction.updated`). Se verifica `signature.checksum` (SHA-256 de las `signature.properties`, el `timestamp` y `WOMPI_EVENTS_SECRET`): 401 `INVALID_SIGNATURE` si no coincide. Las transacciones con otra referencia (otros cobros de la cuenta de Wompi) o con un valor distinto al del cobro se ignoran. Responde 200 para que Wompi no reintente.
 
 Límites del plan: crear o restaurar productos y agregar personas al equipo responde 409 `PLAN_LIMIT` al llegar al tope. Con la suscripción vencida (después de 5 días de gracia), `POST /store/:slug/orders` responde 409 `STORE_UNAVAILABLE` y la tienda informa `status.onlineOrdering: false`.
 

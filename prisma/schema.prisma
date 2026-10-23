@@ -48,6 +48,15 @@ enum PlanCode {
   EMPRESA
 }
 
+// Estado de un pago del plan en línea: los mismos de las transacciones de Wompi.
+enum PlanCheckoutStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  VOIDED
+  ERROR
+}
+
 // Qué pedidos cuentan como venta en las analíticas (sección 11 del documento).
 enum SalesPolicy {
   ACCEPTED // desde que el negocio acepta el pedido (confirmado en adelante)
@@ -83,6 +92,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   pushSubscriptions   PushSubscription[]
   recordedPayments    SubscriptionPayment[]
+  planCheckouts       PlanCheckout[]
 
   @@map("users")
 }
@@ -149,6 +159,7 @@ model Business {
   paymentAccounts   PaymentAccount[]
   paymentProofs     PaymentProof[]
   payments          SubscriptionPayment[]
+  planCheckouts     PlanCheckout[]
   categories        Category[]
   products          Product[]
   customers         Customer[]
@@ -219,7 +230,8 @@ model Subscription {
   @@map("subscriptions")
 }
 
-// Pagos de la suscripción registrados por el equipo de Pedify (transferencia, Nequi…).
+// Pagos de la suscripción: registrados por el equipo de Pedify (transferencia, Nequi…) o pagados
+// en línea con Wompi (method WOMPI, sin recorded_by).
 model SubscriptionPayment {
   id           String   @id @default(uuid(7)) @db.Uuid
   businessId   String   @map("business_id") @db.Uuid
@@ -234,11 +246,38 @@ model SubscriptionPayment {
   recordedById String?  @map("recorded_by_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  recordedBy User?    @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  recordedBy User?         @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  checkout   PlanCheckout?
 
   @@index([businessId, createdAt])
   @@map("subscription_payments")
+}
+
+// Pago del plan en línea con Wompi. Se crea al ir a pagar (su id es la referencia del pago en Wompi)
+// y se completa con el aviso de Wompi o al volver a Pedify; si se aprueba, queda unido al pago registrado.
+model PlanCheckout {
+  id            String             @id @default(uuid(7)) @db.Uuid
+  businessId    String             @map("business_id") @db.Uuid
+  plan          PlanCode
+  months        Int
+  // Valor en pesos (a Wompi va en centavos).
+  amount        Int
+  status        PlanCheckoutStatus @default(PENDING)
+  // Última transacción de Wompi con esta referencia y su medio de pago (CARD, NEQUI, PSE…).
+  transactionId String?            @map("transaction_id")
+  paymentMethod String?            @map("payment_method")
+  paymentId     String?            @unique @map("payment_id") @db.Uuid
+  createdById   String?            @map("created_by_id") @db.Uuid
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business  Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  payment   SubscriptionPayment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdBy User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@map("plan_checkouts")
 }
 
 // ───────────────────────────────── Catálogo ──────────────────────────────────

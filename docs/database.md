@@ -19,7 +19,8 @@ PostgreSQL con Prisma 7 (`prisma/schema.prisma`). Identificadores UUID v7, fecha
 | `order_items` | Detalle | business_id, order_id, product_id, product_name, unit_price, quantity, subtotal |
 | `order_status_history` | Historial de estados | order_id, from_status, to_status, changed_by_id, note |
 | `subscriptions` | Suscripción del negocio a Pedify | business_id, plan (`EMPRENDEDOR`/`NEGOCIO`/`EMPRESA`), trial_ends_at, paid_until |
-| `subscription_payments` | Pagos registrados por el equipo | business_id, plan, amount, months, method, reference, period_start, period_end, recorded_by_id |
+| `subscription_payments` | Pagos del plan: registrados por el equipo o pagados en línea (`method` WOMPI, sin recorded_by_id) | business_id, plan, amount, months, method, reference, note, period_start, period_end, recorded_by_id |
+| `plan_checkouts` | Cobros del plan en línea con Wompi (su id es la referencia en Wompi) | business_id, plan, months, amount, status (`PENDING`/`APPROVED`/`DECLINED`/`VOIDED`/`ERROR`), transaction_id, payment_method, payment_id (pago aplicado, único), created_by_id |
 | `password_reset_tokens` | Enlaces para restablecer la contraseña | user_id, token_hash (único), expires_at, used_at |
 | `payment_proofs` | Comprobantes de pago por adelantado | business_id, order_id (único; nulo mientras el cliente no envía el pedido), image_key (archivo privado en `private/…`) |
 | `payment_accounts` | QR y llaves para cobrar | business_id, kind (`NEQUI`/`BRE_B`/`DAVIPLATA`, única por negocio), account_key, holder_name, qr_payload (código leído del QR), qr_image_url/qr_image_key |

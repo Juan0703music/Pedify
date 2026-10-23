@@ -63,6 +63,11 @@ describe("Configuración pendiente para producción", () => {
     SMTP_URL: "smtps://usuario:clave@smtp.ejemplo.com:465",
     SUPPORT_WHATSAPP: "573001234567",
     METRICS_TOKEN: "token-de-metricas-largo",
+    APP_ENV: "production" as const,
+    WOMPI_PUBLIC_KEY: "pub_prod_LlavePublica",
+    WOMPI_PRIVATE_KEY: "prv_prod_LlavePrivada",
+    WOMPI_EVENTS_SECRET: "prod_events_Secreto",
+    WOMPI_INTEGRITY_SECRET: "prod_integrity_Secreto",
   };
 
   it("no avisa nada con todo configurado", () => {
@@ -78,10 +83,17 @@ describe("Configuración pendiente para producción", () => {
       SMTP_URL: undefined,
       SUPPORT_WHATSAPP: undefined,
       METRICS_TOKEN: undefined,
+      WOMPI_PUBLIC_KEY: undefined,
     });
-    expect(warnings).toHaveLength(6);
+    expect(warnings).toHaveLength(7);
     expect(warnings.join(" ")).toContain("HTTPS");
     expect(warnings.join(" ")).toContain("SMTP_URL");
+  });
+
+  it("avisa si producción cobra los planes con las llaves de prueba de Wompi", () => {
+    expect(productionWarnings({ ...complete, WOMPI_PUBLIC_KEY: "pub_test_LlavePublica" })).toEqual([expect.stringContaining("llaves de prueba")]);
+    // En el entorno de pruebas (staging) las llaves de prueba son lo esperado.
+    expect(productionWarnings({ ...complete, APP_ENV: "staging", WOMPI_PUBLIC_KEY: "pub_test_LlavePublica" })).toEqual([]);
   });
 
   it("detecta el proxy sin TRUST_PROXY (todos compartirían el límite de solicitudes)", () => {

@@ -54,6 +54,15 @@ const EnvSchema = z
     // WhatsApp del equipo de Pedify para pagos y soporte (formato 57XXXXXXXXXX).
     SUPPORT_WHATSAPP: optional(z.string().regex(/^57\d{10}$/, "Usa el formato 57XXXXXXXXXX.")),
 
+    // Pago de los planes en línea con Wompi (Bancolombia): llaves de comercios.wompi.co → Desarrolladores.
+    // Con las de prueba (pub_test_…) se usa el sandbox sin cobros reales. Sin ellas, «Mi plan» lleva al WhatsApp.
+    WOMPI_PUBLIC_KEY: optional(z.string().regex(/^pub_(test|prod)_\w+$/, "WOMPI_PUBLIC_KEY debe empezar por pub_test_ o pub_prod_.")),
+    WOMPI_PRIVATE_KEY: optional(z.string().regex(/^prv_(test|prod)_\w+$/, "WOMPI_PRIVATE_KEY debe empezar por prv_test_ o prv_prod_.")),
+    WOMPI_EVENTS_SECRET: optional(z.string().regex(/^(test|prod)_events_\w+$/, "WOMPI_EVENTS_SECRET debe empezar por test_events_ o prod_events_.")),
+    WOMPI_INTEGRITY_SECRET: optional(
+      z.string().regex(/^(test|prod)_integrity_\w+$/, "WOMPI_INTEGRITY_SECRET debe empezar por test_integrity_ o prod_integrity_."),
+    ),
+
     // Notificaciones push de pedidos nuevos (Web Push). Se generan con `npm run push:keys`.
     // Sin las dos llaves no hay avisos push (el panel sigue sonando mientras esté abierto).
     VAPID_PUBLIC_KEY: optional(z.string().regex(/^[A-Za-z0-9_-]{80,100}$/, "VAPID_PUBLIC_KEY no es una llave válida (npm run push:keys).")),
@@ -80,6 +89,16 @@ const EnvSchema = z
   .superRefine((value, ctx) => {
     if (Boolean(value.VAPID_PUBLIC_KEY) !== Boolean(value.VAPID_PRIVATE_KEY)) {
       ctx.addIssue({ code: "custom", path: ["VAPID_PRIVATE_KEY"], message: "Define VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY juntas (npm run push:keys)." });
+    }
+    const wompi = [value.WOMPI_PUBLIC_KEY, value.WOMPI_PRIVATE_KEY, value.WOMPI_EVENTS_SECRET, value.WOMPI_INTEGRITY_SECRET];
+    if (wompi.some(Boolean) && !wompi.every(Boolean)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["WOMPI_PUBLIC_KEY"],
+        message: "Define las cuatro llaves de Wompi juntas: WOMPI_PUBLIC_KEY, WOMPI_PRIVATE_KEY, WOMPI_EVENTS_SECRET y WOMPI_INTEGRITY_SECRET.",
+      });
+    } else if (wompi.every(Boolean) && new Set(wompi.map((key) => /^(pub_|prv_)?test_/.test(key!))).size > 1) {
+      ctx.addIssue({ code: "custom", path: ["WOMPI_PUBLIC_KEY"], message: "No mezcles llaves de Wompi de prueba (test) y de producción (prod)." });
     }
     if (value.STORAGE_DRIVER !== "s3") return;
     for (const key of ["S3_BUCKET", "S3_PUBLIC_URL"] as const) {

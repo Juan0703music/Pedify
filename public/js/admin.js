@@ -194,9 +194,9 @@ function detailView(business) {
             : html`<ul class="divide-y divide-line text-[0.9375rem]">
                 ${business.payments.map(
                   (payment) => html`<li class="flex flex-wrap justify-between gap-2 py-2.5">
-                    <span>${date(payment.createdAt)} · ${payment.months} ${payment.months === 1 ? "mes" : "meses"} · ${payment.method}${payment.reference ? ` · ${payment.reference}` : ""}</span>
+                    <span>${date(payment.createdAt)} · ${payment.months} ${payment.months === 1 ? "mes" : "meses"} · ${payment.method === "WOMPI" ? `Wompi (${payment.note ?? "en línea"})` : payment.method}${payment.reference ? ` · ${payment.reference}` : ""}</span>
                     <span class="num font-[700]">${formatCOP(payment.amount)}</span>
-                    <span class="w-full text-sm text-muted">Periodo ${date(payment.periodStart)} – ${date(payment.periodEnd)}${payment.recordedBy ? ` · registró ${payment.recordedBy.name}` : ""}</span>
+                    <span class="w-full text-sm text-muted">Periodo ${date(payment.periodStart)} – ${date(payment.periodEnd)}${payment.recordedBy ? ` · registró ${payment.recordedBy.name}` : payment.method === "WOMPI" ? " · pagado en línea" : ""}</span>
                   </li>`,
                 )}
               </ul>`}

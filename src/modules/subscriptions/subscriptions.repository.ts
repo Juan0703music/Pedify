@@ -47,7 +47,7 @@ export const subscriptionsRepository = {
       note: string | null;
       periodStart: Date;
       periodEnd: Date;
-      recordedById: string;
+      recordedById: string | null;
     },
     db: DbClient = prisma,
   ) {
