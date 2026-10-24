@@ -545,16 +545,35 @@ model PaymentAccount {
 /// primero (sin pedido) y queda unido al pedido al crearlo; los que nunca se usan se borran al día.
 /// La imagen es privada: solo el equipo del negocio la ve, a través de la API.
 model PaymentProof {
-  id         String   @id @default(uuid(7)) @db.Uuid
-  businessId String   @map("business_id") @db.Uuid
-  orderId    String?  @map("order_id") @db.Uuid
-  imageKey   String   @map("image_key")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id          String           @id @default(uuid(7)) @db.Uuid
+  businessId  String           @map("business_id") @db.Uuid
+  orderId     String?          @map("order_id") @db.Uuid
+  imageKey    String           @map("image_key")
+  /// Huella del archivo (SHA-256) para reconocer un comprobante que ya se usó en otro pedido.
+  imageHash   String?          @map("image_hash")
+  /// Texto leído del comprobante (OCR) y cuándo terminó la lectura (null = leyendo o no se pudo).
+  receiptText String?          @map("receipt_text")
+  readAt      DateTime?        @map("read_at") @db.Timestamptz(3)
+  /// Referencia o número de aprobación leído (para detectar el mismo pago en dos pedidos).
+  reference   String?
+  /// Resultado de la verificación automática y el detalle de cada revisión.
+  checkStatus ProofCheckStatus @default(PENDING) @map("check_status")
+  checks      Json             @default("[]")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   order    Order?   @relation(fields: [orderId, businessId], references: [id, businessId], onDelete: Cascade)
 
   @@unique([orderId, businessId])
   @@index([businessId, createdAt])
+  @@index([businessId, reference])
   @@map("payment_proofs")
+}
+
+/// Verificación automática del comprobante: leyendo, todo coincide, hay que revisarlo o algo no coincide.
+enum ProofCheckStatus {
+  PENDING
+  VERIFIED
+  REVIEW
+  MISMATCH
 }

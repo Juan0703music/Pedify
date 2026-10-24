@@ -78,6 +78,33 @@ const inColumn = (column) => state.active.filter((order) => column.statuses.incl
 
 // ───────────────────────────── Plantillas ─────────────────────────────
 
+/** Verificación automática del comprobante (la hace Pedify al leerlo): texto, color e ícono. */
+const PROOF_CHECK = {
+  PENDING: { label: "Revisando comprobante…", headline: "Revisando el comprobante…", tone: "text-muted", icon: "loader-circle", box: "border-line" },
+  VERIFIED: { label: "Comprobante verificado", headline: "Todo coincide con el pedido", tone: "text-leaf", icon: "circle-check", box: "border-leaf/40" },
+  REVIEW: { label: "Revisar comprobante", headline: "Revísalo: no pudimos leerlo todo", tone: "text-mustard-deep", icon: "circle-alert", box: "border-mustard-deep/40 bg-mustard-soft/40" },
+  MISMATCH: { label: "Comprobante no coincide", headline: "Algo no coincide: revísalo antes de aceptar", tone: "text-tomato", icon: "circle-x", box: "border-tomato/40 bg-tomato-soft/40" },
+};
+const proofCheck = (order) => PROOF_CHECK[order.paymentProof?.checkStatus] ?? PROOF_CHECK.REVIEW;
+
+/** Lo que revisó Pedify en el comprobante: valor, destinatario, fecha y si ya se había usado. */
+function proofChecks(order) {
+  const result = proofCheck(order);
+  const checks = order.paymentProof?.checks ?? [];
+  const mark = (ok) => (ok === true ? icon("circle-check", "mt-0.5 h-4 w-4 flex-none text-leaf") : ok === false ? icon("circle-x", "mt-0.5 h-4 w-4 flex-none text-tomato") : icon("circle-alert", "mt-0.5 h-4 w-4 flex-none text-muted"));
+  return html`<div class="grid gap-2 rounded-[10px] bg-paper p-3" data-proof-checks>
+    <p class="flex items-center gap-2 font-[720] ${result.tone}">
+      ${icon(result.icon, `h-[18px] w-[18px] ${order.paymentProof?.checkStatus === "PENDING" ? "animate-spin" : ""}`)} ${result.headline}
+    </p>
+    ${checks.length > 0
+      ? html`<ul class="grid gap-1.5 text-sm">
+          ${checks.map((check) => html`<li class="flex items-start gap-2">${mark(check.ok)}<span><span class="font-[650]">${check.title}:</span> ${check.detail}</span></li>`)}
+        </ul>`
+      : ""}
+    <p class="text-xs leading-snug text-muted">Pedify lee el comprobante, pero solo tu cuenta confirma que el dinero llegó: míralo en tu app antes de entregar.</p>
+  </div>`;
+}
+
 function isLate(order) {
   const minutes = minutesSince(order.createdAt);
   return (order.status === "PENDING" && minutes >= 10) || minutes >= 60;
@@ -116,7 +143,7 @@ function orderCard(order) {
         ${PAYMENT_LABEL[order.paymentMethod] ?? "Pago"}${order.paidAt
           ? html` · <span class="font-[650] text-leaf">Pagado</span>`
           : order.paymentProof
-            ? html` · <span class="font-[700] text-mustard-deep">Revisar comprobante</span>`
+            ? html` · <span class="font-[700] ${proofCheck(order).tone}">${proofCheck(order).label}</span>`
             : ""}
       </span>
       <span class="num text-lg font-[820]">${formatCOP(order.total)}</span>
@@ -362,7 +389,7 @@ function detailView(order) {
 
         ${order.notes ? html`<p class="rounded-[10px] bg-mustard-soft px-3.5 py-3"><span class="font-[700]">Nota del cliente:</span> ${order.notes}</p>` : ""}
 
-        <section aria-label="Pago" class="grid gap-4 rounded-[12px] border ${order.paymentProof && !order.paidAt ? "border-mustard-deep/40 bg-mustard-soft/40" : "border-line"} p-4">
+        <section aria-label="Pago" class="grid gap-4 rounded-[12px] border ${order.paymentProof && !order.paidAt ? proofCheck(order).box : "border-line"} p-4">
           <div class="flex items-center justify-between gap-4">
             <span>
               <span class="block font-[650]">Pago: ${PAYMENT_LABEL[order.paymentMethod] ?? "—"}${order.paymentProof ? " · por adelantado" : ""}</span>
@@ -392,7 +419,8 @@ function detailView(order) {
                   <span class="block text-sm text-muted">Subido ${dateTimeLabel(order.paymentProof.createdAt)} · debe ser de <span class="num font-[650] text-ink">${formatCOP(order.total)}</span></span>
                 </span>
                 <span class="flex flex-none items-center gap-1 text-sm font-[650] text-ink">Ver ${icon("external-link", "h-4 w-4")}</span>
-              </a>`
+              </a>
+              ${proofChecks(order)}`
             : ""}
         </section>
 
@@ -523,6 +551,17 @@ async function changeStatus(orderId, from, to, reason) {
 
 async function advance(button) {
   const { advance: orderId, from, to } = button.dataset;
+  // Aceptar un pedido cuyo comprobante no coincide: se pide confirmación.
+  const order = state.active.find((item) => item.id === orderId) ?? (state.detail?.id === orderId ? state.detail : null);
+  if (
+    from === "PENDING" &&
+    to !== "CANCELLED" &&
+    order?.paymentProof?.checkStatus === "MISMATCH" &&
+    !order.paidAt &&
+    !window.confirm(`El comprobante del pedido #${order.number} no coincide con el pedido (valor, cuenta, fecha o ya se usó). ¿Aceptarlo de todas formas?`)
+  ) {
+    return;
+  }
   setBusy(button, true);
   try {
     const result = await changeStatus(orderId, from, to);

@@ -14,10 +14,20 @@ import { paymentProofsService } from "./payment-proofs.service.js";
 // ─── /api/v1/store/:slug/payment-proofs — el cliente sube su comprobante antes de pedir (sin sesión) ───
 export const storePaymentProofRoutes = Router({ mergeParams: true });
 
-storePaymentProofRoutes.post("/", proofLimiter, validate({ params: storeOrderParamsSchema }), imageBody, async (req: Request, res: Response) => {
-  const { slug } = req.params as StoreOrderParams;
-  res.status(201).json({ data: await paymentProofsService.upload(slug, req.body as Buffer) });
-});
+/** `?total=` el valor que el cliente espera pagar: se compara con el que se lee en el comprobante. */
+const proofQuerySchema = z.object({ total: z.coerce.number().int().min(0).max(50_000_000).optional() });
+
+storePaymentProofRoutes.post(
+  "/",
+  proofLimiter,
+  validate({ params: storeOrderParamsSchema, query: proofQuerySchema }),
+  imageBody,
+  async (req: Request, res: Response) => {
+    const { slug } = req.params as StoreOrderParams;
+    const { total } = req.query as z.infer<typeof proofQuerySchema>;
+    res.status(201).json({ data: await paymentProofsService.upload(slug, req.body as Buffer, total) });
+  },
+);
 
 // ─── /api/v1/store/:slug/payment-qr/:kind.png — el QR de pago para guardarlo en el celular ───
 const qrParamsSchema = storeOrderParamsSchema.extend({ kind: z.enum(PaymentAccountKind) });

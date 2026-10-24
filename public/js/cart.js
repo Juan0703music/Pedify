@@ -437,11 +437,13 @@ export function initCart({ store, slug, root, orderable = true }) {
 
       <div class="grid gap-2" data-error-anchor="paymentProof">
         ${proof
-          ? html`<div class="flex items-center gap-3 rounded-[12px] border border-leaf/30 bg-leaf-soft p-2.5">
+          ? html`<div class="flex items-center gap-3 rounded-[12px] border ${proof.reading?.matchesTotal === false ? "border-mustard-deep/40 bg-mustard-soft" : "border-leaf/30 bg-leaf-soft"} p-2.5">
               <img src="${proof.url}" alt="Tu comprobante" class="h-16 w-12 flex-none rounded-[6px] border border-line bg-paper object-cover object-top" />
               <div class="min-w-0 flex-1">
                 <p class="flex items-center gap-1.5 font-[720] text-leaf">${icon("circle-check", "h-4 w-4")} Comprobante listo</p>
-                <p class="text-sm text-muted">Se envía con tu pedido.</p>
+                <p class="text-sm text-muted">
+                  ${proof.reading?.matchesTotal ? html`Leímos <span class="num font-[650] text-ink">${formatCOP(proof.reading.amount)}</span>: coincide con tu pedido.` : "Se envía con tu pedido."}
+                </p>
               </div>
               <label class="btn btn-ghost btn-sm relative flex-none cursor-pointer">
                 <input type="file" accept="image/*" class="sr-only" name="paymentProof" data-proof-file aria-label="Cambiar el comprobante" />
@@ -453,10 +455,15 @@ export function initCart({ store, slug, root, orderable = true }) {
                   Tu pedido cambió después de subir el comprobante (era ${formatCOP(proof.total)}). Si no pagaste ${formatCOP(total)}, paga la diferencia y
                   sube el nuevo comprobante.
                 </p>`
-              : ""}`
+              : proof.reading?.matchesTotal === false
+                ? html`<p class="flex items-start gap-2 rounded-[10px] bg-mustard-soft px-3 py-2 text-sm font-[620] text-mustard-deep" role="alert">
+                    ${icon("circle-alert", "mt-0.5 h-4 w-4 flex-none")}
+                    <span>Tu comprobante parece ser de <span class="num">${formatCOP(proof.reading.amount)}</span> y tu pedido es de <span class="num">${formatCOP(total)}</span>. Revisa que sea el correcto; si te equivocaste, súbelo de nuevo. ${business.name} revisará el pago.</span>
+                  </p>`
+                : ""}`
           : html`<label class="btn btn-ink relative min-h-12 w-full cursor-pointer" data-proof-pick>
               <input type="file" accept="image/*" class="sr-only" name="paymentProof" data-proof-file aria-label="Subir el comprobante de pago" />
-              ${icon("upload")} Subir comprobante de pago
+              ${icon("upload")} <span data-proof-label>Subir comprobante de pago</span>
             </label>`}
       </div>
     </section>`;
@@ -482,8 +489,12 @@ export function initCart({ store, slug, root, orderable = true }) {
     const zone = input.closest("label");
     zone?.setAttribute("aria-busy", "true");
     zone?.classList.add("opacity-60", "pointer-events-none");
+    // Pedify lee el comprobante al subirlo (uno o dos segundos) para revisar el valor.
+    const label = zone?.querySelector("[data-proof-label]");
+    if (label) label.textContent = "Revisando tu comprobante…";
+    const total = subtotal() + deliveryFee();
     try {
-      const response = await fetch(`/api/v1/store/${encodeURIComponent(slug)}/payment-proofs`, {
+      const response = await fetch(`/api/v1/store/${encodeURIComponent(slug)}/payment-proofs?total=${total}`, {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": file.type || "application/octet-stream" },
         body: file,
@@ -491,13 +502,18 @@ export function initCart({ store, slug, root, orderable = true }) {
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.error?.message ?? "No pudimos subir el comprobante. Intenta de nuevo.");
       if (proof) URL.revokeObjectURL(proof.url);
-      proof = { id: payload.data.id, url: URL.createObjectURL(file), total: subtotal() + deliveryFee() };
+      proof = { id: payload.data.id, url: URL.createObjectURL(file), total, reading: payload.data.reading };
       clearFieldErrors(form);
       drawPrepay();
-      announce("Comprobante listo. Ya puedes hacer tu pedido.");
+      announce(
+        proof.reading?.matchesTotal === false
+          ? `Tu comprobante parece ser de ${formatCOP(proof.reading.amount)} y tu pedido es de ${formatCOP(total)}. Revisa que sea el correcto.`
+          : "Comprobante listo. Ya puedes hacer tu pedido.",
+      );
     } catch (error) {
       zone?.removeAttribute("aria-busy");
       zone?.classList.remove("opacity-60", "pointer-events-none");
+      if (label) label.textContent = "Subir comprobante de pago";
       const message = error instanceof TypeError ? "Sin conexión. Revisa tu internet y vuelve a subir el comprobante." : error.message;
       showErrors(form, { message, fields: { paymentProof: message } });
     }

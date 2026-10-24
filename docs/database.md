@@ -22,7 +22,7 @@ PostgreSQL con Prisma 7 (`prisma/schema.prisma`). Identificadores UUID v7, fecha
 | `subscription_payments` | Pagos del plan: registrados por el equipo o pagados en línea (`method` WOMPI, sin recorded_by_id) | business_id, plan, amount, months, method, reference, note, period_start, period_end, recorded_by_id |
 | `plan_checkouts` | Cobros del plan en línea con Wompi (su id es la referencia en Wompi) | business_id, plan, months, amount, status (`PENDING`/`APPROVED`/`DECLINED`/`VOIDED`/`ERROR`), transaction_id, payment_method, payment_id (pago aplicado, único), created_by_id |
 | `password_reset_tokens` | Enlaces para restablecer la contraseña | user_id, token_hash (único), expires_at, used_at |
-| `payment_proofs` | Comprobantes de pago por adelantado | business_id, order_id (único; nulo mientras el cliente no envía el pedido), image_key (archivo privado en `private/…`) |
+| `payment_proofs` | Comprobantes de pago por adelantado | business_id, order_id (único; nulo mientras el cliente no envía el pedido), image_key (archivo privado en `private/…`), image_hash (SHA-256 del archivo, para reconocer uno repetido), receipt_text y read_at (lectura automática), reference (referencia leída), check_status (PENDING/VERIFIED/REVIEW/MISMATCH) y checks (detalle de la verificación) |
 | `payment_accounts` | QR y llaves para cobrar | business_id, kind (`NEQUI`/`BRE_B`/`DAVIPLATA`, única por negocio), account_key, holder_name, qr_payload (código leído del QR), qr_image_url/qr_image_key |
 
 `products` y `categories` se usan desde la fase 2; `customers`, `customer_addresses`, `orders`, `order_items` y `order_status_history`, desde la fase 3.

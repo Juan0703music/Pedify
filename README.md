@@ -140,6 +140,12 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - Sin internet, la app muestra una pantalla propia («Se fue el internet») que se recarga sola al volver la conexión.
 - 184 pruebas en total.
 
+### Verificación automática del comprobante de pago
+
+- Cuando el cliente paga por Nequi, Daviplata, Bre-B o transferencia y sube el pantallazo, **Pedify lo lee solo** (OCR con Tesseract en español, dentro del servidor: sin servicios externos ni costos) y revisa que sea un **pago exitoso**, por el **valor exacto** del pedido, a **una de las cuentas del negocio** (celular, llave o nombre del titular), **de ese momento** (hoy, hasta 3 horas antes) y **no usado en otro pedido** (el mismo pantallazo o la misma referencia).
+- El cliente ve al subirlo «Leímos $40.000: coincide con tu pedido» o un aviso si parece de otro valor. En el panel, cada pedido dice **Comprobante verificado**, **Revisar comprobante** o **Comprobante no coincide**, y el detalle muestra cada revisión; aceptar un pedido cuyo comprobante no coincide pide confirmación. El domiciliario ve «Confirma el pago con el negocio» si no coincide.
+- Es una revisión del comprobante: la confirmación definitiva sigue siendo ver el dinero en la cuenta (el panel lo recuerda).
+
 ### Domicilio según la distancia
 
 - En **Configuración → Entrega** el negocio elige **Tarifa fija** (como antes) o **Según la distancia**: marca la ubicación de su negocio en el mapa (o con el GPS) y define rangos (hasta 8) y un valor por **cada km adicional** para llegar a **toda la ciudad, sea cual sea** (o solo hasta los km que elija; tope de 50 km). Valores sugeridos (2026): hasta 2 km $4.000 · 4 km $5.500 · 6 km $7.000 · 8 km $8.500 · cada km adicional $1.000. Una vista previa muestra lo que paga un cliente a 1, 3, 5, 8, 12 y 20 km.

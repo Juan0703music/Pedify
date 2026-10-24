@@ -6,6 +6,7 @@ import { calculateOrder, deliveryReachKm, feeForDistance, parseDeliveryTiers } f
 import { clock } from "../../utils/clock.js";
 import { formatCOP } from "../../utils/currency.js";
 import { AppError, badRequest, conflict, notFound } from "../../utils/errors.js";
+import { logger } from "../../utils/logger.js";
 import { businessesRepository } from "../businesses/businesses.repository.js";
 import { describeNextOpening, getOpeningStatus, parseOpeningHours } from "../businesses/opening-hours.js";
 import { customersService } from "../customers/customers.service.js";
@@ -238,6 +239,11 @@ export const ordersService = {
         if (!proofId) return created;
         return { ...created, paymentProof: await paymentProofsService.claim(tx, business.id, proofId, created.id) };
       });
+
+      // Con el pedido creado, se verifica el comprobante (si la lectura ya terminó; si no, al terminar).
+      if (proofId) {
+        void paymentProofsService.verify(proofId).catch((err: unknown) => logger.error({ err, proofId }, "Error al verificar el comprobante de pago"));
+      }
 
       notifications.orderCreated({
         businessId: business.id,

@@ -84,9 +84,10 @@ describe("Pago por adelantado con QR y comprobante", () => {
     expect(missing.body.error).toMatchObject({ code: "PAYMENT_PROOF_REQUIRED", details: { fields: { paymentProof: expect.any(String) } } });
 
     const proof = (await uploadProof().expect(201)).body.data;
-    expect(proof).toEqual({ id: expect.any(String), createdAt: expect.any(String) });
+    // Una imagen sin texto: no hay valor que mostrarle al cliente (la verificación la marca en el panel).
+    expect(proof).toEqual({ id: expect.any(String), createdAt: expect.any(String), reading: null });
     const created = (await placeOrder({ paymentProofId: proof.id }).expect(201)).body.data.order;
-    expect(created.paymentProof).toEqual({ createdAt: proof.createdAt });
+    expect(created.paymentProof).toEqual({ createdAt: proof.createdAt, checkStatus: "PENDING" });
 
     const reused = await placeOrder({ paymentProofId: proof.id, paymentMethod: "BANK_TRANSFER" }).expect(400);
     expect(reused.body.error.code).toBe("PAYMENT_PROOF_INVALID");
@@ -96,7 +97,7 @@ describe("Pago por adelantado con QR y comprobante", () => {
     expect((await placeOrder({ paymentMethod: "CASH" }).expect(201)).body.data.order.paymentProof).toBeNull();
 
     const list = (await agent.get("/api/v1/orders").expect(200)).body.data.items;
-    expect(list.find((order: { id: string }) => order.id === created.id).paymentProof).toEqual({ createdAt: proof.createdAt });
+    expect(list.find((order: { id: string }) => order.id === created.id).paymentProof).toMatchObject({ createdAt: proof.createdAt });
   });
 
   it("sin cuentas configuradas, Nequi se sigue pagando al recibir y no se aceptan comprobantes", async () => {

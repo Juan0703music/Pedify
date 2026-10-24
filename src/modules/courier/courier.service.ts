@@ -55,7 +55,7 @@ async function findByKey(key: string) {
           paymentMethod: true,
           total: true,
           paidAt: true,
-          paymentProof: { select: { createdAt: true } },
+          paymentProof: { select: { createdAt: true, checkStatus: true } },
           notes: true,
           business: { select: { name: true, phone: true } },
           items: { orderBy: { id: "asc" }, select: { productName: true, quantity: true } },
@@ -112,6 +112,8 @@ export const courierService = {
       paid: Boolean(order.paidAt),
       // El cliente pagó por adelantado y subió el comprobante (el negocio lo revisa).
       paymentProofSent: Boolean(order.paymentProof),
+      /** Verificación automática del comprobante: PENDING, VERIFIED, REVIEW o MISMATCH. */
+      paymentProofStatus: order.paymentProof?.checkStatus ?? null,
       position: tracking.lat !== null && tracking.lng !== null ? { lat: tracking.lat, lng: tracking.lng, updatedAt: tracking.updatedAt } : null,
       // QR y llaves para que el cliente pague por transferencia al recibir (la sugerida, según su método).
       paymentAccounts: await paymentAccountsService.list(tracking.businessId),

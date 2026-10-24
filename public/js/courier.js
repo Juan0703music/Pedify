@@ -108,11 +108,19 @@ function chargeCard(order) {
       <p class="flex items-center gap-2 font-[760]">${icon("circle-check")} Ya está pagado: no cobres.</p>
     </section>`;
   }
+  if (order.paymentProofSent && order.paymentProofStatus === "MISMATCH") {
+    // Pedify revisó el comprobante y algo no coincide (valor, cuenta, fecha o ya usado en otro pedido).
+    return html`<section class="rounded-[20px] bg-tomato-soft p-4 text-tomato">
+      <p class="flex items-center gap-2 font-[760]">${icon("circle-alert")} Confirma el pago con el negocio</p>
+      <p class="mt-1 text-sm text-ink">El comprobante que envió el cliente no coincide con el pedido. Antes de entregar, pregúntale al negocio; si no pagó, cobra <span class="num font-[700]">${formatCOP(order.total)}</span>.</p>
+    </section>`;
+  }
   if (order.paymentProofSent) {
     // Pagó al pedir y envió el comprobante: el negocio lo revisa antes de despacharlo.
+    const verified = order.paymentProofStatus === "VERIFIED";
     return html`<section class="rounded-[20px] bg-leaf-soft p-4 text-leaf">
       <p class="flex items-center gap-2 font-[760]">${icon("circle-check")} Pagó por adelantado: no cobres.</p>
-      <p class="mt-1 text-sm">El cliente pagó ${PAYMENT[order.paymentMethod] ?? ""} al pedir y envió el comprobante. Si el negocio te dice otra cosa, cobra <span class="num font-[700]">${formatCOP(order.total)}</span>.</p>
+      <p class="mt-1 text-sm">El cliente pagó ${PAYMENT[order.paymentMethod] ?? ""} al pedir y envió el comprobante${verified ? ", y Pedify lo verificó" : ""}. Si el negocio te dice otra cosa, cobra <span class="num font-[700]">${formatCOP(order.total)}</span>.</p>
     </section>`;
   }
   const accounts = order.paymentAccounts ?? [];

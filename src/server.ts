@@ -4,6 +4,7 @@ import { prisma } from "./config/database.js";
 import { attachSocket } from "./config/socket.js";
 import { env, environmentName, isProduction } from "./config/env.js";
 import { productionWarnings } from "./config/readiness.js";
+import { receiptReader } from "./services/receipt-reader.service.js";
 import { logger } from "./utils/logger.js";
 
 if (isProduction) {
@@ -39,6 +40,7 @@ async function shutdown(signal: string) {
   await live.close();
   server.close();
   server.closeIdleConnections();
+  await receiptReader.close();
   await prisma.$disconnect();
   process.exit(0);
 }

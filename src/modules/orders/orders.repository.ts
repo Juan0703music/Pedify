@@ -25,8 +25,8 @@ export const orderSelect = {
   deliveryLng: true,
   deliveryDistanceM: true,
   createdAt: true,
-  /** Comprobante del pago por adelantado (la imagen se pide aparte). */
-  paymentProof: { select: { createdAt: true } },
+  /** Comprobante del pago por adelantado (la imagen se pide aparte) y el resultado de su verificación. */
+  paymentProof: { select: { createdAt: true, checkStatus: true } },
   items: {
     orderBy: { id: "asc" },
     select: { productId: true, productName: true, unitPrice: true, quantity: true, subtotal: true },
@@ -44,6 +44,8 @@ export const orderDetailSelect = {
     select: { fromStatus: true, toStatus: true, note: true, createdAt: true, changedBy: { select: { name: true } } },
   },
   courier: { select: { lat: true, lng: true, accuracy: true, updatedAt: true } },
+  /** En el detalle, también lo que revisó la verificación automática del comprobante. */
+  paymentProof: { select: { createdAt: true, checkStatus: true, checks: true } },
 } as const;
 
 export interface HistoryFilters {
