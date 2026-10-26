@@ -96,6 +96,19 @@ function appearance() {
   </section>`;
 }
 
+/**
+ * Mientras Pedify corre en este computador, los QR llevan su dirección en el Wi-Fi (192.168…): el celular
+ * tiene que estar conectado a esa misma red para abrirlos. Ya publicado, el QR lleva el dominio de Pedify.
+ */
+function localNetworkHint() {
+  const { host, hostname } = new URL(state.business.storeUrl);
+  if (!/^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(hostname)) return "";
+  return html`<p class="flex items-start gap-2 rounded-[10px] bg-mustard-soft px-3.5 py-3 text-sm text-mustard-deep">
+    ${icon("wifi", "mt-0.5 h-4 w-4 flex-none")}
+    <span>Los QR abren la tienda desde este computador (<span class="num">${host}</span>): para escanearlos, conecta el celular al mismo Wi-Fi.</span>
+  </p>`;
+}
+
 function share() {
   const { business } = state;
   const url = new URL(business.storeUrl);
@@ -137,6 +150,7 @@ function share() {
           </div>
         </div>
       </div>
+      ${localNetworkHint()}
     </div>
   </section>`;
 }
@@ -197,6 +211,7 @@ function tables() {
           <p class="text-sm text-muted">Cada QR lleva su número de mesa. La hoja trae también un QR general para el mostrador: con ese, el cliente escribe su mesa al pedir.</p>
         </div>
       </div>
+      ${localNetworkHint()}
     </div>
   </section>`;
 }

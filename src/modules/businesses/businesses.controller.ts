@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import QRCode from "qrcode";
-import { env } from "../../config/env.js";
+import { publicAppUrl } from "../../config/public-url.js";
 import { getAuth } from "../../middlewares/authenticate.js";
 import { getTenant } from "../../middlewares/authorize.js";
 import { authService } from "../auth/auth.service.js";
@@ -15,8 +15,8 @@ import type {
   UpdateSettingsInput,
 } from "./businesses.schemas.js";
 
-/** Enlace público de la tienda: <APP_URL>/tienda/<slug>. */
-export const storeUrl = (slug: string) => new URL(`/tienda/${slug}`, env.APP_URL).toString();
+/** Enlace público de la tienda: <APP_URL>/tienda/<slug> (en desarrollo, con la IP del computador en el Wi-Fi). */
+export const storeUrl = (slug: string) => new URL(`/tienda/${slug}`, publicAppUrl()).toString();
 
 const withStoreUrl = <T extends { slug: string }>(business: T) => ({ ...business, storeUrl: storeUrl(business.slug) });
 

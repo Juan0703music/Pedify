@@ -360,7 +360,7 @@ function inStoreVisit(store) {
 
 /** Franja de bienvenida para quien pide desde la mesa. */
 function tableBanner(visit, store) {
-  return html`<section class="bg-mustard text-ink" aria-label="Pedido desde la mesa">
+  return html`<section class="bg-mustard text-ink" aria-label="Pedido desde la mesa" data-table-banner>
     <div class="mx-auto flex max-w-[72rem] items-center gap-3 px-4 py-3 sm:px-8">
       <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-ink text-mustard">${icon("utensils", "h-5 w-5")}</span>
       <p class="min-w-0 text-[0.9375rem] leading-snug">
@@ -601,6 +601,9 @@ try {
   const store = await loadStore();
   const visit = inStoreVisit(store);
   render(root, page(store, visit));
+  // Recién escaneado el QR de la mesa: directo a los productos, con la franja de la mesa arriba.
+  const params = new URLSearchParams(location.search);
+  if (visit && (params.has("mesa") || params.has("local"))) root.querySelector("[data-table-banner]").scrollIntoView({ block: "start" });
   trackCategories();
   bindHours();
   // Con la tienda cerrada igual se inicia: muestra el seguimiento del último pedido.

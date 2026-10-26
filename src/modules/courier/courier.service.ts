@@ -1,8 +1,8 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import QRCode from "qrcode";
 import { prisma } from "../../config/database.js";
-import { env } from "../../config/env.js";
 import { mapConfig } from "../../config/map.js";
+import { publicAppUrl } from "../../config/public-url.js";
 import { notifications } from "../../services/notification.service.js";
 import type { TenantContext } from "../../types/common.js";
 import { conflict, notFound } from "../../utils/errors.js";
@@ -25,7 +25,7 @@ const linkNotFound = () => notFound("Este enlace ya no funciona: el pedido se en
 
 export function courierUrl(token: string) {
   // La clave va después de "#": el navegador no la envía al servidor ni queda en registros.
-  return new URL(`/domicilio#${token}`, env.APP_URL).toString();
+  return new URL(`/domicilio#${token}`, publicAppUrl()).toString();
 }
 
 /** Busca el seguimiento por la clave y lo valida (vigente y con el pedido aún activo). */

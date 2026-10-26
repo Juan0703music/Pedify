@@ -33,6 +33,7 @@ import { metrics } from "./services/metrics.service.js";
 import { imageOrigin, PRIVATE_PREFIX } from "./services/storage.service.js";
 import { publicDir, sendPage } from "./utils/pages.js";
 import { mapConfig, mapTileOrigin } from "./config/map.js";
+import { publicAppUrl } from "./config/public-url.js";
 
 // Mensajes de validación de Zod en español por defecto.
 z.config(z.locales.es());
@@ -68,7 +69,7 @@ const PANEL_PAGES: Record<string, string> = {
 
 const version = (JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string }).version;
 
-let appQr: string | undefined;
+let appQr: { url: string; svg: string } | undefined;
 
 /**
  * robots.txt: el entorno de pruebas no se indexa; en producción solo las tiendas y las páginas públicas.
@@ -213,8 +214,11 @@ export function createApp() {
   });
   // Código QR de /app: desde el computador, la persona lo escanea para instalar la app en su celular.
   app.get("/app/qr.svg", async (_req, res) => {
-    appQr ??= await QRCode.toString(`${env.APP_URL}/app`, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#17161c", light: "#ffffff" } });
-    res.set("Cache-Control", "public, max-age=86400").type("image/svg+xml").send(appQr);
+    const url = `${publicAppUrl()}/app`;
+    if (appQr?.url !== url) {
+      appQr = { url, svg: await QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#17161c", light: "#ffffff" } }) };
+    }
+    res.set("Cache-Control", "public, max-age=86400").type("image/svg+xml").send(appQr.svg);
   });
 
   // Tienda pública de cada negocio (las etiquetas para compartir se generan en el servidor).
