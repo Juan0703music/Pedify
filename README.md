@@ -1,6 +1,6 @@
 # Pedify
 
-Plataforma SaaS para que restaurantes, salchipaperías, pizzerías, reposterías y otros negocios de comida administren su menú, reciban pedidos ordenados por WhatsApp y consulten sus ventas desde un panel.
+Plataforma SaaS para que restaurantes, salchipaperías, pizzerías, hamburgueserías y otros negocios de comida administren su menú, reciban pedidos ordenados por WhatsApp y consulten sus ventas desde un panel.
 
 Arquitectura: **monolito modular** con Node.js + Express + TypeScript, PostgreSQL + Prisma, HTML + JavaScript + Tailwind CSS (compilado), Socket.IO, Zod, Vitest + Supertest y Docker. Ver [`docs/architecture.md`](docs/architecture.md).
 
