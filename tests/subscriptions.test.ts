@@ -37,7 +37,7 @@ describe("Suscripción del negocio", () => {
     expect(plan.body.data).toMatchObject({
       status: "TRIAL",
       usage: { products: 0, members: 1 },
-      limits: { products: 100, members: 6 },
+      limits: { products: 100, members: 15 },
       support: { whatsapp: "573009998877" },
     });
     expect(plan.body.data.plans.map((item: { code: string }) => item.code)).toEqual(["EMPRENDEDOR", "NEGOCIO", "EMPRESA"]);
