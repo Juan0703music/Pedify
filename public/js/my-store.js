@@ -5,7 +5,16 @@ import { initPanel, renderNoBusiness } from "./dashboard.js";
 import { onLive } from "./notifications.js";
 import { checkImageFile, copyText, html, icon, render, setBusy, shrinkPhoto, toast } from "./ui.js";
 
-const state = { business: null, isOwner: false };
+const state = { business: null, isOwner: false, dineInEnabled: true };
+/** Cuántas mesas tiene el negocio (se recuerda en este dispositivo para imprimir los QR). */
+const TABLES_KEY = "pedify:mesas";
+const tablesCount = () => {
+  try {
+    return Math.min(60, Math.max(1, Number(localStorage.getItem(`${TABLES_KEY}:${state.business.id}`)) || 10));
+  } catch {
+    return 10;
+  }
+};
 let main;
 
 const IMAGES = {
@@ -156,6 +165,42 @@ function preview() {
   </aside>`;
 }
 
+/** QR de las mesas: el cliente escanea, pide desde el celular y se lo llevan a la mesa. */
+function tables() {
+  const count = tablesCount();
+  return html`<section id="mesas" class="panel scroll-mt-24 overflow-hidden" aria-labelledby="tables-title">
+    <header class="border-b border-line px-4 py-4 sm:px-6">
+      <h2 id="tables-title" class="text-lg font-[740]">Pedidos desde la mesa</h2>
+      <p class="mt-0.5 text-sm text-muted">Pon un QR en cada mesa: el cliente lo escanea, pide desde su celular y le llevas el pedido a la mesa.</p>
+    </header>
+    <div class="grid gap-5 p-4 sm:p-6">
+      ${state.dineInEnabled
+        ? ""
+        : html`<p class="flex items-start gap-2 rounded-[10px] bg-mustard-soft px-3.5 py-3 text-sm text-mustard-deep">
+            ${icon("circle-alert", "mt-0.5 h-4 w-4 flex-none")}
+            <span>Está apagado. Actívalo en <a class="font-[700] underline" href="/panel/configuracion#entrega">Configuración → Entrega → Comer en el local</a> para que los QR de las mesas funcionen.</span>
+          </p>`}
+      <div class="grid items-center gap-5 sm:grid-cols-[auto_minmax(0,1fr)]">
+        <figure class="grid w-40 justify-items-center gap-1 rounded-[14px] border-2 border-ink bg-paper p-3 text-center">
+          <span class="text-xs font-[700] tracking-wide text-muted uppercase">Mesa</span>
+          <span class="display -mt-1 text-[2.25rem] leading-none">1</span>
+          <img src="/api/v1/businesses/current/qr?format=svg&mesa=1" alt="Ejemplo: código QR de la mesa 1" class="h-28 w-28" width="112" height="112" />
+        </figure>
+        <div class="grid gap-3">
+          <div class="flex flex-wrap items-end gap-3">
+            <div class="field w-32">
+              <label class="label" for="t-count">Mesas</label>
+              <input class="input num" id="t-count" type="number" inputmode="numeric" min="1" max="60" value="${count}" data-tables-count />
+            </div>
+            <a class="btn btn-ink" href="/panel/tienda/mesas?n=${count}" target="_blank" rel="noopener" data-print-tables>${icon("qr-code")} Imprimir los QR de las mesas</a>
+          </div>
+          <p class="text-sm text-muted">Cada QR lleva su número de mesa. La hoja trae también un QR general para el mostrador: con ese, el cliente escribe su mesa al pedir.</p>
+        </div>
+      </div>
+    </div>
+  </section>`;
+}
+
 function page() {
   return html`<div class="grid grid-cols-[minmax(0,1fr)] gap-6 lg:gap-8">
     <header class="flex flex-wrap items-end justify-between gap-4">
@@ -166,7 +211,7 @@ function page() {
       <a class="btn btn-ghost" href="${state.business.storeUrl}" target="_blank" rel="noopener">${icon("external-link")} Abrir mi tienda</a>
     </header>
     <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_292px] lg:gap-10">
-      <div class="grid min-w-0 gap-6"><div data-appearance-slot>${appearance()}</div> ${share()}</div>
+      <div class="grid min-w-0 gap-6"><div data-appearance-slot>${appearance()}</div> ${share()} ${tables()}</div>
       ${preview()}
     </div>
   </div>`;
@@ -233,6 +278,19 @@ async function removeImage(kind, button) {
 }
 
 function bindPage() {
+  // Cantidad de mesas: actualiza el enlace de la hoja para imprimir y se recuerda.
+  main.addEventListener("input", (event) => {
+    const input = event.target.closest("[data-tables-count]");
+    if (!input) return;
+    const count = Math.min(60, Math.max(1, Math.trunc(Number(input.value)) || 1));
+    main.querySelector("[data-print-tables]").href = `/panel/tienda/mesas?n=${count}`;
+    try {
+      localStorage.setItem(`${TABLES_KEY}:${state.business.id}`, String(count));
+    } catch {
+      // Sin almacenamiento: vale para esta visita.
+    }
+  });
+
   main.addEventListener("change", (event) => {
     const input = event.target.closest("[data-file]");
     if (!input?.files?.[0]) return;
@@ -303,7 +361,9 @@ if (context) {
   } else {
     state.business = context.business;
     state.isOwner = context.business.role === "OWNER";
+    state.dineInEnabled = (await api("/businesses/current/settings").catch(() => null))?.dineInEnabled ?? true;
     render(main, page());
+    if (location.hash) main.querySelector(location.hash)?.scrollIntoView();
     bindPage();
     followOtherDevices();
   }

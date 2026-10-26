@@ -51,7 +51,11 @@ function newKey() {
 
 // ───────────────────────────── Carrito ─────────────────────────────
 
-export function initCart({ store, slug, root, orderable = true }) {
+/**
+ * @param {{ store: any, slug: string, root: HTMLElement, orderable?: boolean, inStore?: { table: string | null } | null }} options
+ * `inStore`: el cliente está en el local (escaneó el QR de una mesa o el general): puede pedir para comer ahí.
+ */
+export function initCart({ store, slug, root, orderable = true, inStore = null }) {
   const keys = { cart: `pedify:cart:${slug}`, order: `pedify:order:${slug}`, customer: "pedify:customer" };
   save(`pedify:pending:${slug}`, null); // aviso de "envíalo por WhatsApp" de versiones anteriores
   const products = new Map(store.categories.flatMap((category) => category.products).map((product) => [product.id, product]));
@@ -67,10 +71,18 @@ export function initCart({ store, slug, root, orderable = true }) {
   if (byDistance) pricing.maxKm = reachKm;
   const farthestKm = byDistance ? `${formatKm(reachKm)} km` : null;
   const fixedDetail = settings.deliveryFee > 0 ? `+ ${formatCOP(settings.deliveryFee)}` : "Gratis";
-  const deliveryModes = [
-    settings.deliveryEnabled && { value: "DELIVERY", label: "Domicilio", detail: byDistance ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))}` : fixedDetail },
-    settings.pickupEnabled && { value: "PICKUP", label: "Recoger en el local", detail: "Sin costo" },
-  ].filter(Boolean);
+  // En el local (QR de la mesa): comer ahí o para llevar; si no, domicilio o recoger.
+  const deliveryModes = (
+    inStore
+      ? [
+          { value: "DINE_IN", label: "Comer aquí", detail: inStore.table ? `Mesa ${inStore.table}` : "En el local" },
+          settings.pickupEnabled && { value: "PICKUP", label: "Para llevar", detail: "Sin costo" },
+        ]
+      : [
+          settings.deliveryEnabled && { value: "DELIVERY", label: "Domicilio", detail: byDistance ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))}` : fixedDetail },
+          settings.pickupEnabled && { value: "PICKUP", label: "Recoger en el local", detail: "Sin costo" },
+        ]
+  ).filter(Boolean);
 
   /** productId → cantidad, en el orden en que se agregaron. */
   const cart = new Map();
@@ -92,6 +104,7 @@ export function initCart({ store, slug, root, orderable = true }) {
     paymentMethod: settings.paymentMethods.length === 1 ? settings.paymentMethods[0] : "",
     notes: "",
     location: null,
+    tableNumber: "",
     ...(load(keys.customer) ?? {}),
     deliveryType: "",
   };
@@ -127,7 +140,8 @@ export function initCart({ store, slug, root, orderable = true }) {
     if (customer.deliveryType !== "DELIVERY") return 0;
     return byDistance ? (distanceQuote()?.fee ?? 0) : settings.deliveryFee;
   };
-  const missingForMinimum = () => Math.max(0, settings.minimumOrder - subtotal());
+  // El pedido mínimo no aplica para comer en el local.
+  const missingForMinimum = () => (customer.deliveryType === "DINE_IN" ? 0 : Math.max(0, settings.minimumOrder - subtotal()));
 
   function persistCart() {
     save(keys.cart, cart.size > 0 ? { items: [...cart], updatedAt: Date.now() } : null);
@@ -521,6 +535,7 @@ export function initCart({ store, slug, root, orderable = true }) {
 
   function checkoutView() {
     const isDelivery = customer.deliveryType === "DELIVERY";
+    const isDineIn = customer.deliveryType === "DINE_IN";
     const missing = missingForMinimum();
     const empty = cart.size === 0;
     return html`<form class="flex min-h-0 flex-auto flex-col" data-checkout novalidate>
@@ -547,8 +562,8 @@ export function initCart({ store, slug, root, orderable = true }) {
                       </div>
                     </fieldset>`
                   : html`<p class="flex items-center gap-2 rounded-[10px] bg-ground px-3.5 py-3 text-[0.9375rem]">
-                      ${icon(isDelivery ? "bike" : "shopping-bag")} <span class="font-[650]">${deliveryModes[0]?.label}</span>
-                      <span class="text-muted">· ${isDelivery ? "este negocio solo hace domicilios" : "este negocio no hace domicilios"}</span>
+                      ${icon(isDineIn ? "utensils" : isDelivery ? "bike" : "shopping-bag")} <span class="font-[650]">${deliveryModes[0]?.label}</span>
+                      <span class="text-muted">· ${isDineIn ? deliveryModes[0].detail : isDelivery ? "este negocio solo hace domicilios" : "este negocio no hace domicilios"}</span>
                     </p>`}
 
                 <fieldset class="grid gap-4">
@@ -574,7 +589,16 @@ export function initCart({ store, slug, root, orderable = true }) {
                           <input class="input" id="c-references" name="references" value="${customer.references}" placeholder="Casa azul, frente al parque" maxlength="160" />
                         </div>
                         <div class="grid gap-2" data-location-field>${locationField()}</div>`
-                    : html`<p class="hint">Recoges en: ${[business.address, business.city].filter(Boolean).join(", ") || "el local del negocio"}.</p>`}
+                    : isDineIn
+                      ? inStore?.table
+                        ? html`<p class="flex items-center gap-2 rounded-[10px] bg-mustard-soft px-3.5 py-3 text-[0.9375rem] text-mustard-deep">
+                            ${icon("utensils", "h-4 w-4 flex-none")}<span>Te lo llevamos a la <strong class="font-[760]">mesa ${inStore.table}</strong>.</span>
+                          </p>`
+                        : html`<div class="field max-w-[14rem]">
+                            <label class="label" for="c-table">¿En qué mesa estás? <span class="font-normal text-muted">(opcional)</span></label>
+                            <input class="input" id="c-table" name="tableNumber" value="${customer.tableNumber}" placeholder="Ej.: 4" maxlength="20" autocomplete="off" />
+                          </div>`
+                      : html`<p class="hint">Recoges en: ${[business.address, business.city].filter(Boolean).join(", ") || "el local del negocio"}.</p>`}
                 </fieldset>
 
                 <fieldset>
@@ -622,6 +646,7 @@ export function initCart({ store, slug, root, orderable = true }) {
   function statusCopy(status, deliveryType) {
     const name = business.name;
     const delivery = deliveryType === "DELIVERY";
+    const dineIn = deliveryType === "DINE_IN";
     return (
       {
         PENDING: { icon: "bell-ring", short: "Enviado", title: "¡Pedido enviado!", text: `${name} ya lo recibió. Espera a que lo acepte.` },
@@ -629,9 +654,11 @@ export function initCart({ store, slug, root, orderable = true }) {
         PREPARING: { icon: "chef-hat", short: "En preparación", title: "Lo están preparando", text: `${name} aceptó tu pedido y ya está en la cocina.` },
         READY: delivery
           ? { icon: "circle-check", short: "Listo", title: "¡Tu pedido está listo!", text: "En un momento sale con el domiciliario." }
-          : { icon: "circle-check", short: "Listo para recoger", title: "¡Tu pedido está listo!", text: "Ya puedes pasar a recogerlo." },
+          : dineIn
+            ? { icon: "circle-check", short: "Listo", title: "¡Tu pedido está listo!", text: "En un momento te lo llevan a la mesa." }
+            : { icon: "circle-check", short: "Listo para recoger", title: "¡Tu pedido está listo!", text: "Ya puedes pasar a recogerlo." },
         OUT_FOR_DELIVERY: { icon: "bike", short: "En camino", title: "Va en camino", text: "El domiciliario ya salió con tu pedido." },
-        DELIVERED: { icon: "utensils", short: "Entregado", title: "¡Buen provecho!", text: "Tu pedido fue entregado." },
+        DELIVERED: { icon: "utensils", short: dineIn ? "Servido" : "Entregado", title: "¡Buen provecho!", text: dineIn ? "Tu pedido ya está en la mesa." : "Tu pedido fue entregado." },
         CANCELLED: { icon: "circle-x", short: "Cancelado", title: "El negocio canceló el pedido", text: "Si tienes dudas, comunícate con el negocio." },
       }[status] ?? { icon: "receipt", short: status, title: status, text: "" }
     );
@@ -640,13 +667,14 @@ export function initCart({ store, slug, root, orderable = true }) {
   /** Pasos del pedido con la hora en que ocurrió cada uno. */
   function trackingSteps(order) {
     const delivery = order.deliveryType === "DELIVERY";
+    const dineIn = order.deliveryType === "DINE_IN";
     const at = (statuses) => order.history.find((entry) => statuses.includes(entry.status))?.at;
     const steps = [
       { label: "Recibido", at: at(["PENDING"]) },
       { label: "Aceptado y en preparación", at: at(["CONFIRMED", "PREPARING"]) },
-      { label: delivery ? "Listo" : "Listo para recoger", at: at(["READY"]) },
+      { label: delivery || dineIn ? "Listo" : "Listo para recoger", at: at(["READY"]) },
       ...(delivery ? [{ label: "En camino", at: at(["OUT_FOR_DELIVERY"]) }] : []),
-      { label: "Entregado", at: at(["DELIVERED"]) },
+      { label: dineIn ? (order.tableNumber ? `Servido en la mesa ${order.tableNumber}` : "Servido en la mesa") : "Entregado", at: at(["DELIVERED"]) },
     ];
     const time = (value) => new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit", timeZone: settings.timezone }).format(new Date(value));
     const current = steps.findLastIndex((step) => step.at);
@@ -936,6 +964,7 @@ export function initCart({ store, slug, root, orderable = true }) {
     customer.phone = value("phone");
     if (form.elements.address) customer.address = value("address");
     if (form.elements.references) customer.references = value("references");
+    if (form.elements.tableNumber) customer.tableNumber = value("tableNumber");
     customer.notes = value("notes");
     const delivery = form.querySelector('[name="deliveryType"]:checked');
     if (delivery) customer.deliveryType = delivery.value;
@@ -976,6 +1005,7 @@ export function initCart({ store, slug, root, orderable = true }) {
       name: customer.name,
       phone: customer.phone,
       deliveryType: customer.deliveryType,
+      tableNumber: customer.deliveryType === "DINE_IN" ? (inStore?.table ?? customer.tableNumber) || undefined : undefined,
       address: isDelivery ? customer.address : "",
       references: isDelivery ? customer.references : "",
       paymentMethod: customer.paymentMethod || undefined,

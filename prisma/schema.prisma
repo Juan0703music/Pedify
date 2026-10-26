@@ -39,6 +39,7 @@ enum OrderStatus {
 enum DeliveryType {
   DELIVERY
   PICKUP
+  DINE_IN // para comer en el local: el cliente pide desde su mesa escaneando el QR
 }
 
 // Planes de Pedify (el detalle de precios y límites está en src/modules/subscriptions/plans.ts).
@@ -220,6 +221,8 @@ model BusinessSettings {
   locationLng        Float?          @map("location_lng")
   deliveryArea       String?         @map("delivery_area")
   pickupEnabled      Boolean         @default(true) @map("pickup_enabled")
+  // Pedidos desde la mesa: el cliente escanea el QR del local y pide para comer ahí.
+  dineInEnabled      Boolean         @default(true) @map("dine_in_enabled")
   minimumOrder       Int             @default(0) @map("minimum_order")
   paymentMethods     PaymentMethod[] @default([CASH]) @map("payment_methods")
   salesPolicy        SalesPolicy     @default(ACCEPTED) @map("sales_policy")
@@ -390,6 +393,8 @@ model Order {
   customerPhone     String         @map("customer_phone")
   deliveryAddress   String?        @map("delivery_address")
   addressReferences String?        @map("address_references")
+  /// Mesa del cliente cuando come en el local (la del QR que escaneó o la que escribió).
+  tableNumber       String?        @map("table_number")
   notes             String?
   paymentMethod     PaymentMethod? @map("payment_method")
   // Valores calculados en el backend, nunca tomados del navegador.

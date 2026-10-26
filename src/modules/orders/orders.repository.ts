@@ -9,6 +9,7 @@ export const orderSelect = {
   number: true,
   status: true,
   deliveryType: true,
+  tableNumber: true,
   customerName: true,
   customerPhone: true,
   deliveryAddress: true,
@@ -161,6 +162,7 @@ export const ordersRepository = {
       customerPhone: string;
       deliveryAddress: string | null;
       addressReferences: string | null;
+      tableNumber: string | null;
       deliveryLat: number | null;
       deliveryLng: number | null;
       deliveryDistanceM: number | null;
@@ -197,6 +199,7 @@ export const ordersRepository = {
         number: true,
         status: true,
         deliveryType: true,
+        tableNumber: true,
         subtotal: true,
         deliveryFee: true,
         discount: true,

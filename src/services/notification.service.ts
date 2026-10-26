@@ -13,7 +13,9 @@ export interface OrderCreatedEvent {
   number: number;
   total: number;
   customerName: string;
-  deliveryType: "DELIVERY" | "PICKUP";
+  deliveryType: "DELIVERY" | "PICKUP" | "DINE_IN";
+  /** Mesa, cuando el cliente come en el local. */
+  tableNumber: string | null;
   createdAt: Date;
 }
 

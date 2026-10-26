@@ -34,6 +34,9 @@ const sendWithWebPush: Transport = (subscription, payload) =>
 
 let listening = false;
 
+/** Cómo recibe el cliente el pedido, en el aviso del celular. */
+const PUSH_DELIVERY_LABEL = { DELIVERY: "Domicilio", PICKUP: "Para recoger", DINE_IN: "En la mesa" } as const;
+
 export const pushService = {
   transport: sendWithWebPush,
 
@@ -91,7 +94,7 @@ export const pushService = {
       const firstName = event.customerName.trim().split(/\s+/)[0] ?? event.customerName;
       const message: PushMessage = {
         title: `Nuevo pedido #${event.number}`,
-        body: `${firstName} · ${event.deliveryType === "DELIVERY" ? "Domicilio" : "Para recoger"} · ${formatCOP(event.total)}`,
+        body: `${firstName} · ${PUSH_DELIVERY_LABEL[event.deliveryType]}${event.tableNumber ? ` ${event.tableNumber}` : ""} · ${formatCOP(event.total)}`,
         url: `/panel/pedidos?pedido=${event.orderId}`,
         tag: `pedido-${event.orderId}`,
       };

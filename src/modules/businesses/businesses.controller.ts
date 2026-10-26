@@ -58,15 +58,18 @@ export const businessesController = {
     };
   },
 
-  /** Código QR del enlace de la tienda (para imprimir en el mostrador, mesas o volantes). */
+  /**
+   * Código QR del enlace de la tienda (para imprimir en el mostrador, mesas o volantes). Con `mesa`,
+   * el de esa mesa (?mesa=4: la tienda abre para pedir y comer ahí); con `local`, el general del local.
+   */
   async qr(req: Request, res: Response) {
-    const { format, download } = req.query as unknown as QrQuery;
+    const { format, download, mesa, local } = req.query as unknown as QrQuery;
     const business = await businessesService.getCurrent(getTenant(req));
-    const url = storeUrl(business.slug);
+    const url = mesa ? `${storeUrl(business.slug)}?mesa=${encodeURIComponent(mesa)}` : local ? `${storeUrl(business.slug)}?local=1` : storeUrl(business.slug);
     const color = { dark: "#17161cff", light: "#ffffffff" };
 
     res.set("Cache-Control", "private, no-cache");
-    if (download) res.attachment(`qr-${business.slug}.${format}`);
+    if (download) res.attachment(`qr-${business.slug}${mesa ? `-mesa-${mesa.replace(/[^\w-]/g, "")}` : local ? "-local" : ""}.${format}`);
     if (format === "png") {
       res.type("png").send(await QRCode.toBuffer(url, { type: "png", width: 1024, margin: 2, errorCorrectionLevel: "M", color }));
     } else {

@@ -338,8 +338,41 @@ function footer(store) {
   </footer>`;
 }
 
-function page(store) {
-  return html`${hero(store)} ${facts(store)}
+/**
+ * Cliente en el local: llegó por el QR de una mesa (?mesa=4) o el general del local (?local=1).
+ * Se recuerda en esta pestaña por si recarga la página. null si pide desde fuera del local.
+ */
+function inStoreVisit(store) {
+  if (!store.settings.dineInEnabled) return null;
+  const key = `pedify:mesa:${slug}`;
+  const params = new URLSearchParams(location.search);
+  let visit = null;
+  if (params.has("mesa")) visit = { table: params.get("mesa").trim().slice(0, 20) || null };
+  else if (params.has("local")) visit = { table: null };
+  try {
+    if (visit) sessionStorage.setItem(key, JSON.stringify(visit));
+    else visit = JSON.parse(sessionStorage.getItem(key) ?? "null");
+  } catch {
+    // Sin almacenamiento: vale mientras la página siga abierta.
+  }
+  return visit;
+}
+
+/** Franja de bienvenida para quien pide desde la mesa. */
+function tableBanner(visit, store) {
+  return html`<section class="bg-mustard text-ink" aria-label="Pedido desde la mesa">
+    <div class="mx-auto flex max-w-[72rem] items-center gap-3 px-4 py-3 sm:px-8">
+      <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-ink text-mustard">${icon("utensils", "h-5 w-5")}</span>
+      <p class="min-w-0 text-[0.9375rem] leading-snug">
+        <span class="font-[800]">${visit.table ? `Estás en la mesa ${visit.table}` : `Estás en ${store.business.name}`}.</span>
+        Pide desde tu celular y te lo llevamos a la mesa.
+      </p>
+    </div>
+  </section>`;
+}
+
+function page(store, visit) {
+  return html`${hero(store)} ${visit ? tableBanner(visit, store) : ""} ${facts(store)}
     <main id="menu" class="scroll-mt-4">${menu(store)}</main>
     ${footer(store)}
     <dialog id="product-detail" class="sheet sheet-night" aria-labelledby="detail-title"></dialog>`;
@@ -566,11 +599,12 @@ function bindDetail(store, cart) {
 
 try {
   const store = await loadStore();
-  render(root, page(store));
+  const visit = inStoreVisit(store);
+  render(root, page(store, visit));
   trackCategories();
   bindHours();
   // Con la tienda cerrada igual se inicia: muestra el seguimiento del último pedido.
-  const cart = initCart({ store, slug, root, orderable: canOrder(store) });
+  const cart = initCart({ store, slug, root, orderable: canOrder(store), inStore: visit });
   bindDetail(store, cart);
   bindFlights();
 } catch (error) {

@@ -71,7 +71,7 @@ Todas requieren sesión. Las rutas `/current…` actúan sobre el **negocio acti
 | GET | `/businesses/current` | miembro | — |
 | PATCH | `/businesses/current` | OWNER | `name, phone, slug, description, city, address` (parcial) |
 | GET | `/businesses/current/settings` | miembro | — |
-| PATCH | `/businesses/current/settings` | OWNER | `openingHours, acceptingOrders, whatsappPhone, deliveryEnabled, deliveryPricing, deliveryFee, deliveryTiers, deliveryExtraKmFee, deliveryMaxKm, location, deliveryArea, pickupEnabled, minimumOrder, paymentMethods, salesPolicy` (parcial). Ver «Domicilio según la distancia» |
+| PATCH | `/businesses/current/settings` | OWNER | `openingHours, acceptingOrders, whatsappPhone, deliveryEnabled, deliveryPricing, deliveryFee, deliveryTiers, deliveryExtraKmFee, deliveryMaxKm, location, deliveryArea, pickupEnabled, dineInEnabled, minimumOrder, paymentMethods, salesPolicy` (parcial). Ver «Domicilio según la distancia» |
 | GET | `/businesses/current/members` | OWNER | — |
 | POST | `/businesses/current/members` | OWNER | `name, email, password?, role` |
 | PATCH | `/businesses/current/members/:membershipId` | OWNER | `role` |
@@ -81,7 +81,7 @@ Todas requieren sesión. Las rutas `/current…` actúan sobre el **negocio acti
 | DELETE | `/businesses/current/logo` | OWNER | — |
 | POST | `/businesses/current/banner` | OWNER | imagen (portada) |
 | DELETE | `/businesses/current/banner` | OWNER | — |
-| GET | `/businesses/current/qr?format=svg\|png&download=1` | miembro | Código QR del enlace de la tienda (imagen) |
+| GET | `/businesses/current/qr?format=svg\|png&download=1&mesa=&local=1` | miembro | Código QR del enlace de la tienda (imagen). Con `mesa=4`, el de esa mesa (`/tienda/<slug>?mesa=4`); con `local=1`, el general del local (`?local=1`) |
 
 `GET /businesses/current` incluye `storeUrl` (`<APP_URL>/tienda/<slug>`), `logoUrl`, `bannerUrl`, el `role` del usuario y `subscription` (`plan, planName, status, endsAt, daysLeft, graceEndsAt, canReceiveOrders`).
 
@@ -316,7 +316,8 @@ Con Nequi, Daviplata o transferencia y cuentas configuradas, además `"paymentPr
 
 - Solo se reciben productos y cantidades. Precios, subtotal, domicilio, descuento y total los calcula el servidor; cualquier valor monetario enviado se descarta.
 - `idempotencyKey`: la genera el navegador por intento de compra (16–80 caracteres `A-Z a-z 0-9 -`). Si llega de nuevo, se responde **200** con el pedido ya creado, sin duplicarlo.
-- `phone`: celular colombiano (se normaliza a `57XXXXXXXXXX`). `address` es obligatoria para `DELIVERY` y se ignora en `PICKUP`.
+- `phone`: celular colombiano (se normaliza a `57XXXXXXXXXX`). `address` es obligatoria para `DELIVERY` y se ignora en `PICKUP` y `DINE_IN`.
+- **Comer en el local** (`deliveryType: "DINE_IN"`, con `tableNumber` opcional de hasta 20 caracteres): el cliente pide desde su mesa con el QR del local. Sin domicilio ni pedido mínimo; 400 `DINE_IN_UNAVAILABLE` si el negocio apagó `dineInEnabled`. Se atiende como para recoger (listo → servido, sin domiciliario) y el pedido trae `tableNumber`.
 - Domicilio según la distancia (`settings.deliveryPricing: "DISTANCE"`, con `deliveryTiers` y la `location` del negocio en `GET /store/:slug`): el pedido a domicilio debe traer `location` del cliente (400 `LOCATION_REQUIRED`) dentro del alcance (400 `DELIVERY_OUT_OF_RANGE`: «Tu ubicación está a 9 km y … lleva domicilios hasta 6 km»). La tienda publica `deliveryExtraKmFee`, `deliveryReachKm` (hasta dónde llega) y `deliveryWholeCity`. El servidor calcula el valor y guarda la distancia en `deliveryDistanceM` (también con tarifa fija si el negocio y el cliente marcaron su ubicación).
 - Reglas: el negocio debe estar abierto según su horario (`STORE_CLOSED`) y sin pausa (`ORDERS_PAUSED`); no necesita WhatsApp: el pedido llega directo al panel; la modalidad y el método de pago deben estar habilitados; el subtotal debe cubrir el pedido mínimo (`MINIMUM_ORDER`); cada producto debe ser del negocio, visible, no archivado y disponible (`PRODUCTS_UNAVAILABLE`, con `details.products: [{ productId, name, reason: "sold_out" | "not_found" }]`).
 
@@ -430,7 +431,7 @@ Solo el propietario (datos personales y compras).
 
 Definiciones (sección 11): **ventas** = suma del total de los pedidos que cumplen la política del negocio (`business_settings.sales_policy`: `ACCEPTED` confirmados en adelante · `DELIVERED` entregados · `PAID` marcados como pagados); un cancelado nunca cuenta. **Pedidos** = registrados en el periodo. **Ticket promedio** = ventas ÷ pedidos incluidos en las ventas (redondeado al peso). **Producto más vendido** = más unidades en los pedidos que cuentan como venta. Los días se cuentan en la zona horaria del negocio.
 
-`summary` devuelve `range`, `salesPolicy`, `sales`, `salesOrders`, `averageTicket`, `orders { created, pending, accepted, delivered, cancelled, paid }`, `delivery { delivery, pickup }`, `topProduct`, `topProducts` (10), `byDay` (todos los días del periodo), `byHour` (24 horas) y `previous` (periodo anterior de igual duración).
+`summary` devuelve `range`, `salesPolicy`, `sales`, `salesOrders`, `averageTicket`, `orders { created, pending, accepted, delivered, cancelled, paid }`, `delivery { delivery, pickup, dineIn }`, `topProduct`, `topProducts` (10), `byDay` (todos los días del periodo), `byHour` (24 horas) y `previous` (periodo anterior de igual duración).
 
 ## Tiempo real — Socket.IO (`/socket.io/`)
 

@@ -41,7 +41,9 @@ export const createOrderSchema = z
       .max(50, "Tu pedido tiene demasiados productos distintos."),
     name: personNameSchema,
     phone: mobilePhoneSchema,
-    deliveryType: z.enum(DeliveryType, { error: "Elige domicilio o recoger en el local." }),
+    deliveryType: z.enum(DeliveryType, { error: "Elige cómo recibes tu pedido." }),
+    /** Mesa del cliente que come en el local (del QR de la mesa o escrita por él). */
+    tableNumber: z.string().trim().max(20, "La mesa no puede superar 20 caracteres.").optional(),
     address: optionalText(160, "La dirección"),
     references: optionalText(160, "Las referencias"),
     paymentMethod: z.enum(PaymentMethod, { error: "Elige cómo vas a pagar." }),

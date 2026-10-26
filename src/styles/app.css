@@ -964,6 +964,45 @@
     }
   }
 
+  /* ─── QR de las mesas (/panel/tienda/mesas): tarjetas para imprimir y recortar ─── */
+  .table-sheet {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 1rem;
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+  }
+  .table-card {
+    break-inside: avoid;
+    border: 2px dashed var(--color-line-strong);
+    border-radius: 18px;
+    background: var(--color-paper);
+    padding: 1.25rem 1rem 1rem;
+    text-align: center;
+  }
+  @media print {
+    @page {
+      size: letter;
+      margin: 10mm;
+    }
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background: #fff !important;
+    }
+    .table-sheet {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6mm;
+      max-width: none;
+      padding: 0;
+    }
+    .table-card {
+      border-color: #9a978f;
+    }
+  }
+
   /* Opción de rol al iniciar sesión ("Soy el dueño" / "Soy empleado"). */
   .role-option {
     position: relative;

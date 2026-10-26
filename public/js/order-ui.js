@@ -32,6 +32,7 @@ export function nextAction(order) {
     case "PREPARING":
       return { status: "READY", label: "Pedido listo", icon: "circle-check" };
     case "READY":
+      if (order.deliveryType === "DINE_IN") return { status: "DELIVERED", label: "Servido en la mesa", icon: "utensils" };
       return order.deliveryType === "DELIVERY"
         ? { status: "OUT_FOR_DELIVERY", label: "Enviar con domiciliario", icon: "bike" }
         : { status: "DELIVERED", label: "Entregado al cliente", icon: "shopping-bag" };
@@ -74,8 +75,9 @@ export function elapsedLabel(value) {
   return rest ? `hace ${hours} h ${rest} min` : `hace ${hours} h`;
 }
 
-/** «Domicilio · 3,2 km» (distancia en línea recta, si el cliente marcó su ubicación) o «Recoger». */
+/** «Domicilio · 3,2 km» (si el cliente marcó su ubicación), «Mesa 4» (come en el local) o «Recoger». */
 export function deliveryLabel(order) {
+  if (order.deliveryType === "DINE_IN") return html`${icon("utensils", "h-4 w-4")} ${order.tableNumber ? `Mesa ${order.tableNumber}` : "En el local"}`;
   return order.deliveryType === "DELIVERY"
     ? html`${icon("bike", "h-4 w-4")} Domicilio${order.deliveryDistanceM ? ` · ${distanceLabel(order.deliveryDistanceM)}` : ""}`
     : html`${icon("shopping-bag", "h-4 w-4")} Recoger`;

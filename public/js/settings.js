@@ -284,6 +284,10 @@ function deliverySection() {
         <div class="rounded-[12px] border border-line p-4">
           ${switchRow("d-pickup", "pickupEnabled", settings.pickupEnabled, "Recoger en el local", "El cliente pasa por su pedido.")}
         </div>
+        <div class="grid gap-2 rounded-[12px] border border-line p-4">
+          ${switchRow("d-dine-in", "dineInEnabled", settings.dineInEnabled, "Comer en el local", "Tus clientes escanean el QR de la mesa y piden desde su celular; se lo llevas a la mesa.")}
+          <a class="w-fit text-sm font-[650] underline underline-offset-2" href="/panel/tienda#mesas">Imprimir los QR de las mesas</a>
+        </div>
         <div class="field max-w-[12rem]">
           <label class="label" for="d-minimum">Pedido mínimo</label>
           ${moneyInput("d-minimum", "minimumOrder", settings.minimumOrder)}
@@ -552,6 +556,7 @@ const PAYLOADS = {
     deliveryFee: parseMoney(form.elements.deliveryFee.value),
     deliveryArea: form.elements.deliveryArea.value.trim(),
     pickupEnabled: form.elements.pickupEnabled.checked,
+    dineInEnabled: form.elements.dineInEnabled.checked,
     minimumOrder: parseMoney(form.elements.minimumOrder.value),
   }),
   pagos: (form) => ({ paymentMethods: readForm(form).paymentMethods ?? [] }),

@@ -1,7 +1,7 @@
 // Panel del comerciante: estructura común (navegación, selector de negocio, sesión) y página de Inicio.
 import { api, formatCOP, redirectToLogin } from "./api.js";
 import { connectLive, disableSound, enableSound, onLive, soundWaitingForTouch, soundWanted } from "./notifications.js";
-import { elapsedLabel, nextAction, statusBadge } from "./order-ui.js";
+import { deliveryLabel, elapsedLabel, nextAction, statusBadge } from "./order-ui.js";
 import { disablePush, enablePush, PUSH_COPY, sendTestPush } from "./push.js";
 import { handlePushClick, pushView, safePushState } from "./push-ui.js";
 import { openCourierLink } from "./courier-link.js";
@@ -696,6 +696,7 @@ function liveOrderRow(order) {
       <span class="block truncate font-[650]">${order.customerName}</span>
       <span class="flex flex-wrap items-center gap-x-2 text-sm text-muted">
         ${statusBadge(order.status)} <span>${elapsedLabel(order.createdAt)}</span>
+        ${order.deliveryType === "DINE_IN" ? html`<span class="flex items-center gap-1">${deliveryLabel(order)}</span>` : ""}
         <span class="num font-[650] text-ink">${formatCOP(order.total)}</span>
       </span>
     </span>

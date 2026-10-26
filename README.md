@@ -140,6 +140,12 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - Sin internet, la app muestra una pantalla propia («Se fue el internet») que se recarga sola al volver la conexión.
 - 184 pruebas en total.
 
+### Pedidos desde la mesa (comer en el local)
+
+- En **Mi tienda → Pedidos desde la mesa** el negocio elige cuántas mesas tiene e imprime una hoja con un **QR por mesa** («Mesa 4») y uno general para el mostrador (tamaño carta, 4 por hoja, para recortar).
+- El cliente escanea el QR de su mesa y la tienda abre con «**Estás en la mesa 4.** Pide desde tu celular y te lo llevamos a la mesa»; en el carrito aparece **Comer aquí · Mesa 4** (ya elegido) o **Para llevar**, sin dirección, domicilio ni pedido mínimo. Con el QR general escribe su mesa (opcional).
+- En el panel el pedido dice **Mesa 4** y su último paso es **Servido en la mesa**; las analíticas cuentan los pedidos «En el local». Se puede apagar en Configuración → Entrega → Comer en el local.
+
 ### Verificación automática del comprobante de pago
 
 - Cuando el cliente paga por Nequi, Daviplata, Bre-B o transferencia y sube el pantallazo, **Pedify lo lee solo** (OCR con Tesseract en español, dentro del servidor: sin servicios externos ni costos) y revisa que sea un **pago exitoso**, por el **valor exacto** del pedido, a **una de las cuentas del negocio** (celular, llave o nombre del titular), **de ese momento** (hoy, hasta 3 horas antes) y **no usado en otro pedido** (el mismo pantallazo o la misma referencia).

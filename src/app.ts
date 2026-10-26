@@ -59,6 +59,8 @@ const PANEL_PAGES: Record<string, string> = {
   "/panel/clientes": "pages/dashboard/customers.html",
   "/panel/analiticas": "pages/dashboard/analytics.html",
   "/panel/tienda": "pages/dashboard/store.html",
+  // Hoja para imprimir los QR de las mesas (pedidos para comer en el local).
+  "/panel/tienda/mesas": "pages/dashboard/tables.html",
   "/panel/configuracion": "pages/dashboard/settings.html",
   "/panel/plan": "pages/dashboard/plan.html",
   "/admin": "pages/admin/index.html",

@@ -80,6 +80,7 @@ async function whatsappFor(order: StoredOrder, businessName: string, whatsappPho
     customerName: order.customerName,
     items: order.items.map((item) => ({ name: item.productName, quantity: item.quantity, subtotal: item.subtotal })),
     deliveryType: order.deliveryType,
+    tableNumber: order.tableNumber,
     deliveryAddress: order.deliveryAddress,
     addressReferences: order.addressReferences,
     paymentMethod: order.paymentMethod,
@@ -129,6 +130,11 @@ export const ordersService = {
     if (input.deliveryType === "DELIVERY" && !settings.deliveryEnabled) {
       throw badRequest("Este negocio no hace domicilios. Elige recoger en el local.", "DELIVERY_UNAVAILABLE", {
         fields: { deliveryType: "Este negocio no hace domicilios." },
+      });
+    }
+    if (input.deliveryType === "DINE_IN" && !settings.dineInEnabled) {
+      throw badRequest("Este negocio no recibe pedidos para comer en el local.", "DINE_IN_UNAVAILABLE", {
+        fields: { deliveryType: "Este negocio no recibe pedidos para comer en el local." },
       });
     }
     if (input.deliveryType === "PICKUP" && !settings.pickupEnabled) {
@@ -184,8 +190,8 @@ export const ordersService = {
           deliveryFee: delivery.fee,
         });
 
-        // El pedido mínimo se compara con el subtotal (sin domicilio).
-        if (totals.subtotal < settings.minimumOrder) {
+        // El pedido mínimo se compara con el subtotal (sin domicilio); en la mesa no aplica.
+        if (input.deliveryType !== "DINE_IN" && totals.subtotal < settings.minimumOrder) {
           throw badRequest(
             `El pedido mínimo es ${formatCOP(settings.minimumOrder)} (sin domicilio). Te faltan ${formatCOP(settings.minimumOrder - totals.subtotal)}.`,
             "MINIMUM_ORDER",
@@ -215,6 +221,7 @@ export const ordersService = {
             customerName: input.name,
             customerPhone: input.phone,
             deliveryAddress: isDelivery ? (input.address ?? null) : null,
+            tableNumber: input.deliveryType === "DINE_IN" ? input.tableNumber || null : null,
             addressReferences: isDelivery ? (input.references ?? null) : null,
             deliveryLat: isDelivery && input.location ? input.location.lat : null,
             deliveryLng: isDelivery && input.location ? input.location.lng : null,
@@ -252,6 +259,7 @@ export const ordersService = {
         total: order.total,
         customerName: order.customerName,
         deliveryType: order.deliveryType,
+        tableNumber: order.tableNumber,
         createdAt: order.createdAt,
       });
 

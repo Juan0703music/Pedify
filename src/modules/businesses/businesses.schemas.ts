@@ -105,6 +105,8 @@ export const updateSettingsSchema = z
     location: geoPointSchema.nullable(),
     deliveryArea: optionalText(200, "La zona de cobertura"),
     pickupEnabled: z.boolean(),
+    /** Pedidos desde la mesa con el QR del local. */
+    dineInEnabled: z.boolean(),
     minimumOrder: copAmountSchema,
     paymentMethods: z
       .array(z.enum(PaymentMethod))
@@ -148,6 +150,13 @@ export const membershipParamsSchema = z.object({
 
 export const qrQuerySchema = z.object({
   format: z.enum(["svg", "png"]).default("svg"),
+  /** QR de una mesa («4», «Terraza 2»): la tienda abre lista para pedir y comer en esa mesa. */
+  mesa: z.string().trim().min(1).max(20).optional(),
+  /** QR general del local (el cliente escribe su mesa si quiere). */
+  local: z
+    .enum(["1", "true"])
+    .optional()
+    .transform((value) => value !== undefined),
   download: z
     .enum(["1", "true"])
     .optional()

@@ -99,6 +99,8 @@ export const storeService = {
         location: distancePricing ? { lat: settings.locationLat, lng: settings.locationLng } : null,
         deliveryArea: settings.deliveryArea,
         pickupEnabled: settings.pickupEnabled,
+        /** Pedir desde la mesa (con el QR del local). */
+        dineInEnabled: settings.dineInEnabled,
         minimumOrder: settings.minimumOrder,
         paymentMethods: settings.paymentMethods,
       },

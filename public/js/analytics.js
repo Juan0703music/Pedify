@@ -274,7 +274,8 @@ function ordersBreakdown(data) {
     </dl>
     <p class="mt-3 rounded-[10px] bg-ground px-3.5 py-2.5 text-sm">
       ${icon("bike", "inline h-4 w-4 align-[-3px]")} Domicilio: <span class="num font-[700]">${delivery.delivery}</span> ·
-      ${icon("shopping-bag", "inline h-4 w-4 align-[-3px]")} Recoger: <span class="num font-[700]">${delivery.pickup}</span>
+      ${icon("shopping-bag", "inline h-4 w-4 align-[-3px]")} Recoger: <span class="num font-[700]">${delivery.pickup}</span> ·
+      ${icon("utensils", "inline h-4 w-4 align-[-3px]")} En el local: <span class="num font-[700]">${delivery.dineIn ?? 0}</span>
       <span class="text-muted">(ventas del periodo)</span>
     </p>
   </section>`;

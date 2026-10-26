@@ -21,6 +21,8 @@ export interface OrderMessage {
   customerName: string;
   items: { name: string; quantity: number; subtotal: number }[];
   deliveryType: DeliveryType;
+  /** Mesa, cuando el cliente come en el local. */
+  tableNumber?: string | null;
   deliveryAddress: string | null;
   addressReferences: string | null;
   paymentMethod: PaymentMethod | null;
@@ -34,6 +36,7 @@ export interface OrderMessage {
 export const DELIVERY_LABEL: Record<DeliveryType, string> = {
   DELIVERY: "Domicilio",
   PICKUP: "Recoger en el local",
+  DINE_IN: "Para comer en el local",
 };
 
 export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
@@ -62,6 +65,7 @@ export function buildOrderMessage(order: OrderMessage): string {
     "",
     `Entrega: ${DELIVERY_LABEL[order.deliveryType]}`,
   ];
+  if (order.deliveryType === "DINE_IN" && order.tableNumber) lines.push(`Mesa: ${order.tableNumber}`);
   if (order.deliveryType === "DELIVERY" && order.deliveryAddress) lines.push(`Dirección: ${order.deliveryAddress}`);
   if (order.deliveryType === "DELIVERY" && order.addressReferences) lines.push(`Referencias: ${order.addressReferences}`);
   if (order.paymentMethod) lines.push(`Pago: ${PAYMENT_LABEL[order.paymentMethod]}`);

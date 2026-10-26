@@ -64,7 +64,7 @@ export const analyticsService = {
         cancelled: totals.cancelled,
         paid: totals.paid,
       },
-      delivery: { delivery: totals.deliveryOrders, pickup: totals.pickupOrders },
+      delivery: { delivery: totals.deliveryOrders, pickup: totals.pickupOrders, dineIn: totals.dineInOrders },
       topProduct: topProducts[0] ?? null,
       topProducts,
       byDay,

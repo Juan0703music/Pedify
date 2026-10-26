@@ -43,6 +43,7 @@ export const analyticsRepository = {
         sales: bigint;
         deliveryOrders: number;
         pickupOrders: number;
+        dineInOrders: number;
       }[]
     >`
       SELECT COUNT(*)::int AS created,
@@ -54,7 +55,8 @@ export const analyticsRepository = {
              COUNT(*) FILTER (WHERE ${sales})::int AS "salesOrders",
              COALESCE(SUM(o.total) FILTER (WHERE ${sales}), 0)::bigint AS sales,
              COUNT(*) FILTER (WHERE ${sales} AND o.delivery_type = 'DELIVERY')::int AS "deliveryOrders",
-             COUNT(*) FILTER (WHERE ${sales} AND o.delivery_type = 'PICKUP')::int AS "pickupOrders"
+             COUNT(*) FILTER (WHERE ${sales} AND o.delivery_type = 'PICKUP')::int AS "pickupOrders",
+             COUNT(*) FILTER (WHERE ${sales} AND o.delivery_type = 'DINE_IN')::int AS "dineInOrders"
       FROM orders o
       WHERE ${inPeriod(p)}`;
     return {
@@ -68,6 +70,7 @@ export const analyticsRepository = {
       sales: toNumber(row?.sales ?? 0),
       deliveryOrders: row?.deliveryOrders ?? 0,
       pickupOrders: row?.pickupOrders ?? 0,
+      dineInOrders: row?.dineInOrders ?? 0,
     };
   },
 

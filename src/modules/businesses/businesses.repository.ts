@@ -32,6 +32,7 @@ export const settingsSelect = {
   locationLng: true,
   deliveryArea: true,
   pickupEnabled: true,
+  dineInEnabled: true,
   minimumOrder: true,
   paymentMethods: true,
   salesPolicy: true,
