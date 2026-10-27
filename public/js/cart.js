@@ -5,11 +5,13 @@
 // Si paga por Nequi, Daviplata o transferencia y el negocio configuró su QR o llave, paga antes de
 // enviar el pedido y sube el pantallazo del comprobante (el negocio lo revisa en el panel).
 // En la mesa (comer en el local) no se paga al pedir: al terminar de comer, desde el seguimiento, el
-// cliente escanea con la cámara el QR de pago del local, paga y sube el comprobante (o paga en la caja).
+// cliente escanea con la cámara el QR de pago del local, Pedify lo lleva a su app (Nequi o su banco)
+// para pagar y luego sube el comprobante (o paga en la caja).
 import { formatCOP, formatPhone } from "./api.js";
 import { checkImageFile, clearFieldErrors, copyText, formAlert, html, icon, raw, render, setBusy, showErrors } from "./ui.js";
 import { deliveryReachKm, feeForDistance, formatKm } from "./delivery-fee.js";
 import { currentPosition, deliveryMap, distanceLabel, distanceMeters, pickerMap } from "./map.js";
+import { appLink, isIOS, PAY_APPS, preferredApp, rememberApp } from "./pay-apps.js";
 import { canUseCamera, readQrFromFile, startQrCamera } from "./qr-scan.js";
 
 export const PAYMENT_LABEL = {
@@ -62,7 +64,7 @@ function newKey() {
  * `inStore`: el cliente está en el local (escaneó el QR de una mesa o el general): puede pedir para comer ahí.
  */
 export function initCart({ store, slug, root, orderable = true, inStore = null }) {
-  const keys = { cart: `pedify:cart:${slug}`, order: `pedify:order:${slug}`, customer: "pedify:customer" };
+  const keys = { cart: `pedify:cart:${slug}`, order: `pedify:order:${slug}`, customer: "pedify:customer", bill: `pedify:bill:${slug}` };
   save(`pedify:pending:${slug}`, null); // aviso de "envíalo por WhatsApp" de versiones anteriores
   const products = new Map(store.categories.flatMap((category) => category.products).map((product) => [product.id, product]));
   const { settings, business } = store;
@@ -799,8 +801,16 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
   const billOpen = (order) => order.deliveryType === "DINE_IN" && order.status !== "CANCELLED" && !order.paid;
   /** Pagar la cuenta: { account } cuando ya escaneó el QR del local; null fuera de esa pantalla. */
   let bill = null;
-  /** Cuenta del último QR escaneado: para subir otro comprobante sin volver a escanear. */
-  let scannedAccount = null;
+  /**
+   * Cuenta del QR que escaneó para este pedido: al volver de su app (aunque el navegador haya recargado
+   * la página) o para subir otro comprobante, no tiene que escanear de nuevo.
+   */
+  let scannedAccount = (() => {
+    const saved = load(keys.bill);
+    return saved && active && saved.orderId === active.id ? saved.account : null;
+  })();
+  /** El QR del negocio en imagen, listo para guardarlo en el celular (en iPhone se comparte al instante). */
+  let qrFile = null;
   /** Apaga la cámara en vivo (si está encendida). */
   let stopCamera = null;
 
@@ -892,8 +902,18 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
   }
 
   function payStep(account) {
-    const app = account.kind === "NEQUI" ? "Nequi" : account.kind === "DAVIPLATA" ? "Daviplata" : "tu banco o billetera";
     const keyName = account.kind === "BRE_B" ? "Llave Bre-B" : `Número de ${account.label}`;
+    const preferred = preferredApp(account.kind);
+    const others = PAY_APPS.filter((app) => app !== preferred);
+    const appButton = (app, primary) => html`<a
+      class="${primary ? "btn btn-primary min-h-13 w-full text-base" : "btn btn-ghost btn-sm"}"
+      href="${appLink(app)}"
+      target="_blank"
+      rel="noopener"
+      data-pay-app="${app.id}"
+    >
+      ${primary ? html`${icon("external-link")} Abrir ${app.name}` : app.name}
+    </a>`;
     return html`<section class="grid gap-4 rounded-[16px] border-2 border-ink bg-paper p-4" aria-labelledby="pay-title">
       <div class="flex items-start gap-3">
         <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-leaf-soft text-leaf">${icon("circle-check", "h-5 w-5")}</span>
@@ -902,20 +922,35 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
           ${account.holderName ? html`<p class="text-sm text-muted">A nombre de ${account.holderName}</p>` : ""}
         </div>
       </div>
+
+      <div class="grid gap-2.5">
+        <p class="font-[760]">${preferred ? "Paga en tu app" : "¿Con qué app pagas?"}</p>
+        ${preferred ? appButton(preferred, true) : ""}
+        <div class="flex flex-wrap items-center gap-2">
+          ${preferred ? html`<span class="text-sm text-muted">¿Otra?</span>` : ""} ${others.map((app) => appButton(app, false))}
+        </div>
+        <p class="text-xs text-muted">Si se abre la tienda de apps, toca «Abrir».</p>
+      </div>
+
       <ol class="grid gap-1.5 rounded-[12px] bg-ground px-4 py-3 text-sm">
-        <li><strong class="font-[720]">1.</strong> Abre la app de ${app} y escanea ese mismo QR.</li>
+        <li><strong class="font-[720]">1.</strong> En tu app elige pagar con QR y escanea el QR del local, o la imagen guardada. ${preferred?.howTo ?? ""}</li>
         <li><strong class="font-[720]">2.</strong> Paga exactamente <span class="num font-[720]">${formatCOP(tracked.total)}</span>.</li>
-        <li><strong class="font-[720]">3.</strong> Toma un pantallazo del comprobante y súbelo aquí: Pedify lo revisa y confirma tu pago.</li>
+        <li><strong class="font-[720]">3.</strong> Vuelve aquí y sube el pantallazo del comprobante: Pedify lo revisa y confirma tu pago.</li>
       </ol>
-      ${account.accountKey
-        ? html`<button type="button" class="inline-flex min-h-10 max-w-full items-center gap-2 justify-self-center rounded-full bg-ground px-3.5 text-[0.9375rem] font-[700]" data-copy-account="${account.accountKey.replace(/\s+/g, "")}">
-            <span class="font-[620] text-muted">${keyName}</span>
-            <span class="num [overflow-wrap:anywhere]">${account.accountKey}</span>
-            <span class="text-muted" data-copy-label>${icon("copy", "h-4 w-4")}</span>
-          </button>`
-        : ""}
+
+      <div class="flex flex-wrap justify-center gap-2">
+        <button type="button" class="btn btn-ghost btn-sm" data-save-qr="${account.kind}">${icon("download", "h-4 w-4")} Guardar el QR en el celular</button>
+        ${account.accountKey
+          ? html`<button type="button" class="inline-flex min-h-9 max-w-full items-center gap-2 rounded-full bg-ground px-3.5 text-sm font-[700]" data-copy-account="${account.accountKey.replace(/\s+/g, "")}">
+              <span class="font-[620] text-muted">${keyName}</span>
+              <span class="num [overflow-wrap:anywhere]">${account.accountKey}</span>
+              <span class="text-muted" data-copy-label>${icon("copy", "h-4 w-4")}</span>
+            </button>`
+          : ""}
+      </div>
+
       <div class="grid gap-2">
-        <label class="btn btn-primary relative min-h-13 w-full cursor-pointer text-base" data-bill-proof-pick>
+        <label class="btn btn-ink relative min-h-12 w-full cursor-pointer" data-bill-proof-pick>
           <input type="file" accept="image/*" class="sr-only" data-bill-proof aria-label="Subir el comprobante de pago" />
           ${icon("upload")} <span data-bill-proof-label>Subir comprobante de pago</span>
         </label>
@@ -923,6 +958,37 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
       </div>
       <button type="button" class="justify-self-center text-sm font-[650] text-muted underline" data-bill-rescan>Escanear otro QR</button>
     </section>`;
+  }
+
+  /** Descarga el QR del negocio (para que el clic de «Guardar» comparta sin esperar, como pide el iPhone). */
+  async function prepareQrFile(kind) {
+    try {
+      const response = await fetch(`/api/v1/store/${encodeURIComponent(slug)}/payment-qr/${kind}.png`);
+      if (response.ok) qrFile = new File([await response.blob()], `qr-pago-${slug}.png`, { type: "image/png" });
+    } catch {
+      qrFile = null;
+    }
+  }
+
+  /** Guarda el QR en el celular: en iPhone con «Guardar imagen» (Fotos); en Android y computador, descargado. */
+  async function saveQr(kind) {
+    if (isIOS() && qrFile && navigator.canShare?.({ files: [qrFile] })) {
+      try {
+        await navigator.share({ files: [qrFile] });
+        announce("En tu app, elige pagar con QR desde una imagen.");
+      } catch {
+        // Cerró la ventana de compartir.
+      }
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = qrFile ? URL.createObjectURL(qrFile) : `/api/v1/store/${encodeURIComponent(slug)}/payment-qr/${kind}.png`;
+    link.download = `qr-pago-${slug}.png`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    if (qrFile) setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+    announce("QR guardado. En tu app, elige pagar con QR desde una imagen.");
   }
 
   /** Mensaje bajo la cámara (sin redibujar: la cámara sigue encendida). */
@@ -982,6 +1048,8 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
       }
       bill.account = payload.data.account;
       scannedAccount = bill.account;
+      save(keys.bill, { orderId: active.id, account: scannedAccount });
+      void prepareQrFile(scannedAccount.kind);
       closeCamera();
       navigator.vibrate?.(80);
       announce(`QR de ${bill.account.label} de ${business.name}. Paga ${formatCOP(tracked.total)} en tu app y sube el comprobante.`);
@@ -1055,8 +1123,9 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
   }
 
   function openBill() {
-    // Si ya había escaneado el QR (y su comprobante no coincidió), va directo a subir otro.
+    // Si ya había escaneado el QR (volvió de su app o su comprobante no coincidió), sigue donde iba.
     bill = { account: scannedAccount };
+    if (scannedAccount && !qrFile) void prepareQrFile(scannedAccount.kind);
     rejectedCode = null;
     view = "bill";
     renderSheet();
@@ -1479,6 +1548,13 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
 
   dialog.addEventListener("click", async (event) => {
     if (event.target === dialog) return closeSheet();
+    const payApp = event.target.closest("[data-pay-app]");
+    if (payApp) {
+      // La app que eligió sale primero de ahora en adelante (también en otras tiendas).
+      rememberApp(payApp.dataset.payApp);
+      setTimeout(() => view === "bill" && bill?.account && renderSheet(), 400);
+      return;
+    }
     const button = event.target.closest("button");
     if (button?.matches("[data-locate]")) {
       setBusy(button, true);
@@ -1499,9 +1575,12 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
     if (button?.matches("[data-bill-rescan]")) {
       bill = { account: null };
       scannedAccount = null;
+      qrFile = null;
+      save(keys.bill, null);
       rejectedCode = null;
       renderSheet();
     }
+    if (button?.matches("[data-save-qr]")) void saveQr(button.dataset.saveQr);
     if (button?.matches("[data-prepay-kind]")) {
       payKind = button.dataset.prepayKind;
       drawPrepay();
