@@ -3,7 +3,6 @@
  *   - fonts/archivo-latin-wdth.woff2  (Archivo variable: peso 100–900 y ancho 62–125 %; licencia OFL)
  *   - icons/sprite.svg                (íconos Lucide, licencia ISC)
  *   - vendor/leaflet                  (mapas, licencia BSD-2)
- *   - vendor/jsqr/jsQR.min.js         (lectura de QR con la cámara donde el navegador no la trae, licencia Apache-2.0)
  *
  *   npx tsx scripts/build-assets.ts
  *
@@ -11,15 +10,14 @@
  */
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { transformSync } from "esbuild";
 
 const ICONS = [
-  "arrow-down", "arrow-left", "arrow-right", "arrow-up", "arrow-up-down", "archive", "archive-restore", "banknote", "bell", "bell-off", "bell-ring",
+  "arrow-down", "arrow-right", "arrow-up", "arrow-up-down", "archive", "archive-restore", "banknote", "bell", "bell-off", "bell-ring",
   "bike", "calendar", "camera", "chart-column", "check", "chef-hat", "chevron-down", "chevron-up", "chevrons-up-down",
   "circle-alert", "circle-check", "circle-x", "credit-card", "clock", "copy", "download", "ellipsis", "ellipsis-vertical", "external-link", "eye", "eye-off",
   "flame", "folder-plus", "history", "house", "image", "image-plus", "info", "key-round", "laptop", "link", "list-checks", "locate-fixed", "navigation-2", "loader-circle", "lock",
   "log-out", "map-pin", "menu", "minus", "message-circle", "monitor-down", "monitor-smartphone", "navigation", "package", "pencil", "phone", "plus", "qr-code",
-  "receipt", "refresh-cw", "scan-qr-code", "search", "settings", "share", "share-2", "shield", "shopping-bag", "smartphone", "square-plus", "store", "tag",
+  "receipt", "refresh-cw", "search", "settings", "share", "share-2", "shield", "shopping-bag", "smartphone", "square-plus", "store", "tag",
   "trash-2", "trending-down", "trending-up", "truck", "upload", "user-plus", "users", "utensils", "wallet", "wifi", "wifi-off", "x",
 ];
 
@@ -56,12 +54,4 @@ for (const file of ["leaflet.js", "leaflet.css"]) {
 }
 copyFileSync(path.join(root, "node_modules/leaflet/LICENSE"), path.join(leaflet, "LICENSE"));
 
-// jsQR: lee el QR de pago del local con la cámara en iPhone y Firefox (Chrome y Android traen BarcodeDetector).
-// Se descarga solo cuando el cliente abre «Pagar la cuenta».
-const jsqr = path.join(assets, "vendor/jsqr");
-mkdirSync(jsqr, { recursive: true });
-const jsqrSource = readFileSync(path.join(root, "node_modules/jsqr/dist/jsQR.js"), "utf8");
-writeFileSync(path.join(jsqr, "jsQR.min.js"), transformSync(jsqrSource, { minify: true, target: "es2019" }).code);
-copyFileSync(path.join(root, "node_modules/jsqr/LICENSE"), path.join(jsqr, "LICENSE"));
-
-console.log(`Fuente copiada, ${ICONS.length} íconos en public/assets/icons/sprite.svg, Leaflet y jsQR en public/assets/vendor`);
+console.log(`Fuente copiada, ${ICONS.length} íconos en public/assets/icons/sprite.svg y Leaflet en public/assets/vendor/leaflet`);

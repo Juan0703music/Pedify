@@ -18,6 +18,7 @@ export const PAYMENT_LABEL = {
   NEQUI: "Nequi",
   DAVIPLATA: "Daviplata",
   BANK_TRANSFER: "Transferencia",
+  BRE_B: "Llave Bre-B",
   CARD: "Tarjeta",
 };
 

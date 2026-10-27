@@ -9,7 +9,7 @@ import { copyText, html, icon, raw, render, setBusy } from "./ui.js";
 const root = document.getElementById("courier");
 const key = decodeURIComponent(location.hash.slice(1));
 
-const PAYMENT = { CASH: "en efectivo", NEQUI: "por Nequi", DAVIPLATA: "por Daviplata", BANK_TRANSFER: "por transferencia", CARD: "con datáfono" };
+const PAYMENT = { CASH: "en efectivo", NEQUI: "por Nequi", DAVIPLATA: "por Daviplata", BANK_TRANSFER: "por transferencia", CARD: "con datáfono", BRE_B: "con llave Bre-B" };
 /** Cada cuánto se envía la posición (y como mínimo, aunque no se mueva). */
 const SEND_EVERY_MS = 5_000;
 const HEARTBEAT_MS = 20_000;

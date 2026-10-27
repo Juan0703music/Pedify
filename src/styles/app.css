@@ -1050,25 +1050,6 @@
     outline-offset: 2px;
   }
 
-  /* ─── Cámara para escanear el QR de pago del local (pagar la cuenta de la mesa) ─── */
-  .scanner-frame {
-    position: absolute;
-    inset: 16%;
-    border-radius: 8px;
-    pointer-events: none;
-    /* Solo las esquinas del recuadro, en mostaza; afuera se oscurece un poco. */
-    box-shadow: 0 0 0 100vmax rgb(23 22 28 / 0.35);
-    background:
-      linear-gradient(var(--color-mustard), var(--color-mustard)) top left / 34px 5px no-repeat,
-      linear-gradient(var(--color-mustard), var(--color-mustard)) top left / 5px 34px no-repeat,
-      linear-gradient(var(--color-mustard), var(--color-mustard)) top right / 34px 5px no-repeat,
-      linear-gradient(var(--color-mustard), var(--color-mustard)) top right / 5px 34px no-repeat,
-      linear-gradient(var(--color-mustard), var(--color-mustard)) bottom left / 34px 5px no-repeat,
-      linear-gradient(var(--color-mustard), var(--color-mustard)) bottom left / 5px 34px no-repeat,
-      linear-gradient(var(--color-mustard), var(--color-mustard)) bottom right / 34px 5px no-repeat,
-      linear-gradient(var(--color-mustard), var(--color-mustard)) bottom right / 5px 34px no-repeat;
-  }
-
   /* ─── Mapas del seguimiento de domicilios (Leaflet) ─── */
   .delivery-map {
     position: relative;

@@ -24,8 +24,8 @@ const COLUMNS = [
   { id: "new", title: "Nuevos", statuses: ["PENDING"], empty: "No hay pedidos por aceptar." },
   { id: "kitchen", title: "En cocina", statuses: ["CONFIRMED", "PREPARING"], empty: "Nada en preparación." },
   { id: "ready", title: "Listos y en camino", statuses: ["READY", "OUT_FOR_DELIVERY"], empty: "Nada listo por entregar." },
-  // Mesas ya servidas que no han pagado: se ven solo cuando hay alguna. Salen al pagar (con el QR del local
-  // y el comprobante verificado, o al tocar «Cobrado» en la caja).
+  // Mesas ya servidas que no han pagado: se ven solo cuando hay alguna. El cliente paga en el local (con su
+  // app y el QR del negocio, o en efectivo) y salen al tocar «Cobrado».
   { id: "bill", title: "Por cobrar", statuses: ["DELIVERED"], empty: "No hay mesas por cobrar.", onlyWithOrders: true },
 ];
 
@@ -402,16 +402,14 @@ function detailView(order) {
         <section aria-label="Pago" class="grid gap-4 rounded-[12px] border ${order.paymentProof && !order.paidAt ? proofCheck(order).box : "border-line"} p-4">
           <div class="flex items-center justify-between gap-4">
             <span>
-              <span class="block font-[650]">Pago: ${PAYMENT_LABEL[order.paymentMethod] ?? "—"}${order.paymentProof
-                ? order.deliveryType === "DINE_IN" ? " · con el QR del local" : " · por adelantado"
-                : ""}</span>
+              <span class="block font-[650]">Pago: ${PAYMENT_LABEL[order.paymentMethod] ?? "—"}${order.paymentProof ? " · por adelantado" : ""}</span>
               <span class="block text-sm text-muted">
                 ${order.paidAt
-                  ? `Pagado · ${dateTimeLabel(order.paidAt)}${order.deliveryType === "DINE_IN" && order.paymentProof?.checkStatus === "VERIFIED" ? " · confirmado con el comprobante" : ""}`
+                  ? `Pagado · ${dateTimeLabel(order.paidAt)}`
                   : order.paymentProof
                     ? "Revisa en tu app que llegó el valor y márcalo como pagado."
                     : order.deliveryType === "DINE_IN"
-                      ? "Paga al terminar de comer: con el QR del local desde su celular o en la caja."
+                      ? "Paga al terminar de comer, en el local. Márcalo cuando veas el pago."
                       : "Marca cuando recibas el pago."}
               </span>
             </span>
@@ -764,13 +762,6 @@ function bindLive() {
     if (state.detail?.id === update.orderId) refreshDetail();
     if (update.changedBy && update.changedBy !== state.me.user.id) {
       toast(`Pedido #${update.number}: ${STATUS[update.status]?.label ?? update.status}.`, "info");
-    }
-    // Una mesa pagó la cuenta con el QR del local y subió su comprobante.
-    const paid = update.tablePayment;
-    if (paid && paid.check !== "PENDING") {
-      const who = `Pedido #${update.number}${paid.tableNumber ? ` (mesa ${paid.tableNumber})` : ""}`;
-      if (update.paidAt) toast(`${who} pagó ${formatCOP(paid.total)}: comprobante verificado.`);
-      else toast(`${who} subió su comprobante de ${formatCOP(paid.total)}: revísalo.`, "info");
     }
   });
 }

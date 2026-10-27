@@ -45,6 +45,7 @@ export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
   DAVIPLATA: "Daviplata",
   BANK_TRANSFER: "Transferencia bancaria",
   CARD: "Tarjeta (datáfono)",
+  BRE_B: "Llave Bre-B",
 };
 
 /**

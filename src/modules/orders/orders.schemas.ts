@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DeliveryType, OrderStatus, PaymentAccountKind, PaymentMethod } from "../../generated/prisma/enums.js";
+import { DeliveryType, OrderStatus, PaymentMethod } from "../../generated/prisma/enums.js";
 import { paginationQuerySchema } from "../../utils/pagination.js";
 import { mobilePhoneSchema } from "../../utils/phone.js";
 import { personNameSchema } from "../auth/auth.schemas.js";
@@ -73,16 +73,6 @@ export const whatsappOpenedSchema = z.object({
   idempotencyKey: idempotencyKeySchema,
 });
 
-/** Pagar la cuenta de la mesa: el contenido del QR de pago que escaneó el cliente con la cámara. */
-export const tableQrScanSchema = z.object({
-  payload: z.string({ error: "Escanea el QR de pago." }).trim().min(1, "Escanea el QR de pago.").max(1000, "Ese código QR no parece de pago."),
-});
-
-/** Pagar la cuenta de la mesa: el comprobante subido y la cuenta del QR que escaneó. */
-export const tablePaymentSchema = z.object({
-  paymentProofId: z.uuid("Vuelve a subir el comprobante."),
-  kind: z.enum(PaymentAccountKind, { error: "Escanea de nuevo el QR de pago." }),
-});
 
 // ─── Panel del comerciante ───
 
@@ -119,5 +109,4 @@ export type PaymentInput = z.infer<typeof paymentSchema>;
 export type StoreOrderParams = z.infer<typeof storeOrderParamsSchema>;
 export type WhatsappOpenedParams = z.infer<typeof whatsappOpenedParamsSchema>;
 export type StoreOrderIdParams = z.infer<typeof storeOrderIdParamsSchema>;
-export type TableQrScanInput = z.infer<typeof tableQrScanSchema>;
-export type TablePaymentInput = z.infer<typeof tablePaymentSchema>;
+

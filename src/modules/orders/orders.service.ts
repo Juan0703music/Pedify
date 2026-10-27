@@ -1,7 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { prisma } from "../../config/database.js";
 import { Prisma } from "../../generated/prisma/client.js";
-import type { DeliveryType, OrderStatus } from "../../generated/prisma/enums.js";
 import { notifications } from "../../services/notification.service.js";
 import { calculateOrder, deliveryReachKm, feeForDistance, parseDeliveryTiers } from "../../services/pricing.service.js";
 import { clock } from "../../utils/clock.js";
@@ -14,9 +13,7 @@ import { customersService } from "../customers/customers.service.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { whatsapp, type OrderMessage } from "../whatsapp/whatsapp.service.js";
 import { courierService } from "../courier/courier.service.js";
-import { METHOD_FOR_ACCOUNT, paymentAccountsService } from "../payment-accounts/payment-accounts.service.js";
 import { paymentProofsService } from "../payment-accounts/payment-proofs.service.js";
-import { deleteImage } from "../../services/storage.service.js";
 import { mapConfig } from "../../config/map.js";
 import type { TenantContext } from "../../types/common.js";
 import { addDays, startOfDay } from "../../utils/dates.js";
@@ -24,7 +21,7 @@ import { distanceLabel, distanceMeters } from "../../utils/geo.js";
 import { buildPage } from "../../utils/pagination.js";
 import { allowedTransitions, canTransition, STATUS_LABEL } from "./order-status.js";
 import { ordersRepository } from "./orders.repository.js";
-import type { ChangeStatusInput, CreateOrderInput, ListOrdersQuery, TablePaymentInput } from "./orders.schemas.js";
+import type { ChangeStatusInput, CreateOrderInput, ListOrdersQuery } from "./orders.schemas.js";
 
 type StoredOrder = NonNullable<Awaited<ReturnType<typeof ordersRepository.findByIdempotencyKey>>>;
 
@@ -51,13 +48,6 @@ async function customerOrder(slug: string, orderId: string, key: string) {
     throw notFound("No encontramos ese pedido.", "ORDER_NOT_FOUND");
   }
   return { business, order };
-}
-
-/** La cuenta de la mesa se paga desde el pedido: para comer en el local, sin cancelar y aún sin pagar. */
-function assertOpenBill(order: { deliveryType: DeliveryType; status: OrderStatus; paidAt: Date | null }) {
-  if (order.deliveryType !== "DINE_IN") throw conflict("Este pedido no es para comer en el local.", "NOT_DINE_IN");
-  if (order.status === "CANCELLED") throw conflict("Este pedido fue cancelado.", "ORDER_CANCELLED");
-  if (order.paidAt) throw conflict("Tu cuenta ya está pagada.", "ALREADY_PAID");
 }
 
 type StoreSettings = Awaited<ReturnType<typeof loadStore>>["settings"];
@@ -170,8 +160,8 @@ export const ordersService = {
       });
     }
     const delivery = quoteDelivery(business.name, settings, input);
-    // Nequi, Daviplata o transferencia con cuenta configurada: se paga antes y se adjunta el comprobante.
-    // En la mesa no: se paga al terminar de comer (QR del local y comprobante desde el pedido, o en la caja).
+    // Nequi, Daviplata, transferencia o llave Bre-B con cuenta configurada: se paga antes y se adjunta el
+    // comprobante. En la mesa no: se paga al terminar de comer, en el local (el negocio marca «Cobrado»).
     const proofId =
       input.deliveryType === "DINE_IN"
         ? null
@@ -407,8 +397,6 @@ export const ordersService = {
       paid: Boolean(paidAt),
       /** Subió comprobante al pedir: el negocio lo revisa y lo marca como pagado. */
       paymentProofSent: Boolean(paymentProof),
-      /** Revisión automática del comprobante (PENDING mientras se lee). En la mesa, VERIFIED deja la cuenta pagada. */
-      paymentCheck: paymentProof?.checkStatus ?? null,
       // Su propio punto de entrega y, si va en camino, dónde está el domiciliario.
       destination: deliveryLat !== null && deliveryLng !== null ? { lat: deliveryLat, lng: deliveryLng } : null,
       courier: await courierService.positionFor(order.id, order.status),
@@ -417,46 +405,6 @@ export const ordersService = {
       history: statusHistory.map((entry) => ({ status: entry.toStatus, at: entry.createdAt })),
       business: { name: business.name, phone: business.phone, whatsappPhone: business.settings.whatsappPhone },
     };
-  },
-
-  /**
-   * Pagar la cuenta de la mesa, paso 1: el cliente escaneó con la cámara el QR de pago del local. Se
-   * comprueba que sea de una cuenta del negocio y se le dice a quién y cuánto pagar.
-   */
-  async scanTableQr(slug: string, orderId: string, key: string, payload: string) {
-    const { business, order } = await customerOrder(slug, orderId, key);
-    assertOpenBill(order);
-    const account = await paymentAccountsService.matchStoreQr(business.id, business.settings.paymentMethods, payload);
-    if (!account) {
-      throw new AppError(422, "QR_NOT_FROM_STORE", `Ese QR no es el de pago de ${business.name}. Escanea el QR de Nequi o Bre-B del local.`);
-    }
-    return { account, total: order.total };
-  },
-
-  /**
-   * Pagar la cuenta de la mesa, paso 2: el cliente pagó en su app y subió el comprobante. Se une al
-   * pedido (reemplaza uno anterior que no se aceptó) y se verifica: si todo coincide, queda pagado.
-   */
-  async payTableBill(slug: string, orderId: string, key: string, input: TablePaymentInput) {
-    const { business, order } = await customerOrder(slug, orderId, key);
-    assertOpenBill(order);
-    const kinds = await paymentAccountsService.prepayKindsFor(business.id, business.settings.paymentMethods, METHOD_FOR_ACCOUNT[input.kind]);
-    const method = kinds.includes(input.kind) ? METHOD_FOR_ACCOUNT[input.kind] : order.paymentMethod;
-
-    const replaced = await prisma.$transaction(async (tx) => {
-      const previous = await tx.paymentProof.findFirst({ where: { orderId: order.id, businessId: business.id }, select: { id: true, imageKey: true } });
-      if (previous) await tx.paymentProof.delete({ where: { id: previous.id } });
-      await paymentProofsService.claim(tx, business.id, input.paymentProofId, order.id);
-      if (method && method !== order.paymentMethod) {
-        await tx.order.update({ where: { id_businessId: { id: order.id, businessId: business.id } }, data: { paymentMethod: method } });
-      }
-      return previous;
-    });
-    if (replaced) void deleteImage(replaced.imageKey).catch((err: unknown) => logger.warn({ err }, "No se pudo borrar el comprobante anterior"));
-
-    // Si la lectura ya terminó se verifica ahora; si no, al terminar (y el seguimiento lo muestra).
-    await paymentProofsService.verify(input.paymentProofId);
-    return ordersService.trackFromStore(slug, orderId, key);
   },
 
   /** El cliente tocó "Enviar por WhatsApp". No prueba que el mensaje se haya enviado. */

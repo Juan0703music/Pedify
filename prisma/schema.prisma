@@ -77,6 +77,8 @@ enum PaymentMethod {
   DAVIPLATA
   BANK_TRANSFER
   CARD
+  /// Llave Bre-B (celular, correo, cédula o alias): se paga desde cualquier banco o billetera.
+  BRE_B
 }
 
 // ───────────────────────────── Cuentas y negocios ────────────────────────────

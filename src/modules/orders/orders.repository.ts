@@ -215,7 +215,7 @@ export const ordersRepository = {
         deliveryLng: true,
         paidAt: true,
         paymentMethod: true,
-        paymentProof: { select: { createdAt: true, checkStatus: true } },
+        paymentProof: { select: { createdAt: true } },
         createdAt: true,
         updatedAt: true,
         items: { orderBy: { id: "asc" }, select: { productName: true, quantity: true, subtotal: true } },

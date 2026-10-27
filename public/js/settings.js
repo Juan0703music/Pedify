@@ -38,6 +38,7 @@ const PAYMENT_METHODS = [
   { value: "NEQUI", label: "Nequi", icon: "smartphone" },
   { value: "DAVIPLATA", label: "Daviplata", icon: "smartphone" },
   { value: "BANK_TRANSFER", label: "Transferencia bancaria", icon: "wallet" },
+  { value: "BRE_B", label: "Llave Bre-B", icon: "key-round" },
   { value: "CARD", label: "Datáfono (tarjeta)", icon: "wallet" },
 ];
 
@@ -304,7 +305,7 @@ function paymentsSection() {
   return section(
     "pagos",
     "Métodos de pago",
-    "Se muestran en tu tienda para que el cliente elija cómo pagar. Abajo configuras tus QR: con ellos, Nequi, Daviplata y transferencia se pagan antes de enviar el pedido.",
+    "Se muestran en tu tienda para que el cliente elija cómo pagar. Abajo configuras tus QR: con ellos, Nequi, Daviplata, transferencia y llave Bre-B se pagan antes de enviar el pedido (en la mesa, al terminar de comer).",
     html`<form data-form="pagos" novalidate>
       <fieldset ${isOwner ? "" : "disabled"}>
         <legend class="sr-only">Métodos de pago aceptados</legend>

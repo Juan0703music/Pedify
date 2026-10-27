@@ -95,10 +95,10 @@ function view() {
     <div class="grid gap-1">
       <h3 class="flex items-center gap-2 text-[1.0625rem] font-[740]">${icon("qr-code")} Cobrar por adelantado con QR</h3>
       <p class="text-sm text-muted">
-        Cuando el cliente elige Nequi, Daviplata o transferencia, ve tu QR y tu llave al hacer el pedido, paga y sube el comprobante antes de
-        enviarlo: tú lo revisas en el pedido y lo marcas como pagado. Si paga en efectivo y cambia de idea, el domiciliario también puede mostrarle
-        el QR. Sube el QR para recibir pagos que te da tu app (Pedify lo lee y lo muestra nítido). Ese QR no trae el valor: el cliente escribe el
-        total que le mostramos.
+        Cuando el cliente elige Nequi, Daviplata, transferencia o llave Bre-B, ve tu QR y tu llave al hacer el pedido, paga y sube el comprobante
+        antes de enviarlo: tú lo revisas en el pedido y lo marcas como pagado. Si paga en efectivo y cambia de idea, el domiciliario también puede
+        mostrarle el QR. En la mesa no: el cliente paga al terminar de comer con el QR impreso en tu local, y tú tocas «Cobrado». Sube el QR para
+        recibir pagos que te da tu app (Pedify lo lee y lo muestra nítido). Ese QR no trae el valor: el cliente escribe el total que le mostramos.
       </p>
     </div>
     ${KINDS.map(card)}

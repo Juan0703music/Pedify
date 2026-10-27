@@ -13,8 +13,6 @@ import type {
   PaymentInput,
   StoreOrderParams,
   StoreOrderIdParams,
-  TablePaymentInput,
-  TableQrScanInput,
   WhatsappOpenedParams,
 } from "./orders.schemas.js";
 
@@ -67,20 +65,6 @@ export const ordersController = {
     const { slug, id } = req.params as StoreOrderIdParams;
     res.set("Cache-Control", "no-store");
     res.json({ data: await ordersService.trackFromStore(slug, id, orderKey(req)) });
-  },
-
-  /** POST /api/v1/store/:slug/orders/:id/payment-scan — QR de pago del local que escaneó el cliente de la mesa. */
-  async scanTableQr(req: Request, res: Response) {
-    const { slug, id } = req.params as StoreOrderIdParams;
-    res.set("Cache-Control", "no-store");
-    res.json({ data: await ordersService.scanTableQr(slug, id, orderKey(req), (req.body as TableQrScanInput).payload) });
-  },
-
-  /** POST /api/v1/store/:slug/orders/:id/payment-proof — comprobante del pago de la cuenta de la mesa. */
-  async payTableBill(req: Request, res: Response) {
-    const { slug, id } = req.params as StoreOrderIdParams;
-    res.set("Cache-Control", "no-store");
-    res.json({ data: await ordersService.payTableBill(slug, id, orderKey(req), req.body as TablePaymentInput) });
   },
 
   /** POST /api/v1/store/:slug/orders/:id/whatsapp — el cliente abrió WhatsApp con el mensaje. */
