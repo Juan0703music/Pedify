@@ -1,7 +1,8 @@
 import { prisma, type DbClient } from "../../config/database.js";
 import type { Prisma } from "../../generated/prisma/client.js";
 import type { DeliveryType, OrderStatus, PaymentMethod } from "../../generated/prisma/enums.js";
-import { ACTIVE_STATUSES, FINAL_STATUSES } from "./order-status.js";
+import { clock } from "../../utils/clock.js";
+import { ACTIVE_STATUSES, FINAL_STATUSES, UNPAID_TABLE_HOURS } from "./order-status.js";
 
 /** Campos del pedido que se devuelven (sin la clave de idempotencia). */
 export const orderSelect = {
@@ -74,9 +75,14 @@ function historyWhere(businessId: string, filters: HistoryFilters): Prisma.Order
 
 export const ordersRepository = {
   /** Pedidos en curso, del más antiguo al más reciente (el primero en llegar se atiende primero). */
+  /** En curso, más las mesas ya servidas que aún no pagan (por cobrar). */
   listActive(businessId: string) {
+    const since = new Date(clock.now().getTime() - UNPAID_TABLE_HOURS * 60 * 60 * 1000);
     return prisma.order.findMany({
-      where: { businessId, status: { in: ACTIVE_STATUSES } },
+      where: {
+        businessId,
+        OR: [{ status: { in: ACTIVE_STATUSES } }, { deliveryType: "DINE_IN", status: "DELIVERED", paidAt: null, createdAt: { gte: since } }],
+      },
       orderBy: { createdAt: "asc" },
       select: orderSelect,
     });
@@ -208,7 +214,8 @@ export const ordersRepository = {
         deliveryLat: true,
         deliveryLng: true,
         paidAt: true,
-        paymentProof: { select: { createdAt: true } },
+        paymentMethod: true,
+        paymentProof: { select: { createdAt: true, checkStatus: true } },
         createdAt: true,
         updatedAt: true,
         items: { orderBy: { id: "asc" }, select: { productName: true, quantity: true, subtotal: true } },

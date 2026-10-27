@@ -708,6 +708,9 @@ function liveOrderRow(order) {
   </li>`;
 }
 
+/** En curso de verdad: las mesas ya servidas que faltan por pagar se ven en Pedidos → Por cobrar. */
+const inProgress = (order) => order.status !== "DELIVERED";
+
 function liveOrders(orders) {
   const pending = orders.filter((order) => order.status === "PENDING").length;
   return html`<section aria-labelledby="live-title" class="panel p-4 sm:p-6" data-live-orders>
@@ -930,7 +933,7 @@ async function renderHome(context) {
       api("/businesses/current/settings"),
       api("/products/summary"),
       seesSales ? api("/analytics/today") : null,
-      api("/orders").then((page) => page.items),
+      api("/orders").then((page) => page.items.filter(inProgress)),
     ]);
   } catch (error) {
     render(main, html`<p class="text-tomato">${error.message}</p>`);
@@ -972,7 +975,7 @@ async function renderHome(context) {
   // En vivo: un pedido nuevo o un cambio de estado vuelve a consultar la API.
   let refreshing = null;
   const refresh = () => {
-    refreshing ??= Promise.all([seesSales ? api("/analytics/today") : null, api("/orders").then((page) => page.items)])
+    refreshing ??= Promise.all([seesSales ? api("/analytics/today") : null, api("/orders").then((page) => page.items.filter(inProgress))])
       .then(([nextToday, nextOrders]) => {
         today = nextToday;
         orders = nextOrders;

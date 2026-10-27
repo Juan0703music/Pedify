@@ -13,8 +13,17 @@ import type {
   PaymentInput,
   StoreOrderParams,
   StoreOrderIdParams,
+  TablePaymentInput,
+  TableQrScanInput,
   WhatsappOpenedParams,
 } from "./orders.schemas.js";
+
+/** Clave secreta del pedido que envía el navegador del cliente (cabecera X-Order-Key). */
+function orderKey(req: Request) {
+  const key = idempotencyKeySchema.safeParse(req.get("x-order-key") ?? "");
+  if (!key.success) throw notFound("No encontramos ese pedido.", "ORDER_NOT_FOUND");
+  return key.data;
+}
 
 export const ordersController = {
   // ─── Panel ───
@@ -56,10 +65,22 @@ export const ordersController = {
   /** GET /api/v1/store/:slug/orders/:id — seguimiento del pedido (cabecera X-Order-Key). */
   async track(req: Request, res: Response) {
     const { slug, id } = req.params as StoreOrderIdParams;
-    const key = idempotencyKeySchema.safeParse(req.get("x-order-key") ?? "");
-    if (!key.success) throw notFound("No encontramos ese pedido.", "ORDER_NOT_FOUND");
     res.set("Cache-Control", "no-store");
-    res.json({ data: await ordersService.trackFromStore(slug, id, key.data) });
+    res.json({ data: await ordersService.trackFromStore(slug, id, orderKey(req)) });
+  },
+
+  /** POST /api/v1/store/:slug/orders/:id/payment-scan — QR de pago del local que escaneó el cliente de la mesa. */
+  async scanTableQr(req: Request, res: Response) {
+    const { slug, id } = req.params as StoreOrderIdParams;
+    res.set("Cache-Control", "no-store");
+    res.json({ data: await ordersService.scanTableQr(slug, id, orderKey(req), (req.body as TableQrScanInput).payload) });
+  },
+
+  /** POST /api/v1/store/:slug/orders/:id/payment-proof — comprobante del pago de la cuenta de la mesa. */
+  async payTableBill(req: Request, res: Response) {
+    const { slug, id } = req.params as StoreOrderIdParams;
+    res.set("Cache-Control", "no-store");
+    res.json({ data: await ordersService.payTableBill(slug, id, orderKey(req), req.body as TablePaymentInput) });
   },
 
   /** POST /api/v1/store/:slug/orders/:id/whatsapp — el cliente abrió WhatsApp con el mensaje. */

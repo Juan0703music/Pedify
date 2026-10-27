@@ -312,7 +312,7 @@ Sin sesión (secciones 4, 8 y 9 del documento). Límite: 15 pedidos cada 10 minu
 }
 ```
 
-Con Nequi, Daviplata o transferencia y cuentas configuradas, además `"paymentProofId": "…"` (ver «Pago por adelantado con comprobante»).
+Con Nequi, Daviplata o transferencia y cuentas configuradas, además `"paymentProofId": "…"` (ver «Pago por adelantado con comprobante»). En la mesa (`DINE_IN`) no: se paga al terminar de comer (ver «Pagar la cuenta de la mesa»).
 
 - Solo se reciben productos y cantidades. Precios, subtotal, domicilio, descuento y total los calcula el servidor; cualquier valor monetario enviado se descarta.
 - `idempotencyKey`: la genera el navegador por intento de compra (16–80 caracteres `A-Z a-z 0-9 -`). Si llega de nuevo, se responde **200** con el pedido ya creado, sin duplicarlo.
@@ -380,7 +380,18 @@ Lo usa la pantalla de seguimiento del cliente (cada 8–20 s). Requiere la cabec
 }
 ```
 
-No incluye datos personales del cliente (nombre, celular, dirección ni notas).
+No incluye datos personales del cliente (nombre, celular, dirección ni notas). Incluye `paid`, `paymentProofSent` y `paymentCheck` (resultado de la revisión del comprobante: `PENDING` mientras se lee, `VERIFIED`, `REVIEW`, `MISMATCH` o `null`).
+
+### Pagar la cuenta de la mesa
+
+Para pedidos `DINE_IN`: el cliente pide sin pagar y, al terminar de comer, paga desde su seguimiento. Ambas rutas requieren `X-Order-Key` (404 `ORDER_NOT_FOUND` con otra clave) y responden 409 `NOT_DINE_IN`, `ORDER_CANCELLED` o `ALREADY_PAID` cuando la cuenta ya no se puede pagar.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| POST | `/store/:slug/orders/:id/payment-scan` | `{ "payload": "…" }`: el contenido del QR de pago del local que el cliente escaneó con la cámara. Si es el QR de una cuenta del negocio → 200 `{ account: { kind, label, accountKey, holderName }, total }`; si no → 422 `QR_NOT_FROM_STORE` |
+| POST | `/store/:slug/orders/:id/payment-proof` | `{ "paymentProofId": "…", "kind": "NEQUI" }`: el comprobante subido con `POST /store/:slug/payment-proofs?total=` (reemplaza uno anterior). El pedido queda con el método de esa cuenta y se verifica: con `VERIFIED` se marca **pagado** sin pasar por la caja (`paidAt`) y el panel recibe `order:updated` con `tablePayment: { check, tableNumber, total }`. → 200 con el seguimiento. Límite: 20 cada 15 minutos por IP |
+
+En el panel, `GET /orders` (en curso) incluye también las mesas servidas sin pagar de las últimas 12 horas («Por cobrar»); salen al marcarlas pagadas (`PATCH /orders/:id/payment`) o al verificarse su comprobante.
 
 ### `POST /store/:slug/orders/:id/whatsapp`
 

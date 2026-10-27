@@ -24,6 +24,13 @@ export const ACCOUNT_FOR_METHOD: Partial<Record<PaymentMethod, PaymentAccountKin
   BANK_TRANSFER: "BRE_B",
 };
 
+/** Método de pago con el que queda el pedido según la cuenta a la que pagó el cliente. */
+export const METHOD_FOR_ACCOUNT: Record<PaymentAccountKind, PaymentMethod> = {
+  NEQUI: "NEQUI",
+  DAVIPLATA: "DAVIPLATA",
+  BRE_B: "BANK_TRANSFER",
+};
+
 /** Métodos de pago que, si el negocio tiene cuenta para recibirlos, se pagan antes de enviar el pedido. */
 const TRANSFER_METHODS: PaymentMethod[] = ["NEQUI", "DAVIPLATA", "BANK_TRANSFER"];
 
@@ -113,6 +120,18 @@ export const paymentAccountsService = {
     const payload = shown.has(kind) ? stored.find((account) => account.kind === kind)?.qrPayload : null;
     if (!payload) throw notFound("Este negocio no tiene ese QR de pago.", "PAYMENT_QR_NOT_FOUND");
     return QRCode.toBuffer(payload, { type: "png", width: 900, margin: 4, errorCorrectionLevel: "M" });
+  },
+
+  /**
+   * Cuenta del negocio cuyo QR de pago escaneó el cliente con la cámara (el que está impreso en el
+   * local). null si ese código no es de ninguna de sus cuentas.
+   */
+  async matchStoreQr(businessId: string, methods: PaymentMethod[], payload: string) {
+    const stored = await prisma.paymentAccount.findMany({ where: { businessId, qrPayload: { not: null } }, select });
+    const shown = new Set(Object.values(prepayPlan(stored, methods)).flat());
+    const account = stored.find((item) => shown.has(item.kind) && item.qrPayload?.trim() === payload.trim());
+    if (!account) return null;
+    return { kind: account.kind, label: PAYMENT_ACCOUNT_LABEL[account.kind], accountKey: account.accountKey, holderName: account.holderName };
   },
 
   /** Cuentas para pagar por adelantado con `method` (vacío: ese método se paga al recibir). */

@@ -23,6 +23,11 @@ const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 export const ACTIVE_STATUSES: OrderStatus[] = ["PENDING", "CONFIRMED", "PREPARING", "READY", "OUT_FOR_DELIVERY"];
 export const FINAL_STATUSES: OrderStatus[] = ["DELIVERED", "CANCELLED"];
+/**
+ * Mesas por cobrar: un pedido para comer en el local ya servido sigue en el panel hasta que se paga
+ * (con el QR del local y el comprobante, o en la caja). Después de estas horas pasa al historial.
+ */
+export const UNPAID_TABLE_HOURS = 12;
 /** Aceptados por el negocio: de confirmado en adelante, sin cancelados. */
 export const ACCEPTED_STATUSES: OrderStatus[] = ["CONFIRMED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"];
 

@@ -24,6 +24,9 @@ const COLUMNS = [
   { id: "new", title: "Nuevos", statuses: ["PENDING"], empty: "No hay pedidos por aceptar." },
   { id: "kitchen", title: "En cocina", statuses: ["CONFIRMED", "PREPARING"], empty: "Nada en preparación." },
   { id: "ready", title: "Listos y en camino", statuses: ["READY", "OUT_FOR_DELIVERY"], empty: "Nada listo por entregar." },
+  // Mesas ya servidas que no han pagado: se ven solo cuando hay alguna. Salen al pagar (con el QR del local
+  // y el comprobante verificado, o al tocar «Cobrado» en la caja).
+  { id: "bill", title: "Por cobrar", statuses: ["DELIVERED"], empty: "No hay mesas por cobrar.", onlyWithOrders: true },
 ];
 
 const ACTION_DONE = {
@@ -74,7 +77,9 @@ async function loadHistory({ reset = false } = {}) {
   }
 }
 
-const inColumn = (column) => state.active.filter((order) => column.statuses.includes(order.status));
+const inColumn = (column) => state.active.filter((order) => column.statuses.includes(order.status) && !(order.status === "DELIVERED" && order.paidAt));
+/** Columnas a la vista: «Por cobrar» solo si hay mesas sin pagar. */
+const visibleColumns = () => COLUMNS.filter((column) => !column.onlyWithOrders || inColumn(column).length > 0);
 
 // ───────────────────────────── Plantillas ─────────────────────────────
 
@@ -128,7 +133,8 @@ function orderCard(order) {
         </p>
       </div>
       <div class="grid justify-items-end gap-1.5">
-        ${fresh ? html`<span class="badge bg-ink text-mustard">Nuevo</span>` : ""} ${statusBadge(order.status)}
+        ${fresh ? html`<span class="badge bg-ink text-mustard">Nuevo</span>` : ""}
+        ${order.status === "DELIVERED" ? html`<span class="badge bg-mustard text-ink">Por cobrar</span>` : statusBadge(order.status)}
       </div>
     </header>
     <p class="mt-3 font-[720]">${order.customerName}</p>
@@ -159,7 +165,9 @@ function orderCard(order) {
           >
             ${icon(action.icon)} ${action.label}
           </button>`
-        : ""}
+        : order.status === "DELIVERED" && !order.paidAt
+          ? html`<button type="button" class="btn btn-ink flex-1" data-collect="${order.id}">${icon("banknote")} Cobrado</button>`
+          : ""}
       <button type="button" class="btn btn-ghost btn-icon" data-open="${order.id}" aria-label="Ver detalle del pedido #${order.number}" title="Ver detalle">
         ${icon("ellipsis")}
       </button>
@@ -168,8 +176,10 @@ function orderCard(order) {
 }
 
 function activeView() {
-  const counts = COLUMNS.map((column) => inColumn(column).length);
-  state.column ??= COLUMNS[counts.findIndex((count) => count > 0)]?.id ?? "new";
+  const columns = visibleColumns();
+  const counts = columns.map((column) => inColumn(column).length);
+  if (!columns.some((column) => column.id === state.column)) state.column = null;
+  state.column ??= columns[counts.findIndex((count) => count > 0)]?.id ?? "new";
   if (state.active.length === 0) {
     return html`<div class="panel grid justify-items-center gap-3 px-6 py-14 text-center">
       <span class="grid h-14 w-14 place-items-center rounded-full bg-mustard-soft">${icon("receipt", "h-7 w-7")}</span>
@@ -180,7 +190,7 @@ function activeView() {
     </div>`;
   }
   return html`<div class="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:hidden" role="tablist" aria-label="Etapas">
-      ${COLUMNS.map(
+      ${columns.map(
         (column, index) => html`<button
           type="button"
           role="tab"
@@ -193,8 +203,8 @@ function activeView() {
         </button>`,
       )}
     </div>
-    <div class="grid items-start gap-5 lg:grid-cols-3">
-      ${COLUMNS.map((column, index) => {
+    <div class="grid items-start gap-5 ${columns.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}">
+      ${columns.map((column, index) => {
         const orders = inColumn(column);
         return html`<section class="${column.id === state.column ? "" : "hidden"} grid gap-4 lg:grid" aria-labelledby="col-${column.id}">
           <h2 id="col-${column.id}" class="hidden items-center gap-2 text-base font-[760] lg:flex">
@@ -392,13 +402,17 @@ function detailView(order) {
         <section aria-label="Pago" class="grid gap-4 rounded-[12px] border ${order.paymentProof && !order.paidAt ? proofCheck(order).box : "border-line"} p-4">
           <div class="flex items-center justify-between gap-4">
             <span>
-              <span class="block font-[650]">Pago: ${PAYMENT_LABEL[order.paymentMethod] ?? "—"}${order.paymentProof ? " · por adelantado" : ""}</span>
+              <span class="block font-[650]">Pago: ${PAYMENT_LABEL[order.paymentMethod] ?? "—"}${order.paymentProof
+                ? order.deliveryType === "DINE_IN" ? " · con el QR del local" : " · por adelantado"
+                : ""}</span>
               <span class="block text-sm text-muted">
                 ${order.paidAt
-                  ? `Pagado · ${dateTimeLabel(order.paidAt)}`
+                  ? `Pagado · ${dateTimeLabel(order.paidAt)}${order.deliveryType === "DINE_IN" && order.paymentProof?.checkStatus === "VERIFIED" ? " · confirmado con el comprobante" : ""}`
                   : order.paymentProof
                     ? "Revisa en tu app que llegó el valor y márcalo como pagado."
-                    : "Marca cuando recibas el pago."}
+                    : order.deliveryType === "DINE_IN"
+                      ? "Paga al terminar de comer: con el QR del local desde su celular o en la caja."
+                      : "Marca cuando recibas el pago."}
               </span>
             </span>
             <label class="flex items-center gap-2.5">
@@ -549,6 +563,21 @@ async function changeStatus(orderId, from, to, reason) {
   return result;
 }
 
+/** Mesa por cobrar: el cliente pagó en la caja (efectivo, datáfono o le mostró el pago). */
+async function collect(button) {
+  setBusy(button, true);
+  try {
+    const result = await api(`/orders/${button.dataset.collect}/payment`, { method: "PATCH", body: { paid: true } });
+    const index = state.active.findIndex((order) => order.id === result.id);
+    if (index !== -1) state.active[index] = { ...state.active[index], paidAt: result.paidAt };
+    drawBody();
+    toast(`Pedido #${result.number}${result.tableNumber ? ` (mesa ${result.tableNumber})` : ""} cobrado.`);
+  } catch (error) {
+    setBusy(button, false);
+    toast(error.message, "error");
+  }
+}
+
 async function advance(button) {
   const { advance: orderId, from, to } = button.dataset;
   // Aceptar un pedido cuyo comprobante no coincide: se pide confirmación.
@@ -615,6 +644,7 @@ function bindPage() {
       drawBody();
     }
     if (target.matches("[data-advance]")) advance(target);
+    if (target.matches("[data-collect]")) collect(target);
     if (target.matches("[data-open]")) openDetail(target.dataset.open);
     if (target.matches("[data-more]")) {
       setBusy(target, true);
@@ -734,6 +764,13 @@ function bindLive() {
     if (state.detail?.id === update.orderId) refreshDetail();
     if (update.changedBy && update.changedBy !== state.me.user.id) {
       toast(`Pedido #${update.number}: ${STATUS[update.status]?.label ?? update.status}.`, "info");
+    }
+    // Una mesa pagó la cuenta con el QR del local y subió su comprobante.
+    const paid = update.tablePayment;
+    if (paid && paid.check !== "PENDING") {
+      const who = `Pedido #${update.number}${paid.tableNumber ? ` (mesa ${paid.tableNumber})` : ""}`;
+      if (update.paidAt) toast(`${who} pagó ${formatCOP(paid.total)}: comprobante verificado.`);
+      else toast(`${who} subió su comprobante de ${formatCOP(paid.total)}: revísalo.`, "info");
     }
   });
 }

@@ -67,6 +67,9 @@ function quickReading(text: string, expectedTotal: number | undefined) {
  * Verificación automática: Pedify lee el comprobante y revisa que sea un pago exitoso, por el valor del
  * pedido, a una cuenta del negocio, de ese momento y no usado en otro pedido (proof-check.ts). El
  * panel muestra el resultado; la confirmación definitiva es ver el dinero en la cuenta.
+ *
+ * En la mesa (comer en el local) el cliente paga al terminar: escanea el QR de pago del local, paga y
+ * sube el comprobante desde su pedido. Si todo coincide, la cuenta queda pagada sola en el panel.
  */
 export const paymentProofsService = {
   /**
@@ -117,7 +120,7 @@ export const paymentProofsService = {
         receiptText: true,
         readAt: true,
         createdAt: true,
-        order: { select: { id: true, number: true, total: true, status: true, paidAt: true } },
+        order: { select: { id: true, number: true, total: true, status: true, paidAt: true, deliveryType: true, tableNumber: true } },
       },
     });
     if (!proof?.order || !proof.readAt) return;
@@ -137,14 +140,24 @@ export const paymentProofsService = {
     });
     await prisma.paymentProof.updateMany({ where: { id: proof.id }, data: { checkStatus: result.status, checks: result.checks as object[] } });
     logger.info({ businessId: proof.businessId, orderId: proof.order.id, status: result.status }, "Comprobante de pago verificado");
+
+    // Cuenta de la mesa: si el comprobante coincide en todo, el pago queda confirmado sin esperar a la caja.
+    const { order } = proof;
+    const atTable = order.deliveryType === "DINE_IN";
+    let paidAt = order.paidAt;
+    if (atTable && result.status === "VERIFIED" && !paidAt && order.status !== "CANCELLED") {
+      paidAt = clock.now();
+      await prisma.order.updateMany({ where: { id: order.id, businessId: proof.businessId, paidAt: null }, data: { paidAt } });
+    }
     // El panel abierto (en el computador y en el celular) muestra el resultado al instante.
     notifications.orderUpdated({
       businessId: proof.businessId,
-      orderId: proof.order.id,
-      number: proof.order.number,
-      status: proof.order.status,
-      paidAt: proof.order.paidAt,
+      orderId: order.id,
+      number: order.number,
+      status: order.status,
+      paidAt,
       changedBy: null,
+      tablePayment: atTable ? { check: result.status, tableNumber: order.tableNumber, total: order.total } : undefined,
     });
   },
 

@@ -27,7 +27,14 @@ const REVALIDATE_MS = 60_000;
 interface ServerToClientEvents {
   ready: (payload: { businessId: string }) => void;
   "order:created": (payload: { orderId: string; number: number; total: number; customerName: string; deliveryType: string; createdAt: Date }) => void;
-  "order:updated": (payload: { orderId: string; number: number; status: string; paidAt: Date | null; changedBy: string | null }) => void;
+  "order:updated": (payload: {
+    orderId: string;
+    number: number;
+    status: string;
+    paidAt: Date | null;
+    changedBy: string | null;
+    tablePayment?: { check: string; tableNumber: string | null; total: number };
+  }) => void;
   "business:changed": (payload: { scope: ChangeScope; clientId: string | null }) => void;
 }
 
@@ -110,6 +117,7 @@ export function attachSocket(server: http.Server) {
       status: event.status,
       paidAt: event.paidAt,
       changedBy: event.changedBy,
+      tablePayment: event.tablePayment,
     });
   });
 

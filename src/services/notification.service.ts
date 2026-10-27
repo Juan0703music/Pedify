@@ -27,6 +27,8 @@ export interface OrderUpdatedEvent {
   status: string;
   paidAt: Date | null;
   changedBy: string | null;
+  /** El cliente de una mesa pagó la cuenta con el QR del local: resultado de la revisión del comprobante. */
+  tablePayment?: { check: string; tableNumber: string | null; total: number };
 }
 
 /**

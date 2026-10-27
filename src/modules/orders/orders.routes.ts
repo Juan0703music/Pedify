@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
 import { getTenant, requireBusiness } from "../../middlewares/authorize.js";
-import { orderLimiter, trackingLimiter } from "../../middlewares/rateLimiter.js";
+import { orderLimiter, proofLimiter, trackingLimiter } from "../../middlewares/rateLimiter.js";
 import { validate } from "../../middlewares/validate.js";
 import { paymentProofsService } from "../payment-accounts/payment-proofs.service.js";
 import { ordersController } from "./orders.controller.js";
@@ -13,6 +13,8 @@ import {
   paymentSchema,
   storeOrderIdParamsSchema,
   storeOrderParamsSchema,
+  tablePaymentSchema,
+  tableQrScanSchema,
   whatsappOpenedParamsSchema,
   whatsappOpenedSchema,
 } from "./orders.schemas.js";
@@ -43,6 +45,19 @@ storeOrderRoutes.post(
   ordersController.createFromStore,
 );
 storeOrderRoutes.get("/:id", trackingLimiter, validate({ params: storeOrderIdParamsSchema }), ordersController.track);
+// Pagar la cuenta de la mesa: el cliente escanea el QR de pago del local y luego sube su comprobante.
+storeOrderRoutes.post(
+  "/:id/payment-scan",
+  trackingLimiter,
+  validate({ params: storeOrderIdParamsSchema, body: tableQrScanSchema }),
+  ordersController.scanTableQr,
+);
+storeOrderRoutes.post(
+  "/:id/payment-proof",
+  proofLimiter,
+  validate({ params: storeOrderIdParamsSchema, body: tablePaymentSchema }),
+  ordersController.payTableBill,
+);
 storeOrderRoutes.post(
   "/:id/whatsapp",
   validate({ params: whatsappOpenedParamsSchema, body: whatsappOpenedSchema }),
