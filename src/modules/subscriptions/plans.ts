@@ -42,7 +42,7 @@ export const PLANS: Record<PlanCode, Plan> = {
     annualDiscountPercent: 8,
     priceYearly: 4_414_896,
     maxProducts: 100,
-    maxMembers: 15,
+    maxMembers: 20,
     maxBusinesses: 3,
     summary: "Para el negocio con carta completa y equipo en el mostrador.",
   },
