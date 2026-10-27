@@ -95,7 +95,7 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
           settings.pickupEnabled && { value: "PICKUP", label: "Para llevar", detail: "Sin costo" },
         ]
       : [
-          settings.deliveryEnabled && { value: "DELIVERY", label: "Domicilio", detail: byDistance ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))}` : fixedDetail },
+          settings.deliveryEnabled && { value: "DELIVERY", label: "Domicilio", detail: byDistance ? "Por ubicación" : fixedDetail },
           settings.pickupEnabled && { value: "PICKUP", label: "Recoger en el local", detail: "Sin costo" },
         ]
   ).filter(Boolean);

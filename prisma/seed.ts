@@ -324,6 +324,18 @@ async function main() {
       data: {
         // Lunes cerrado; de martes a domingo de 8:00 a. m. a 11:30 p. m. (horario amplio para probar pedidos).
         openingHours: DEMO_HOURS,
+        // Domicilio por ubicación: se cobra por km desde el negocio (valores sugeridos, a toda la ciudad).
+        // deliveryFee queda para los pedidos de ejemplo.
+        deliveryPricing: "DISTANCE",
+        deliveryTiers: [
+          { upToKm: 2, fee: 4000 },
+          { upToKm: 4, fee: 5500 },
+          { upToKm: 6, fee: 7000 },
+          { upToKm: 8, fee: 8500 },
+        ],
+        deliveryExtraKmFee: 1000,
+        locationLat: 9.3047,
+        locationLng: -75.3978,
         deliveryFee: 4000,
         deliveryArea: "Todo Sincelejo",
         minimumOrder: 15000,

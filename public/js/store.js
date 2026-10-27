@@ -136,18 +136,18 @@ function facts(store) {
   const { business, settings } = store;
   const items = [];
   if (settings.deliveryEnabled) {
-    // Según la distancia: desde el rango más barato, a toda la ciudad o hasta donde llegue.
-    const tiers = settings.deliveryPricing === "DISTANCE" ? (settings.deliveryTiers ?? []) : [];
-    const reach = settings.deliveryWholeCity ? "toda la ciudad" : `hasta ${String(settings.deliveryReachKm).replace(".", ",")} km`;
-    const price =
-      tiers.length > 0
-        ? `desde ${formatCOP(Math.min(...tiers.map((tier) => tier.fee)))} · ${reach}`
-        : settings.deliveryFee > 0
-          ? formatCOP(settings.deliveryFee)
-          : "gratis";
-    items.push(html`<span class="fact">${icon("bike")} Domicilio
-      <span class="num font-[720]">${price}</span>
-      ${settings.deliveryArea ? html`<span class="text-paper/55">· ${settings.deliveryArea}</span>` : ""}</span>`);
+    // Según la distancia: el valor sale de los km hasta la ubicación del cliente (se ve en el carrito).
+    const byDistance = settings.deliveryPricing === "DISTANCE" && (settings.deliveryTiers ?? []).length > 0;
+    if (byDistance) {
+      const reach = settings.deliveryWholeCity ? settings.deliveryArea || "toda la ciudad" : `hasta ${String(settings.deliveryReachKm).replace(".", ",")} km`;
+      items.push(html`<span class="fact">${icon("bike")} Domicilio <span class="font-[720]">por ubicación</span>
+        <span class="text-paper/55">· ${reach}</span></span>`);
+    } else {
+      const price = settings.deliveryFee > 0 ? formatCOP(settings.deliveryFee) : "gratis";
+      items.push(html`<span class="fact">${icon("bike")} Domicilio
+        <span class="num font-[720]">${price}</span>
+        ${settings.deliveryArea ? html`<span class="text-paper/55">· ${settings.deliveryArea}</span>` : ""}</span>`);
+    }
   }
   if (settings.pickupEnabled) items.push(html`<span class="fact">${icon("shopping-bag")} Recoger en el local</span>`);
   if (settings.minimumOrder > 0) {
