@@ -179,6 +179,8 @@ npm run dev                # terminal 2: API + Tailwind en modo observación →
 
 Páginas: `/` portada · `/registro` · `/login` · `/recuperar` · `/privacidad` · `/admin` (equipo de Pedify) · `/panel/plan` · `/panel` · `/panel/pedidos` · `/panel/menu` · `/panel/clientes` · `/panel/analiticas` · `/panel/tienda` · `/panel/configuracion` · `/tienda/<slug>` (tienda pública, p. ej. `/tienda/sabores-del-caribe`).
 
+**Probar desde el celular:** los QR y enlaces que se abren en otro dispositivo (tienda, mesas, domiciliario) usan la IP del computador en el Wi-Fi, así que el celular debe estar en la misma red. Para probar desde cualquier red (también con datos), usa `npm run dev:public` en lugar de `npm run dev`: abre un túnel temporal de Cloudflare (`https://….trycloudflare.com`, requiere `cloudflared`) y los QR lo usan. El enlace cambia en cada encendido: no imprimas esos QR para el local.
+
 Las fotos se guardan en `uploads/` en desarrollo. En producción se recomienda `STORAGE_DRIVER=s3` (ver `.env.example`).
 
 ## Scripts
@@ -186,6 +188,7 @@ Las fotos se guardan en `uploads/` en desarrollo. En producción se recomienda `
 | Script | Qué hace |
 |---|---|
 | `npm run dev` | Servidor con recarga (`tsx watch`) + Tailwind en modo observación |
+| `npm run dev:public` | Lo mismo con un enlace público temporal (túnel de Cloudflare) para probar los QR desde cualquier celular |
 | `npm run build` | Compila el CSS (minificado) y el TypeScript a `dist/` |
 | `npm start` | Ejecuta la versión compilada |
 | `npm run smoke -- <url>` | Verifica un despliegue (solo lectura) |

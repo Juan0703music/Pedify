@@ -3,8 +3,12 @@ import type { RequestHandler } from "express";
 import { forbidden } from "../utils/errors.js";
 import { env } from "./env.js";
 
-/** Orígenes autorizados: la propia aplicación y los declarados en CORS_ORIGINS. */
-export const allowedOrigins = new Set([new URL(env.APP_URL).origin, ...env.CORS_ORIGINS]);
+/** Orígenes autorizados: la propia aplicación (también por PUBLIC_URL) y los declarados en CORS_ORIGINS. */
+export const allowedOrigins = new Set([
+  new URL(env.APP_URL).origin,
+  ...(env.PUBLIC_URL ? [new URL(env.PUBLIC_URL).origin] : []),
+  ...env.CORS_ORIGINS,
+]);
 
 export function isAllowedOrigin(origin: string, requestHost?: string): boolean {
   if (allowedOrigins.has(origin)) return true;

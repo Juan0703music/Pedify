@@ -22,9 +22,11 @@ function lanAddress(): string | undefined {
  * Dirección de Pedify para abrir en otro dispositivo: el enlace y los QR de la tienda y de las mesas, el
  * enlace del domiciliario y el QR de la app. En desarrollo APP_URL es http://localhost:3000, que en el
  * celular no abre nada (allí «localhost» es el propio celular): se usa la IP del computador en la red,
- * y un celular conectado al mismo Wi-Fi abre la tienda. En pruebas y producción es siempre APP_URL.
+ * y un celular conectado al mismo Wi-Fi abre la tienda. Con PUBLIC_URL (un túnel), esa dirección, que
+ * abre desde cualquier red. En pruebas y producción es APP_URL.
  */
 export function publicAppUrl(): string {
+  if (env.PUBLIC_URL) return new URL(env.PUBLIC_URL).origin;
   const url = new URL(env.APP_URL);
   if (env.NODE_ENV === "development" && LOOPBACK_HOSTS.has(url.hostname)) {
     const address = lanAddress();

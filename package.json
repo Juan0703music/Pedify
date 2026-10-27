@@ -11,6 +11,7 @@
     "dev": "concurrently -k -n api,css -c blue,magenta \"npm:dev:api\" \"npm:dev:css\"",
     "dev:api": "tsx watch --clear-screen=false src/server.ts",
     "dev:css": "tailwindcss -i src/styles/app.css -o public/css/app.css --watch",
+    "dev:public": "tsx scripts/dev-public.ts",
     "build": "npm run build:css && npm run build:api",
     "build:css": "tailwindcss -i src/styles/app.css -o public/css/app.css --minify",
     "build:api": "prisma generate && tsc -p tsconfig.build.json",

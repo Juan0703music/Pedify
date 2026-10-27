@@ -97,15 +97,23 @@ function appearance() {
 }
 
 /**
- * Mientras Pedify corre en este computador, los QR llevan su dirección en el Wi-Fi (192.168…): el celular
- * tiene que estar conectado a esa misma red para abrirlos. Ya publicado, el QR lleva el dominio de Pedify.
+ * Mientras Pedify corre en este computador, los QR llevan su dirección en el Wi-Fi (192.168…), y el celular
+ * tiene que estar en esa misma red, o un enlace temporal (npm run dev:public) que cambia en cada encendido.
+ * Ya publicado, el QR lleva el dominio de Pedify y no hay aviso.
  */
 function localNetworkHint() {
   const { host, hostname } = new URL(state.business.storeUrl);
-  if (!/^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(hostname)) return "";
+  let text;
+  if (/^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(hostname)) {
+    text = html`Los QR abren la tienda desde este computador (<span class="num">${host}</span>): para escanearlos, conecta el celular al mismo Wi-Fi.`;
+  } else if (hostname.endsWith(".trycloudflare.com")) {
+    text = html`Los QR usan un enlace temporal para probar desde cualquier celular: cambia cada vez que se enciende el servidor. Imprime los definitivos cuando Pedify esté publicado con su dominio.`;
+  } else {
+    return "";
+  }
   return html`<p class="flex items-start gap-2 rounded-[10px] bg-mustard-soft px-3.5 py-3 text-sm text-mustard-deep">
     ${icon("wifi", "mt-0.5 h-4 w-4 flex-none")}
-    <span>Los QR abren la tienda desde este computador (<span class="num">${host}</span>): para escanearlos, conecta el celular al mismo Wi-Fi.</span>
+    <span>${text}</span>
   </p>`;
 }
 

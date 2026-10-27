@@ -18,6 +18,9 @@ const EnvSchema = z
     APP_ENV: z.enum(["production", "staging"]).default("production"),
     PORT: z.coerce.number().int().positive().default(3000),
     APP_URL: z.url().default("http://localhost:3000"),
+    // Dirección con la que otros dispositivos abren los QR y enlaces (tienda, mesas, domiciliario), si no es
+    // APP_URL: p. ej. el túnel https://….trycloudflare.com de `npm run dev:public` para probar desde el celular.
+    PUBLIC_URL: optional(z.url()),
     CORS_ORIGINS: z
       .string()
       .default("")
