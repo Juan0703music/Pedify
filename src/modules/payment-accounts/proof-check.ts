@@ -194,15 +194,26 @@ export interface EvaluateInput {
   total: number;
   accounts: ProofAccount[];
   uploadedAt: Date;
-  /** Pedido que ya usó el mismo archivo o la misma referencia. */
-  reusedImageIn: number | null;
-  reusedReferenceIn: { reference: string; orderNumber: number } | null;
+  /** Pedido (su número) o pago (su descripción) que ya usó el mismo archivo o la misma referencia. */
+  reusedImageIn: number | string | null;
+  reusedReferenceIn: { reference: string; orderNumber: number | string } | null;
+  /**
+   * Qué se paga: un pedido (por defecto, pagado poco antes de pedir) o un plan de Pedify, que el
+   * propietario puede pagar y reportar días después.
+   */
+  subject?: "order" | "plan";
 }
 
-/** Revisa el comprobante contra el pedido y devuelve el resultado con el detalle de cada revisión. */
+/** Un plan se puede pagar hasta 3 días antes de subir el comprobante. */
+const PLAN_PAYMENT_MAX_AGE_MS = 3 * 86_400_000;
+
+/** Revisa el comprobante contra el pedido (o el plan) y devuelve el resultado con el detalle de cada revisión. */
 export function evaluateProof(input: EvaluateInput): { status: ProofStatus; checks: ProofCheck[] } {
   const checks: ProofCheck[] = [];
   const parsed = input.text ? parseReceipt(input.text, input.uploadedAt) : null;
+  const plan = input.subject === "plan";
+  const what = plan ? "el plan" : "el pedido";
+  const usedIn = (where: number | string) => (typeof where === "number" ? `el pedido #${where}` : where);
 
   // 1. Que sea un comprobante de un pago hecho.
   if (!parsed || parsed.plain.replace(/\s/g, "").length < 20) {
@@ -218,10 +229,10 @@ export function evaluateProof(input: EvaluateInput): { status: ProofStatus; chec
   if (parsed) {
     // 2. El valor del pedido.
     if (parsed.amounts.includes(input.total)) {
-      checks.push({ key: "amount", ok: true, title: "Valor", detail: `${formatCOP(input.total)}, igual al total del pedido.` });
+      checks.push({ key: "amount", ok: true, title: "Valor", detail: `${formatCOP(input.total)}, igual al ${plan ? "valor del plan" : "total del pedido"}.` });
     } else if (parsed.amounts.length > 0) {
       const closest = parsed.amounts.reduce((best, value) => (Math.abs(value - input.total) < Math.abs(best - input.total) ? value : best));
-      checks.push({ key: "amount", ok: false, title: "Valor", detail: `Dice ${formatCOP(closest)} y el pedido es de ${formatCOP(input.total)}.` });
+      checks.push({ key: "amount", ok: false, title: "Valor", detail: `Dice ${formatCOP(closest)} y ${what} es de ${formatCOP(input.total)}.` });
     } else {
       checks.push({ key: "amount", ok: null, title: "Valor", detail: "No pudimos leer el valor." });
     }
@@ -237,11 +248,20 @@ export function evaluateProof(input: EvaluateInput): { status: ProofStatus; chec
           : { key: "recipient", ok: null, title: "Destinatario", detail: "No pudimos leer a quién se pagó." },
     );
 
-    // 4. De este pedido: hecho poco antes de subirlo (hasta 3 horas antes).
+    // 4. De este pedido: hecho poco antes de subirlo (hasta 3 horas antes; un plan, hasta 3 días antes).
     const paid = parsed.paidAt;
     const uploaded = input.uploadedAt.getTime();
     if (!paid) {
       checks.push({ key: "date", ok: null, title: "Fecha y hora", detail: "No pudimos leer la fecha." });
+    } else if (plan) {
+      if (paid.date.getTime() > uploaded + 15 * 60_000) {
+        checks.push({ key: "date", ok: false, title: "Fecha y hora", detail: `Dice ${dayLabel(paid.date)}, una fecha que aún no había llegado.` });
+      } else if (paid.date.getTime() < uploaded - PLAN_PAYMENT_MAX_AGE_MS) {
+        checks.push({ key: "date", ok: false, title: "Fecha y hora", detail: `Es del ${dayLabel(paid.date)}: no parece de este pago.` });
+      } else {
+        const day = dayLabel(paid.date) === dayLabel(input.uploadedAt) ? "Hoy" : `El ${dayLabel(paid.date)}`;
+        checks.push({ key: "date", ok: true, title: "Fecha y hora", detail: paid.hasTime ? `${day} a las ${timeLabel(paid.date)}` : day });
+      }
     } else if (dayLabel(paid.date) !== dayLabel(input.uploadedAt)) {
       checks.push({ key: "date", ok: false, title: "Fecha y hora", detail: `Es del ${dayLabel(paid.date)}: no es de este pedido.` });
     } else if (!paid.hasTime) {
@@ -256,14 +276,15 @@ export function evaluateProof(input: EvaluateInput): { status: ProofStatus; chec
     }
   }
 
-  // 5. Que no se haya usado en otro pedido.
+  // 5. Que no se haya usado en otro pedido (u otro pago de un plan).
   if (input.reusedImageIn !== null) {
-    checks.push({ key: "unique", ok: false, title: "No repetido", detail: `Es el mismo pantallazo del pedido #${input.reusedImageIn}.` });
+    checks.push({ key: "unique", ok: false, title: "No repetido", detail: `Es el mismo pantallazo ${typeof input.reusedImageIn === "number" ? `del pedido #${input.reusedImageIn}` : `de ${input.reusedImageIn}`}.` });
   } else if (input.reusedReferenceIn) {
-    checks.push({ key: "unique", ok: false, title: "No repetido", detail: `La referencia ${input.reusedReferenceIn.reference} ya se usó en el pedido #${input.reusedReferenceIn.orderNumber}.` });
+    checks.push({ key: "unique", ok: false, title: "No repetido", detail: `La referencia ${input.reusedReferenceIn.reference} ya se usó en ${usedIn(input.reusedReferenceIn.orderNumber)}.` });
   } else {
     const reference = parsed?.references[0];
-    checks.push({ key: "unique", ok: true, title: "No repetido", detail: reference ? `Referencia ${reference}, no usada en otro pedido.` : "No se ha usado en otros pedidos." });
+    const others = plan ? "otro pago" : "otro pedido";
+    checks.push({ key: "unique", ok: true, title: "No repetido", detail: reference ? `Referencia ${reference}, no usada en ${others}.` : `No se ha usado en ${others}.` });
   }
 
   const ok = (key: CheckKey) => checks.find((check) => check.key === key)?.ok;

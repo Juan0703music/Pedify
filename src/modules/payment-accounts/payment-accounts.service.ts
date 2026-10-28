@@ -71,6 +71,20 @@ export async function readQr(input: Buffer): Promise<string | null> {
   return null;
 }
 
+/** Código del QR de cobro en la imagen subida; error claro si no hay un QR o no parece de cobro. */
+export async function readPaymentQr(file: Buffer): Promise<string> {
+  const payload = await readQr(file);
+  if (!payload) {
+    throw new AppError(
+      422,
+      "QR_NOT_FOUND",
+      "No encontramos un código QR en esa imagen. Sube el pantallazo del QR para recibir pagos que te da la app (que se vea completo y nítido).",
+    );
+  }
+  if (payload.length > 1000) throw new AppError(422, "QR_TOO_LONG", "Ese código QR no parece de cobro. Sube el QR para recibir pagos.");
+  return payload;
+}
+
 /**
  * Para cada método por transferencia que acepta el negocio, las cuentas que se le muestran al cliente
  * (la propia del método y la llave Bre-B, que se paga desde cualquier banco o billetera). Un método con
@@ -137,16 +151,7 @@ export const paymentAccountsService = {
 
   /** Sube la imagen del QR: se lee el código y se guarda la imagen (la anterior se borra). */
   async setQr(tenant: TenantContext, kind: PaymentAccountKind, file: Buffer) {
-    const payload = await readQr(file);
-    if (!payload) {
-      throw new AppError(
-        422,
-        "QR_NOT_FOUND",
-        "No encontramos un código QR en esa imagen. Sube el pantallazo del QR para recibir pagos que te da la app (que se vea completo y nítido).",
-      );
-    }
-    if (payload.length > 1000) throw new AppError(422, "QR_TOO_LONG", "Ese código QR no parece de cobro. Sube el QR para recibir pagos.");
-
+    const payload = await readPaymentQr(file);
     const current = await prisma.paymentAccount.findUnique({ where: { businessId_kind: { businessId: tenant.businessId, kind } }, select: { qrImageKey: true } });
     const saved = await saveImage(file, "qr", `businesses/${tenant.businessId}/payments`);
     let account;

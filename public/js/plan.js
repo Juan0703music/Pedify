@@ -1,14 +1,20 @@
 // Mi plan (fase 5: comercialización): estado de la suscripción, uso frente a los límites,
 // planes disponibles, cómo pagar y pagos registrados. Con Wompi configurado, el plan se paga en
 // línea: Pedify crea el cobro, el negocio paga en Wompi y al volver aquí se confirma el pago.
+// Con las cuentas de Pedify configuradas, también se paga directo a Nequi o a la llave Bre-B: el
+// negocio sube el comprobante y el plan se activa cuando Pedify confirma que el dinero llegó.
 // El pago se ve en vivo en todos los dispositivos: si pagas en el celular, el computador lo muestra.
-import { api, formatCOP } from "./api.js";
+import { api, formatCOP, upload } from "./api.js";
 import { initPanel, renderNoBusiness } from "./dashboard.js";
 import { onLive } from "./notifications.js";
-import { html, icon, render, setBusy, toast } from "./ui.js";
+import { checkImageFile, copyText, html, icon, raw, render, setBusy, toast } from "./ui.js";
 
 const longDate = (value) =>
   new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Bogota" }).format(new Date(value));
+const dayTime = (value) =>
+  new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" }).format(new Date(value));
+const period = (months) => (months === 12 ? "1 año" : "1 mes");
+const METHOD_LABEL = { NEQUI: "Nequi", BRE_B: "Llave Bre-B", DAVIPLATA: "Daviplata", TRANSFERENCIA: "Transferencia", EFECTIVO: "Efectivo", OTRO: "Otro" };
 
 const STATUS = {
   TRIAL: { label: "Prueba gratis", badge: "bg-mustard text-ink" },
@@ -38,7 +44,7 @@ function supportLink(plan, text) {
 /** Medio de pago de un pago registrado (los de Wompi traen el medio en la nota). */
 function methodLabel(payment) {
   if (payment.method === "WOMPI") return `Wompi · ${payment.note ?? "en línea"}`;
-  return payment.method.charAt(0) + payment.method.slice(1).toLowerCase();
+  return METHOD_LABEL[payment.method] ?? payment.method.charAt(0) + payment.method.slice(1).toLowerCase();
 }
 
 /** Por qué no se puede pagar un plan más pequeño que el menú o el equipo actual (o null). */
@@ -51,15 +57,152 @@ function tooSmall(plan, option) {
   return null;
 }
 
-/** Botones para pagar un plan en Wompi: un mes o el año completo con descuento. */
-function payButtons(plan, option, { primary = false } = {}) {
+/**
+ * Botones para pagar un plan: un mes o el año completo con descuento. En Wompi (`data-pay`) o directo a
+ * las cuentas de Pedify (`data-direct`, abre los datos para pagar y subir el comprobante).
+ */
+function payButtons(plan, option, { primary = false, direct = false } = {}) {
   const blocked = tooSmall(plan, option);
   if (blocked) return html`<p class="rounded-[10px] bg-ground px-3.5 py-2.5 text-sm text-muted">${blocked} Elimina algunos para pagarlo.</p>`;
+  const action = direct ? "data-direct" : "data-pay";
   return html`<div class="grid gap-2 ${primary ? "sm:grid-cols-2" : ""}">
-    <button type="button" class="btn ${primary ? "btn-ink" : "btn-ghost"}" data-pay="${option.code}" data-months="1">
-      ${icon("credit-card")} Pagar 1 mes · ${formatCOP(option.priceMonthly)}
+    <button type="button" class="btn ${primary ? "btn-ink" : "btn-ghost"}" ${action}="${option.code}" data-months="1">
+      ${icon(direct ? "qr-code" : "credit-card")} Pagar 1 mes · ${formatCOP(option.priceMonthly)}
     </button>
-    <button type="button" class="btn btn-ghost" data-pay="${option.code}" data-months="12">Pagar 1 año · ${formatCOP(option.priceYearly)}</button>
+    <button type="button" class="btn btn-ghost" ${action}="${option.code}" data-months="12">Pagar 1 año · ${formatCOP(option.priceYearly)}</button>
+  </div>`;
+}
+
+/** Nombres de las cuentas de Pedify para pagar directo: «Nequi o llave Bre-B». */
+const directNames = (plan) => plan.directPayment.accounts.map((account) => (account.kind === "BRE_B" ? "llave Bre-B" : account.label)).join(" o ");
+
+/** ¿Se puede pagar directo ahora? (Hay cuentas y no hay otro pago esperando confirmación.) */
+const canPayDirect = (plan) => Boolean(plan.directPayment) && plan.transfer?.status !== "PENDING";
+
+/** Cómo pagar `option`: Wompi, directo a Nequi o Bre-B (o ambos), o nada si no hay forma configurada. */
+function paymentChoices(plan, option, { primary = false } = {}) {
+  const direct = canPayDirect(plan);
+  if (plan.onlinePayment) {
+    return html`${payButtons(plan, option, { primary })}
+      ${direct && !tooSmall(plan, option)
+        ? html`<p class="text-sm text-muted">
+            ¿Prefieres pagar por ${directNames(plan)}?
+            <button type="button" class="font-[650] text-ink underline underline-offset-2" data-direct="${option.code}" data-months="1">Paga directo y sube el comprobante</button>
+          </p>`
+        : ""}`;
+  }
+  return direct ? payButtons(plan, option, { primary, direct: true }) : "";
+}
+
+/** Pago directo a la cuenta de Pedify: QR o llave, valor exacto, pasos y el botón para subir el comprobante. */
+function directPanel(plan, paying) {
+  const option = plan.plans.find((item) => item.code === paying.plan);
+  const accounts = plan.directPayment.accounts;
+  const account = accounts.find((item) => item.kind === paying.kind) ?? accounts[0];
+  const amount = paying.months === 12 ? option.priceYearly : option.priceMonthly;
+  const keyName = account.kind === "BRE_B" ? "Llave Bre-B" : `Número de ${account.label}`;
+  const segment = (attribute, value, selected, label) => html`<button
+    type="button"
+    class="min-h-9 flex-1 rounded-full px-3 text-sm font-[720] text-muted aria-pressed:bg-ink aria-pressed:text-paper"
+    aria-pressed="${selected ? "true" : "false"}"
+    ${attribute}="${value}"
+  >
+    ${label}
+  </button>`;
+  return html`<section class="panel grid gap-5 border-2 border-ink p-5 sm:p-6" aria-labelledby="direct-title" data-direct-panel>
+    <header class="flex items-start gap-3">
+      <span class="grid h-11 w-11 flex-none place-items-center rounded-full bg-mustard">${icon("qr-code", "h-5 w-5")}</span>
+      <div class="min-w-0 flex-1">
+        <h2 id="direct-title" class="text-[1.25rem] leading-snug font-[800]">Paga tu plan ${option.name}</h2>
+        <p class="text-sm text-muted">Paga desde tu app y sube el comprobante. Tu plan se activa apenas confirmemos que el pago llegó.</p>
+      </div>
+      <button type="button" class="btn btn-quiet btn-icon" data-direct-close aria-label="Cerrar">${icon("x")}</button>
+    </header>
+
+    <div class="grid gap-2 sm:grid-cols-2">
+      <div class="flex gap-1 rounded-full bg-ground p-1" role="group" aria-label="Periodo">
+        ${segment("data-direct-months", "1", paying.months === 1, `1 mes · ${formatCOP(option.priceMonthly)}`)}
+        ${segment("data-direct-months", "12", paying.months === 12, `1 año · ${formatCOP(option.priceYearly)}`)}
+      </div>
+      ${accounts.length > 1
+        ? html`<div class="flex gap-1 rounded-full bg-ground p-1" role="group" aria-label="Cuenta para pagar">
+            ${accounts.map((item) => segment("data-direct-kind", item.kind, item.kind === account.kind, item.kind === "BRE_B" ? "Llave Bre-B" : item.label))}
+          </div>`
+        : ""}
+    </div>
+
+    <div class="grid items-center gap-4 ${account.qrSvg ? "sm:grid-cols-[11rem_minmax(0,1fr)]" : ""}">
+      ${account.qrSvg
+        ? html`<div
+            class="mx-auto w-44 rounded-[14px] border-2 border-ink bg-[#fff] p-1.5 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full"
+            role="img"
+            aria-label="Código QR de ${account.label} para pagar"
+          >
+            ${raw(account.qrSvg)}
+          </div>`
+        : ""}
+      <div class="grid justify-items-center gap-2 text-center ${account.qrSvg ? "sm:justify-items-start sm:text-left" : ""}">
+        <div>
+          <p class="text-sm font-[620] text-muted">Valor a pagar</p>
+          <p class="num text-[2rem] leading-none font-[860] [font-stretch:80%]">${formatCOP(amount)}</p>
+        </div>
+        ${account.accountKey
+          ? html`<button type="button" class="inline-flex min-h-10 max-w-full items-center gap-2 rounded-full bg-ground px-3.5 text-[0.9375rem] font-[700]" data-copy-account="${account.accountKey.replace(/\s+/g, "")}">
+              <span class="font-[620] text-muted">${keyName}</span>
+              <span class="num [overflow-wrap:anywhere]">${account.accountKey}</span>
+              <span class="text-muted" data-copy-label>${icon("copy", "h-4 w-4")}</span>
+            </button>`
+          : ""}
+        ${account.holderName ? html`<p class="text-sm">A nombre de <strong class="font-[720]">${account.holderName}</strong></p>` : ""}
+        ${account.qrSvg
+          ? html`<a class="inline-flex items-center gap-1.5 text-sm font-[650] text-ink underline" href="/api/v1/subscription/payment-qr/${account.kind}.png" download>
+              ${icon("download", "h-4 w-4")} Guardar imagen del QR
+            </a>`
+          : ""}
+      </div>
+    </div>
+
+    <ol class="grid gap-1.5 rounded-[12px] bg-ground px-4 py-3 text-sm">
+      <li><strong class="font-[720]">1.</strong> ${account.qrSvg
+        ? "Escanea el QR desde la app de Nequi o de tu banco. Si estás en el celular, guarda la imagen y súbela en tu app, o copia el número."
+        : account.kind === "BRE_B"
+          ? "Copia la llave y envía el pago desde la app de tu banco o billetera (Bre-B funciona entre todos los bancos)."
+          : `Copia el número y envía el pago desde tu app de ${account.label}.`}</li>
+      <li><strong class="font-[720]">2.</strong> Paga exactamente <span class="num font-[720]">${formatCOP(amount)}</span>.</li>
+      <li><strong class="font-[720]">3.</strong> Toma un pantallazo del comprobante y súbelo aquí.</li>
+    </ol>
+
+    <label class="btn btn-ink relative min-h-12 w-full cursor-pointer" data-transfer-pick>
+      <input type="file" accept="image/*" class="sr-only" data-transfer-file aria-label="Subir el comprobante de pago" />
+      ${icon("upload")} <span data-transfer-label>Subir comprobante de pago</span>
+    </label>
+  </section>`;
+}
+
+/** Estado del último pago directo: en revisión, confirmado o no confirmado (con el motivo). */
+function transferNotice(plan) {
+  const transfer = plan.transfer;
+  if (!transfer) return "";
+  const what = `Plan ${transfer.planName} · ${period(transfer.months)} (${formatCOP(transfer.amount)}) por ${transfer.methodLabel}`;
+  if (transfer.status === "PENDING") {
+    return html`<div class="flex flex-wrap items-start gap-3 rounded-[14px] bg-mustard-soft px-4 py-3.5 text-[0.9375rem] text-mustard-deep" role="status">
+      ${icon("clock", "mt-0.5 flex-none")}
+      <p class="min-w-0 flex-[1_1_16rem]">
+        <strong class="font-[720]">Tu pago está en revisión.</strong> ${what}. Lo enviaste el ${dayTime(transfer.createdAt)} y apenas confirmemos que
+        llegó, tu plan se activa (te avisamos aquí y por correo).
+      </p>
+      <button type="button" class="btn btn-ghost btn-sm bg-paper" data-transfer-cancel="${transfer.id}">Cancelar y subir otro</button>
+    </div>`;
+  }
+  if (transfer.status === "APPROVED") {
+    return html`<div class="flex items-start gap-3 rounded-[14px] bg-leaf-soft px-4 py-3.5 text-[0.9375rem] text-leaf" role="status">
+      ${icon("circle-check", "mt-0.5 flex-none")}
+      <p><strong class="font-[720]">¡Confirmamos tu pago!</strong> ${what}. Tu plan está pagado hasta el ${longDate(plan.endsAt)}.</p>
+    </div>`;
+  }
+  return html`<div class="flex items-start gap-3 rounded-[14px] bg-tomato-soft px-4 py-3.5 text-[0.9375rem] text-tomato" role="status">
+    ${icon("circle-x", "mt-0.5 flex-none")}
+    <p><strong class="font-[720]">No pudimos confirmar tu pago.</strong> ${what}. Motivo: ${transfer.rejectReason} Si ya pagaste, sube el comprobante de nuevo.</p>
   </div>`;
 }
 
@@ -116,6 +259,8 @@ function page(plan, business, notice) {
       <p class="mt-1 text-[0.9375rem] text-muted">${business.name}</p>
     </header>
     ${resultNotice(notice)}
+    ${transferNotice(plan)}
+    ${view.paying && plan.directPayment ? directPanel(plan, view.paying) : ""}
 
     <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
       <section class="panel overflow-hidden" aria-labelledby="current-title">
@@ -134,7 +279,7 @@ function page(plan, business, notice) {
           ${meter("Productos en el menú", plan.usage.products, plan.limits.products)}
           ${meter("Personas en el equipo", plan.usage.members, plan.limits.members)}
           ${online
-            ? html`${payButtons(plan, currentOption, { primary: true })}
+            ? html`${paymentChoices(plan, currentOption, { primary: true })}
                 <p class="flex items-start gap-2 text-sm text-muted">
                   ${icon("shield", "mt-0.5 h-4 w-4 flex-none")} Pagas en Wompi, la pasarela de Bancolombia, con tarjeta, PSE, Nequi o botón
                   Bancolombia. Tu plan se activa apenas se aprueba el pago.
@@ -142,6 +287,13 @@ function page(plan, business, notice) {
                 ${online.sandbox
                   ? html`<p class="rounded-[10px] bg-mustard-soft px-3.5 py-2.5 text-sm text-mustard-deep">Modo de pruebas: Wompi no cobra dinero real.</p>`
                   : ""}
+                ${payUrl ? html`<a class="text-sm font-[650] underline underline-offset-2" href="${payUrl}" target="_blank" rel="noopener">¿Dudas? Escríbenos por WhatsApp</a>` : ""}`
+            : plan.directPayment
+            ? html`${paymentChoices(plan, currentOption, { primary: true })}
+                <p class="flex items-start gap-2 text-sm text-muted">
+                  ${icon("shield", "mt-0.5 h-4 w-4 flex-none")} Pagas por ${directNames(plan)} y subes el comprobante. Tu plan se activa apenas
+                  confirmemos el pago.
+                </p>
                 ${payUrl ? html`<a class="text-sm font-[650] underline underline-offset-2" href="${payUrl}" target="_blank" rel="noopener">¿Dudas? Escríbenos por WhatsApp</a>` : ""}`
             : payUrl
             ? html`<a class="btn btn-whatsapp w-full" href="${payUrl}" target="_blank" rel="noopener">
@@ -162,6 +314,12 @@ function page(plan, business, notice) {
                 ["Elige tu plan", "Paga un mes o el año completo con descuento. Si eliges otro plan, el cambio es inmediato."],
                 ["Paga en Wompi", "Con tarjeta débito o crédito, PSE, Nequi o botón Bancolombia, en la página segura de Wompi."],
                 ["Tu plan se activa solo", "Apenas Wompi aprueba el pago lo ves aquí. Los días que te queden no se pierden: el nuevo periodo empieza cuando termina el actual."],
+              ]
+            : plan.directPayment
+            ? [
+                ["Elige tu plan", `Un mes o el año completo con descuento. Pagas por ${directNames(plan)} desde la app de tu banco o billetera.`],
+                ["Sube el comprobante", "Toma un pantallazo del pago y súbelo aquí mismo."],
+                ["Activamos tu plan", "Confirmamos que el pago llegó y tu plan se activa (te avisamos aquí y por correo). Los días que te queden no se pierden."],
               ]
             : [
                 ["Escríbenos por WhatsApp", "Te contamos los datos de pago del plan que elijas: mes a mes o el año completo con descuento."],
@@ -204,8 +362,8 @@ function page(plan, business, notice) {
             </ul>
             ${current
               ? ""
-              : online
-                ? html`<div class="mt-1">${payButtons(plan, option)}</div>`
+              : online || canPayDirect(plan)
+                ? html`<div class="mt-1 grid gap-2">${paymentChoices(plan, option)}</div>`
                 : changeUrl
                   ? html`<a class="btn btn-ghost mt-1" href="${changeUrl}" target="_blank" rel="noopener">Cambiar a ${option.name}</a>`
                   : ""}
@@ -303,12 +461,13 @@ const POLL_TRIES = 30;
  * siga pendiente (PSE o Nequi pueden tardar), vuelve a consultar cada pocos segundos.
  */
 /** Lo que muestra la pantalla además del plan: el aviso del último pago y si se está siguiendo uno. */
-const view = { notice: null, following: false };
+const view = { notice: null, following: false, paying: null, plan: null };
 
 async function followPayment(main, business, checkoutId, transactionId) {
   let plan = await api("/subscription");
   const draw = (notice) => {
     view.notice = notice;
+    view.plan = plan;
     render(main, page(plan, business, notice));
   };
   draw({ kind: "PENDING", busy: true, title: "Confirmando tu pago…", text: "Un momento, estamos consultando a Wompi." });
@@ -362,6 +521,9 @@ function followPlan(main, business) {
       if (pending && (!checkout || checkout.status !== "PENDING")) forgetPayment();
       const plan = await api("/subscription");
       if (checkout && checkout.status !== "PENDING") view.notice = settledNotice(checkout, plan);
+      // Si ya no se puede pagar directo (otro dispositivo subió un comprobante), se cierra el pago abierto.
+      if (!canPayDirect(plan)) view.paying = null;
+      view.plan = plan;
       render(main, page(plan, business, view.notice));
     } catch (error) {
       // Sin conexión: se intenta de nuevo al reconectarse (la primera carga sí muestra el error).
@@ -375,6 +537,94 @@ function followPlan(main, business) {
   return refresh;
 }
 
+// ─── Pago directo a Nequi o a la llave Bre-B de Pedify ───
+
+function bindDirectPayment(main, business, refresh) {
+  const redraw = () => render(main, page(view.plan, business, view.notice));
+  const showPanel = () => main.querySelector("[data-direct-panel]")?.scrollIntoView({ block: "start", behavior: "smooth" });
+
+  main.addEventListener("click", async (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    if (button.matches("[data-direct]")) {
+      const kind = view.plan.directPayment.accounts.find((account) => account.qrSvg)?.kind ?? view.plan.directPayment.accounts[0].kind;
+      view.paying = { plan: button.dataset.direct, months: Number(button.dataset.months), kind };
+      redraw();
+      showPanel();
+    }
+    if (button.matches("[data-direct-close]")) {
+      view.paying = null;
+      redraw();
+    }
+    if (button.matches("[data-direct-months]")) {
+      view.paying = { ...view.paying, months: Number(button.dataset.directMonths) };
+      redraw();
+    }
+    if (button.matches("[data-direct-kind]")) {
+      view.paying = { ...view.paying, kind: button.dataset.directKind };
+      redraw();
+    }
+    if (button.matches("[data-copy-account]")) {
+      const ok = await copyText(button.dataset.copyAccount);
+      const label = button.querySelector("[data-copy-label]");
+      if (label) label.textContent = ok ? "Copiado" : "";
+    }
+    if (button.matches("[data-transfer-cancel]")) {
+      if (button.dataset.armed !== "true") {
+        button.dataset.armed = "true";
+        button.textContent = "¿Cancelar el pago en revisión?";
+        return;
+      }
+      setBusy(button, true);
+      try {
+        await api(`/subscription/transfers/${button.dataset.transferCancel}`, { method: "DELETE" });
+        view.notice = null;
+        toast("Cancelaste el pago en revisión. Puedes subir el comprobante correcto.");
+        await refresh();
+      } catch (error) {
+        setBusy(button, false);
+        toast(error.message, "error");
+      }
+    }
+  });
+
+  main.addEventListener("change", async (event) => {
+    const input = event.target.closest("[data-transfer-file]");
+    const file = input?.files?.[0];
+    if (!file) return;
+    input.value = "";
+    const problem = checkImageFile(file);
+    if (problem) return toast(problem, "error");
+    const zone = input.closest("label");
+    const label = zone.querySelector("[data-transfer-label]");
+    zone.setAttribute("aria-busy", "true");
+    zone.classList.add("opacity-60", "pointer-events-none");
+    // Pedify lee el comprobante al subirlo (uno o dos segundos) para revisar el valor.
+    label.textContent = "Revisando tu comprobante…";
+    const { plan, months, kind } = view.paying;
+    try {
+      const transfer = await upload(`/subscription/transfers?${new URLSearchParams({ plan, months: String(months), method: kind })}`, file);
+      view.paying = null;
+      view.notice =
+        transfer.reading?.matchesTotal === false
+          ? {
+              kind: "PENDING",
+              title: "Revisa tu comprobante.",
+              text: `Parece ser de ${formatCOP(transfer.reading.amount)} y el plan es de ${formatCOP(transfer.amount)}. Si te equivocaste, cancela el pago en revisión y sube el correcto.`,
+            }
+          : null;
+      toast("Recibimos tu comprobante. Te avisamos apenas confirmemos el pago.");
+      await refresh();
+      main.scrollIntoView({ block: "start", behavior: "smooth" });
+    } catch (error) {
+      zone.removeAttribute("aria-busy");
+      zone.classList.remove("opacity-60", "pointer-events-none");
+      label.textContent = "Subir comprobante de pago";
+      toast(error instanceof TypeError ? "Sin conexión. Revisa tu internet y vuelve a subir el comprobante." : error.message, "error");
+    }
+  });
+}
+
 const context = await initPanel("plan");
 if (context) {
   const { main, business } = context;
@@ -383,12 +633,13 @@ if (context) {
   } else if (business.role !== "OWNER") {
     render(main, html`<p class="panel mx-auto mt-6 flex max-w-lg items-start gap-3 p-6">${icon("lock", "mt-0.5")} Solo el propietario del negocio ve el plan y los pagos.</p>`);
   } else {
+    const params = new URLSearchParams(location.search);
+    const refresh = followPlan(main, business);
+    bindDirectPayment(main, business, refresh);
     main.addEventListener("click", (event) => {
       const button = event.target.closest("[data-pay]");
       if (button) startPayment(button);
     });
-    const params = new URLSearchParams(location.search);
-    const refresh = followPlan(main, business);
     try {
       if (params.get("pago")) {
         view.following = true;

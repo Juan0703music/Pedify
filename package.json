@@ -27,6 +27,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
+    "admin:create": "tsx scripts/admin.ts create",
     "admin:grant": "tsx scripts/admin.ts grant",
     "admin:revoke": "tsx scripts/admin.ts revoke",
     "push:keys": "tsx scripts/push-keys.ts",

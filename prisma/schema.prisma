@@ -102,6 +102,8 @@ model User {
   pushSubscriptions   PushSubscription[]
   recordedPayments    SubscriptionPayment[]
   planCheckouts       PlanCheckout[]
+  planTransfers       PlanTransfer[]        @relation("PlanTransferCreatedBy")
+  reviewedTransfers   PlanTransfer[]        @relation("PlanTransferReviewedBy")
 
   @@map("users")
 }
@@ -169,6 +171,7 @@ model Business {
   paymentProofs     PaymentProof[]
   payments          SubscriptionPayment[]
   planCheckouts     PlanCheckout[]
+  planTransfers     PlanTransfer[]
   categories        Category[]
   products          Product[]
   customers         Customer[]
@@ -271,6 +274,7 @@ model SubscriptionPayment {
   business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   recordedBy User?         @relation(fields: [recordedById], references: [id], onDelete: SetNull)
   checkout   PlanCheckout?
+  transfer   PlanTransfer?
 
   @@index([businessId, createdAt])
   @@map("subscription_payments")
@@ -583,4 +587,65 @@ enum ProofCheckStatus {
   VERIFIED
   REVIEW
   MISMATCH
+}
+
+/// Cuentas de Pedify para recibir el pago de los planes por transferencia directa (Nequi y llave Bre-B).
+/// Las configura un administrador en /admin y los propietarios las ven en «Mi plan».
+model PlatformPaymentAccount {
+  kind       PaymentAccountKind @id
+  /// Número de celular o llave Bre-B (celular, correo, cédula o alias con @).
+  accountKey String?            @map("account_key")
+  holderName String?            @map("holder_name")
+  /// Contenido del código QR leído de la imagen subida (se vuelve a dibujar nítido para escanearlo).
+  qrPayload  String?            @map("qr_payload")
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("platform_payment_accounts")
+}
+
+/// Pago directo del plan: en revisión, aprobado (el plan se extendió) o rechazado.
+enum PlanTransferStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Pago de un plan por transferencia directa a las cuentas de Pedify (Nequi o llave Bre-B): el
+/// propietario sube el comprobante, Pedify lo lee y lo revisa, y un administrador lo aprueba o lo rechaza.
+model PlanTransfer {
+  id           String             @id @default(uuid(7)) @db.Uuid
+  businessId   String             @map("business_id") @db.Uuid
+  plan         PlanCode
+  months       Int
+  amount       Int
+  method       PaymentAccountKind
+  status       PlanTransferStatus @default(PENDING)
+  /// Imagen privada del comprobante y su huella (SHA-256) para reconocer el mismo pantallazo dos veces.
+  imageKey     String             @map("image_key")
+  imageHash    String?            @map("image_hash")
+  /// Texto leído del comprobante (OCR), cuándo terminó la lectura y la referencia leída.
+  receiptText  String?            @map("receipt_text")
+  readAt       DateTime?          @map("read_at") @db.Timestamptz(3)
+  reference    String?
+  checkStatus  ProofCheckStatus   @default(PENDING) @map("check_status")
+  checks       Json               @default("[]")
+  rejectReason String?            @map("reject_reason")
+  createdById  String?            @map("created_by_id") @db.Uuid
+  reviewedById String?            @map("reviewed_by_id") @db.Uuid
+  reviewedAt   DateTime?          @map("reviewed_at") @db.Timestamptz(3)
+  paymentId    String?            @unique @map("payment_id") @db.Uuid
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business   Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  payment    SubscriptionPayment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdBy  User?                @relation("PlanTransferCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  reviewedBy User?                @relation("PlanTransferReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([businessId, createdAt])
+  @@index([reference])
+  @@index([imageHash])
+  @@map("plan_transfers")
 }

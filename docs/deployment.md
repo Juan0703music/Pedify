@@ -126,8 +126,8 @@ El script revisa `.env`, construye las imágenes, levanta PostgreSQL, hace una c
 
 Después:
 
-1. Regístrate en `https://pedifyai.com/registro` con el correo del equipo.
-2. Hazte administrador: `docker compose run --rm tools npm run admin:grant -- tu@correo.com`.
+1. Crea tu cuenta de administrador: `docker compose run --rm tools npm run admin:create -- tu@correo.com "Tu nombre"` (muestra la contraseña inicial). Si ya te registraste con un negocio, usa `admin:grant` en su lugar.
+2. Entra en `/login`, cambia la contraseña en «Mi cuenta» y configura tus cuentas en «Cuentas de cobro» para recibir el pago de los planes por Nequi o Bre-B.
 3. Abre `/admin`. El recuadro **«Pendiente de configurar en el servidor»** no debe aparecer; si aparece, dice exactamente qué falta.
 4. Prueba «¿La olvidaste?» en `/login` y comprueba que el correo llega.
 5. Crea un producto con foto (debe guardarse en R2) y haz un pedido desde tu celular hasta WhatsApp, mirando el panel en vivo en el computador.

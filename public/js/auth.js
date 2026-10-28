@@ -5,9 +5,11 @@ import { clearFieldErrors, formAlert, readForm, render, setBusy, showErrors } fr
 const page = document.body.dataset.page;
 
 /** Solo se permite volver a páginas del panel (evita redirecciones abiertas a otros sitios). */
-function nextUrl() {
+/** A dónde ir al entrar: la página pedida o el panel (el administrador de Pedify sin negocio, a /admin). */
+function nextUrl(me) {
   const next = new URLSearchParams(location.search).get("next");
-  return next && /^\/(panel|admin)(\/|\?|#|$)/.test(next) ? next : "/panel";
+  if (next && /^\/(panel|admin)(\/|\?|#|$)/.test(next)) return next;
+  return me?.user?.isPlatformAdmin && me.businesses?.length === 0 ? "/admin" : "/panel";
 }
 
 function setupPasswordToggles() {
@@ -66,7 +68,7 @@ setupPasswordToggles();
 // Si ya hay una sesión válida, ir directo al panel (en recuperar/restablecer se deja seguir).
 if (page === "login" || page === "register") {
   api("/auth/me")
-    .then(() => location.replace(nextUrl()))
+    .then((me) => location.replace(nextUrl(me)))
     .catch(() => {});
 }
 
@@ -97,8 +99,8 @@ if (page === "login") {
   });
 
   setupForm(form, async (data) => {
-    await api("/auth/login", { method: "POST", body: { email: data.email, password: data.password, as: data.as } });
-    location.assign(nextUrl());
+    const me = await api("/auth/login", { method: "POST", body: { email: data.email, password: data.password, as: data.as } });
+    location.assign(nextUrl(me));
   });
 }
 

@@ -108,6 +108,47 @@ export const adminRepository = {
     return { ...row, gmv30: Number(row?.gmv30 ?? 0) };
   },
 
+  /** Lo que ha recibido Pedify por los planes (pagos en línea y registrados): este mes, 30 días y en total. */
+  async revenueMetrics(now: Date) {
+    const [row] = await prisma.$queryRaw<{ month: bigint; days30: bigint; total: bigint; payments: number; owners: number }[]>`
+      SELECT COALESCE(SUM(p.amount) FILTER (
+               WHERE p.created_at >= date_trunc('month', ${now}::timestamptz AT TIME ZONE 'America/Bogota') AT TIME ZONE 'America/Bogota'
+             ), 0)::bigint AS month,
+             COALESCE(SUM(p.amount) FILTER (WHERE p.created_at > ${now}::timestamptz - interval '30 days'), 0)::bigint AS days30,
+             COALESCE(SUM(p.amount), 0)::bigint AS total,
+             COUNT(p.id)::int AS payments,
+             (SELECT COUNT(DISTINCT m.user_id)::int FROM business_memberships m WHERE m.role = 'OWNER') AS owners
+      FROM subscription_payments p`;
+    return { month: Number(row?.month ?? 0), days30: Number(row?.days30 ?? 0), total: Number(row?.total ?? 0), payments: row?.payments ?? 0, owners: row?.owners ?? 0 };
+  },
+
+  /** Pagos de los planes de todos los negocios, del más reciente al más antiguo. */
+  async listPayments(options: { skip: number; take: number }) {
+    const [items, total] = await Promise.all([
+      prisma.subscriptionPayment.findMany({
+        orderBy: { createdAt: "desc" },
+        skip: options.skip,
+        take: options.take,
+        select: {
+          id: true,
+          plan: true,
+          amount: true,
+          months: true,
+          method: true,
+          reference: true,
+          note: true,
+          periodStart: true,
+          periodEnd: true,
+          createdAt: true,
+          business: { select: { id: true, name: true, slug: true } },
+          recordedBy: { select: { name: true } },
+        },
+      }),
+      prisma.subscriptionPayment.count(),
+    ]);
+    return { items, total };
+  },
+
   findBusiness(id: string) {
     return prisma.business.findUnique({
       where: { id },

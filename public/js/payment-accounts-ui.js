@@ -1,6 +1,7 @@
 // Configuración → Pagos: QR y llaves para cobrar por transferencia (Nequi, Bre-B, Daviplata).
 // El propietario sube el QR que le da su app (un pantallazo sirve); el servidor lee el código y lo
 // devuelve dibujado de nuevo. El domiciliario lo muestra al entregar para que el cliente lo escanee.
+// El panel central de Pedify usa la misma sección para las cuentas que reciben el pago de los planes.
 import { api, upload } from "./api.js";
 import { checkImageFile, clearFieldErrors, formAlert, html, icon, raw, readForm, render, setBusy, showErrors, toast } from "./ui.js";
 
@@ -29,8 +30,17 @@ const KINDS = [
   },
 ];
 
+const DEFAULTS = {
+  /** Ruta de la API de las cuentas (sin /api/v1). */
+  base: "/businesses/current/payment-accounts",
+  kinds: KINDS.map((config) => config.kind),
+  intro: null,
+  qrSaved: "Listo: leímos tu QR. El domiciliario lo verá al entregar.",
+};
+
 let container = null;
 let accounts = new Map();
+let options = DEFAULTS;
 
 function statusBadge(account) {
   if (account?.qrSvg) return html`<span class="badge badge-dot bg-leaf-soft text-leaf">QR listo</span>`;
@@ -92,7 +102,13 @@ function card(config) {
 
 function view() {
   return html`<div class="grid gap-4">
-    <div class="grid gap-1">
+    ${options.intro ?? defaultIntro()}
+    ${KINDS.filter((config) => options.kinds.includes(config.kind)).map(card)}
+  </div>`;
+}
+
+function defaultIntro() {
+  return html`<div class="grid gap-1">
       <h3 class="flex items-center gap-2 text-[1.0625rem] font-[740]">${icon("qr-code")} Cobrar por adelantado con QR</h3>
       <p class="text-sm text-muted">
         Cuando el cliente elige Nequi, Daviplata, transferencia o llave Bre-B, ve tu QR y tu llave al hacer el pedido, paga y sube el comprobante
@@ -100,9 +116,7 @@ function view() {
         mostrarle el QR. En la mesa no: el cliente paga al terminar de comer con el QR impreso en tu local, y tú tocas «Cobrado». Sube el QR para
         recibir pagos que te da tu app (Pedify lo lee y lo muestra nítido). Ese QR no trae el valor: el cliente escribe el total que le mostramos.
       </p>
-    </div>
-    ${KINDS.map(card)}
-  </div>`;
+    </div>`;
 }
 
 function redraw() {
@@ -124,9 +138,9 @@ async function uploadQr(kind, file) {
   setZoneBusy(kind, true);
   try {
     // Sin reducir en el navegador: el código se lee mejor de la imagen original.
-    accounts.set(kind, await upload(`/businesses/current/payment-accounts/${kind}/qr`, file));
+    accounts.set(kind, await upload(`${options.base}/${kind}/qr`, file));
     redraw();
-    toast("Listo: leímos tu QR. El domiciliario lo verá al entregar.");
+    toast(options.qrSaved);
   } catch (error) {
     setZoneBusy(kind, false);
     toast(error.message, "error");
@@ -140,7 +154,7 @@ async function save(form) {
   setBusy(button, true);
   try {
     const { accountKey, holderName } = readForm(form);
-    accounts.set(kind, await api(`/businesses/current/payment-accounts/${kind}`, { method: "PUT", body: { accountKey, holderName } }));
+    accounts.set(kind, await api(`${options.base}/${kind}`, { method: "PUT", body: { accountKey, holderName } }));
     redraw();
     toast("Datos de cobro guardados.");
   } catch (error) {
@@ -158,7 +172,7 @@ async function remove(button) {
   }
   setBusy(button, true);
   try {
-    await api(`/businesses/current/payment-accounts/${kind}`, { method: "DELETE" });
+    await api(`${options.base}/${kind}`, { method: "DELETE" });
     accounts.delete(kind);
     redraw();
     toast("Quitaste esa cuenta de cobro.");
@@ -210,12 +224,16 @@ function bind() {
   });
 }
 
-/** Monta la sección (solo el propietario). */
-export async function mountPaymentAccounts(element) {
+/**
+ * Monta la sección (solo el propietario). `overrides` cambia la API, las cuentas que se muestran, el
+ * texto de introducción y el aviso al leer el QR (lo usa el panel central para las cuentas de Pedify).
+ */
+export async function mountPaymentAccounts(element, overrides = {}) {
   if (!element) return;
   container = element;
+  options = { ...DEFAULTS, ...overrides };
   try {
-    accounts = new Map((await api("/businesses/current/payment-accounts")).map((account) => [account.kind, account]));
+    accounts = new Map((await api(options.base)).map((account) => [account.kind, account]));
     redraw();
     bind();
   } catch (error) {

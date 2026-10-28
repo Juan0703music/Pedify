@@ -15,8 +15,8 @@ import { evaluateProof, parseReceipt } from "./proof-check.js";
 /** Un comprobante sin pedido sirve por un día; después se borra. */
 const UNCLAIMED_TTL_MS = 24 * 60 * 60 * 1000;
 /** Al subir, se espera la lectura hasta este tiempo; si tarda más, el resultado llega después al panel. */
-const READ_WAIT_MS = 6_000;
-const RECEIPT_TEXT_MAX = 4_000;
+export const READ_WAIT_MS = 6_000;
+export const RECEIPT_TEXT_MAX = 4_000;
 
 const storeNotFound = () => notFound("Esta tienda no existe o ya no está disponible.", "STORE_NOT_FOUND");
 
@@ -49,8 +49,8 @@ async function readProof(proofId: string, image: Buffer): Promise<string | null>
   return text;
 }
 
-/** Lo que el cliente ve apenas sube el comprobante: el valor leído y si coincide con su pedido. */
-function quickReading(text: string, expectedTotal: number | undefined) {
+/** Lo que el cliente ve apenas sube el comprobante: el valor leído y si coincide con su pedido (o el plan). */
+export function quickReading(text: string, expectedTotal: number | undefined) {
   const { amounts } = parseReceipt(text, clock.now());
   if (amounts.length === 0) return { amount: null, matchesTotal: null };
   if (expectedTotal === undefined) return { amount: amounts[0]!, matchesTotal: null };

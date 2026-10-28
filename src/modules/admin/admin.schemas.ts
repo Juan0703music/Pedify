@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { BusinessStatus, PlanCode } from "../../generated/prisma/enums.js";
+import { BusinessStatus, PlanCode, PlanTransferStatus } from "../../generated/prisma/enums.js";
 import { paginationQuerySchema } from "../../utils/pagination.js";
+import { PLATFORM_ACCOUNT_KINDS } from "../subscriptions/platform-accounts.service.js";
 
 export const SUBSCRIPTION_FILTERS = ["TRIAL", "ACTIVE", "PAST_DUE", "EXPIRED", "SUSPENDED"] as const;
 
@@ -24,7 +25,7 @@ export const updateBusinessAdminSchema = z
   .partial()
   .refine((value) => Object.values(value).some((item) => item !== undefined), "No hay cambios para aplicar.");
 
-export const PAYMENT_METHODS = ["NEQUI", "DAVIPLATA", "TRANSFERENCIA", "EFECTIVO", "OTRO"] as const;
+export const PAYMENT_METHODS = ["NEQUI", "BRE_B", "DAVIPLATA", "TRANSFERENCIA", "EFECTIVO", "OTRO"] as const;
 
 export const recordPaymentSchema = z.object({
   plan: z.enum(PlanCode).optional(),
@@ -36,7 +37,23 @@ export const recordPaymentSchema = z.object({
   note: z.string().trim().max(200).optional(),
 });
 
+/** Pagos directos de los planes: por defecto, los que esperan revisión. */
+export const listTransfersQuerySchema = paginationQuerySchema.extend({
+  status: z.enum(PlanTransferStatus).default("PENDING"),
+});
+
+export const transferParamsSchema = z.object({ id: z.uuid("Pago inválido.") });
+
+export const rejectTransferSchema = z.object({
+  reason: z.string({ error: "Escribe el motivo." }).trim().min(3, "Escribe el motivo.").max(200, "El motivo es muy largo (máximo 200 caracteres)."),
+});
+
+export const platformAccountParamsSchema = z.object({ kind: z.enum(PLATFORM_ACCOUNT_KINDS, { error: "Cuenta inválida." }) });
+
 export type ListBusinessesQuery = z.infer<typeof listBusinessesQuerySchema>;
 export type BusinessParams = z.infer<typeof businessParamsSchema>;
 export type UpdateBusinessAdminInput = z.infer<typeof updateBusinessAdminSchema>;
 export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>;
+export type ListTransfersQuery = z.infer<typeof listTransfersQuerySchema>;
+export type TransferParams = z.infer<typeof transferParamsSchema>;
+export type PlatformAccountParams = z.infer<typeof platformAccountParamsSchema>;

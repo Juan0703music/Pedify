@@ -9,11 +9,13 @@ import { logger } from "../../utils/logger.js";
 import { buildPage } from "../../utils/pagination.js";
 import { storeUrl } from "../businesses/businesses.controller.js";
 import { planOf, PLANS, priceFor } from "../subscriptions/plans.js";
+import { planTransfersService } from "../subscriptions/plan-transfers.service.js";
 import { latest, subscriptionState } from "../subscriptions/subscription-state.js";
 import { subscriptionsRepository } from "../subscriptions/subscriptions.repository.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { adminRepository } from "./admin.repository.js";
 import type { ListBusinessesQuery, RecordPaymentInput, UpdateBusinessAdminInput } from "./admin.schemas.js";
+import type { PaginationQuery } from "../../utils/pagination.js";
 
 const DAY = 86_400_000;
 const version = (JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")) as { version: string }).version;
@@ -25,7 +27,12 @@ export const adminService = {
     const started = performance.now();
     await prisma.$queryRaw`SELECT 1`;
     const dbLatencyMs = Math.round(performance.now() - started);
-    const [businesses, orders] = await Promise.all([adminRepository.businessMetrics(now), adminRepository.orderMetrics(now)]);
+    const [businesses, orders, revenue, pendingTransfers] = await Promise.all([
+      adminRepository.businessMetrics(now),
+      adminRepository.orderMetrics(now),
+      adminRepository.revenueMetrics(now),
+      planTransfersService.pendingCount(),
+    ]);
     const mrr =
       (businesses?.activeEmprendedor ?? 0) * PLANS.EMPRENDEDOR.priceMonthly +
       (businesses?.activeNegocio ?? 0) * PLANS.NEGOCIO.priceMonthly +
@@ -33,6 +40,10 @@ export const adminService = {
     return {
       businesses,
       orders,
+      /** Lo recibido por los planes y cuántos propietarios tienen cuenta. */
+      revenue,
+      /** Pagos directos (Nequi o Bre-B) que esperan revisión. */
+      pendingTransfers,
       /** Ingreso mensual recurrente estimado con los precios de lista de las suscripciones activas. */
       mrr,
       plans: Object.values(PLANS),
@@ -57,6 +68,12 @@ export const adminService = {
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
     });
+    return buildPage(items, total, query);
+  },
+
+  /** Ingresos: los pagos de los planes de todos los negocios. */
+  async listPayments(query: PaginationQuery) {
+    const { items, total } = await adminRepository.listPayments({ skip: (query.page - 1) * query.pageSize, take: query.pageSize });
     return buildPage(items, total, query);
   },
 

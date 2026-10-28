@@ -7,7 +7,6 @@ import { notifications } from "../../services/notification.service.js";
 import { AppError, conflict, notFound } from "../../utils/errors.js";
 import { logger } from "../../utils/logger.js";
 import { planOf, priceFor } from "./plans.js";
-import { subscriptionsRepository } from "./subscriptions.repository.js";
 import { subscriptionsService } from "./subscriptions.service.js";
 
 const checkoutSelect = {
@@ -110,15 +109,7 @@ export const planCheckoutsService = {
       throw conflict("El pago en línea todavía no está disponible. Escríbenos por WhatsApp para pagar tu plan.", "ONLINE_PAYMENT_UNAVAILABLE");
     }
     const plan = planOf(input.plan);
-    // Un plan más pequeño solo sirve si el menú y el equipo caben en sus límites.
-    const usage = await subscriptionsRepository.usage(tenant.businessId);
-    if (plan.maxProducts !== null && usage.products > plan.maxProducts) {
-      throw conflict(`Tienes ${usage.products} productos en el menú y el plan ${plan.name} permite ${plan.maxProducts}. Elimina algunos o elige un plan más grande.`, "PLAN_TOO_SMALL");
-    }
-    if (plan.maxMembers !== null && usage.members > plan.maxMembers) {
-      const allowed = `${plan.maxMembers} ${plan.maxMembers === 1 ? "persona" : "personas"}`;
-      throw conflict(`Tienes ${usage.members} personas en el equipo y el plan ${plan.name} permite ${allowed}. Quita algunas o elige un plan más grande.`, "PLAN_TOO_SMALL");
-    }
+    await subscriptionsService.assertPlanFits(tenant.businessId, plan);
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, email: true } });
     const amount = priceFor(plan, input.months);
