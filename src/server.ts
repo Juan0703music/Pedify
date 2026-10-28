@@ -4,6 +4,7 @@ import { prisma } from "./config/database.js";
 import { attachSocket } from "./config/socket.js";
 import { env, environmentName, isProduction } from "./config/env.js";
 import { productionWarnings } from "./config/readiness.js";
+import { renewalReminders } from "./modules/subscriptions/renewal-reminders.service.js";
 import { receiptReader } from "./services/receipt-reader.service.js";
 import { logger } from "./utils/logger.js";
 
@@ -30,6 +31,10 @@ server.listen(env.PORT, () => {
   logger.info(`Pedify (${environmentName}) escuchando en el puerto ${env.PORT} (${env.APP_URL})`);
 });
 
+// Recordatorios de vencimiento del plan (correo y aviso al celular). Solo en el servidor real: en
+// desarrollo no se le escribe a nadie.
+if (isProduction) renewalReminders.start();
+
 let shuttingDown = false;
 async function shutdown(signal: string) {
   if (shuttingDown) return;
@@ -37,6 +42,7 @@ async function shutdown(signal: string) {
   logger.info(`Señal ${signal}: cerrando el servidor…`);
   // Docker espera 10 s antes de forzar el cierre; si algo se queda colgado, salimos antes.
   setTimeout(() => process.exit(1), 8_000).unref();
+  renewalReminders.stop();
   await live.close();
   server.close();
   server.closeIdleConnections();

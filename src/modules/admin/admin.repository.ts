@@ -18,6 +18,11 @@ const subscriptionStatus = (now: Date) => Prisma.sql`
 
 const ACCEPTED = Prisma.sql`o.status IN ('CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED')`;
 
+/** Fin del periodo vigente (pago o prueba), como `endsAt` de `subscriptionState`. */
+const ENDS_AT = Prisma.sql`GREATEST(COALESCE(s.paid_until, s.trial_ends_at), s.trial_ends_at)`;
+/** «Por vencer»: en prueba o pagados que terminan en los próximos días. */
+const EXPIRING_DAYS = 7;
+
 export interface AdminBusinessRow {
   id: string;
   name: string;
@@ -29,6 +34,11 @@ export interface AdminBusinessRow {
   trialEndsAt: Date;
   paidUntil: Date | null;
   subscriptionStatus: string;
+  endsAt: Date;
+  /** Subió el comprobante de un pago directo que espera revisión. */
+  paymentInReview: boolean;
+  /** Último recordatorio de vencimiento enviado para el periodo vigente. */
+  lastReminder: "DAYS_5" | "DAY_1" | "EXPIRED" | null;
   ownerName: string | null;
   ownerEmail: string | null;
   products: number;
@@ -40,13 +50,19 @@ export const adminRepository = {
   async listBusinesses(options: { now: Date; search?: string; status?: string; skip: number; take: number }) {
     const text = options.search?.trim();
     const like = text ? `%${text.replace(/[\\%_]/g, (char) => `\\${char}`)}%` : null;
+    const status = options.status ?? null;
     const where = Prisma.sql`
       WHERE (${like}::text IS NULL OR name ILIKE ${like} OR slug ILIKE ${like} OR "ownerEmail" ILIKE ${like})
-        AND (${options.status ?? null}::text IS NULL OR "subscriptionStatus" = ${options.status ?? null})`;
+        AND (${status}::text IS NULL OR "subscriptionStatus" = ${status}
+          OR (${status}::text = 'EXPIRING' AND "subscriptionStatus" IN ('ACTIVE', 'TRIAL')
+              AND "endsAt" <= ${options.now}::timestamptz + ${`${EXPIRING_DAYS} days`}::interval))`;
     const base = Prisma.sql`
       SELECT b.id, b.name, b.slug, b.city, b.status::text AS status, b.created_at AS "createdAt",
              s.plan::text AS plan, s.trial_ends_at AS "trialEndsAt", s.paid_until AS "paidUntil",
              ${subscriptionStatus(options.now)} AS "subscriptionStatus",
+             ${ENDS_AT} AS "endsAt",
+             EXISTS (SELECT 1 FROM plan_transfers t WHERE t.business_id = b.id AND t.status = 'PENDING') AS "paymentInReview",
+             CASE WHEN s.reminder_ends_at = ${ENDS_AT} THEN s.reminder_stage::text END AS "lastReminder",
              owner.name AS "ownerName", owner.email AS "ownerEmail",
              (SELECT COUNT(*)::int FROM products p WHERE p.business_id = b.id AND p.archived_at IS NULL) AS products,
              (SELECT COUNT(*)::int FROM orders o WHERE o.business_id = b.id AND o.created_at > ${options.now}::timestamptz - interval '30 days') AS orders30,
@@ -58,7 +74,11 @@ export const adminRepository = {
         WHERE m.business_id = b.id AND m.role = 'OWNER' ORDER BY m.created_at LIMIT 1
       ) owner ON true`;
     const [items, count] = await Promise.all([
-      prisma.$queryRaw<AdminBusinessRow[]>`SELECT * FROM (${base}) t ${where} ORDER BY "createdAt" DESC LIMIT ${options.take} OFFSET ${options.skip}`,
+      // «Por vencer»: primero el que vence antes.
+      prisma.$queryRaw<AdminBusinessRow[]>`
+        SELECT * FROM (${base}) t ${where}
+        ORDER BY CASE WHEN ${status}::text = 'EXPIRING' THEN "endsAt" END ASC, "createdAt" DESC
+        LIMIT ${options.take} OFFSET ${options.skip}`,
       prisma.$queryRaw<{ total: number }[]>`SELECT COUNT(*)::int AS total FROM (${base}) t ${where}`,
     ]);
     return { items, total: count[0]?.total ?? 0 };
@@ -75,6 +95,7 @@ export const adminRepository = {
         suspended: number;
         new7: number;
         new30: number;
+        expiring: number;
         activeEmprendedor: number;
         activeNegocio: number;
         activeEmpresa: number;
@@ -88,11 +109,12 @@ export const adminRepository = {
              COUNT(*) FILTER (WHERE st = 'SUSPENDED')::int AS suspended,
              COUNT(*) FILTER (WHERE created_at > ${now}::timestamptz - interval '7 days')::int AS new7,
              COUNT(*) FILTER (WHERE created_at > ${now}::timestamptz - interval '30 days')::int AS new30,
+             COUNT(*) FILTER (WHERE st IN ('ACTIVE', 'TRIAL') AND ends_at <= ${now}::timestamptz + ${`${EXPIRING_DAYS} days`}::interval)::int AS expiring,
              COUNT(*) FILTER (WHERE st = 'ACTIVE' AND plan = 'EMPRENDEDOR')::int AS "activeEmprendedor",
              COUNT(*) FILTER (WHERE st = 'ACTIVE' AND plan = 'NEGOCIO')::int AS "activeNegocio",
              COUNT(*) FILTER (WHERE st = 'ACTIVE' AND plan = 'EMPRESA')::int AS "activeEmpresa"
       FROM (
-        SELECT b.created_at, s.plan::text AS plan, ${subscriptionStatus(now)} AS st
+        SELECT b.created_at, s.plan::text AS plan, ${subscriptionStatus(now)} AS st, ${ENDS_AT} AS ends_at
         FROM businesses b JOIN subscriptions s ON s.business_id = b.id
       ) t`;
     return row;

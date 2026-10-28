@@ -3,7 +3,8 @@ import { BusinessStatus, PlanCode, PlanTransferStatus } from "../../generated/pr
 import { paginationQuerySchema } from "../../utils/pagination.js";
 import { PLATFORM_ACCOUNT_KINDS } from "../subscriptions/platform-accounts.service.js";
 
-export const SUBSCRIPTION_FILTERS = ["TRIAL", "ACTIVE", "PAST_DUE", "EXPIRED", "SUSPENDED"] as const;
+/** EXPIRING: en prueba o pagados que terminan en los próximos 7 días. */
+export const SUBSCRIPTION_FILTERS = ["EXPIRING", "TRIAL", "ACTIVE", "PAST_DUE", "EXPIRED", "SUSPENDED"] as const;
 
 export const listBusinessesQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(80).optional(),

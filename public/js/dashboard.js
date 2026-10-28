@@ -184,25 +184,45 @@ function businessSwitcher(me, business, id, { compact = false } = {}) {
 const shortDate = (value) =>
   new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", timeZone: "America/Bogota" }).format(new Date(value));
 
-/** Aviso de la suscripción: prueba por terminar, plan vencido (con gracia) o tienda sin pedidos en línea. */
+/** «hoy», «mañana» o «en 3 días» hasta `value`, contando días del calendario de Colombia (como los recordatorios por correo). */
+function untilLabel(value) {
+  const day = (date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(date);
+  const days = Math.round((Date.parse(day(new Date(value))) - Date.parse(day(new Date()))) / 86_400_000);
+  return days <= 0 ? "hoy" : days === 1 ? "mañana" : `en ${days} días`;
+}
+
+/**
+ * Aviso de la suscripción: prueba o plan por terminar (5 días antes), plan vencido (con gracia) o tienda
+ * sin pedidos en línea. Si el propietario ya subió el comprobante, se le dice que está en revisión.
+ */
 function planBanner(business) {
   const subscription = business?.subscription;
   if (!subscription) return "";
   const owner = business.role === "OWNER";
-  const cta = (label) => (owner ? html`<a class="btn btn-ink btn-sm ml-auto" href="/panel/plan">${label}</a>` : "");
+  const inReview = owner && subscription.paymentInReview;
+  const cta = (label) => (owner ? html`<a class="btn btn-ink btn-sm ml-auto" href="/panel/plan">${inReview ? "Ver mi plan" : label}</a>` : "");
   const bar = (tone, iconName, text, action) => html`<div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 text-[0.9375rem] sm:px-6 lg:px-10 ${tone}" role="status">
     ${icon(iconName, "flex-none")}<p class="min-w-0 flex-1">${text}</p>${action}
   </div>`;
+  const review = inReview ? " Ya recibimos tu comprobante: te avisamos apenas lo confirmemos." : "";
+  const when = untilLabel(subscription.endsAt);
 
   if (subscription.status === "TRIAL" && subscription.daysLeft <= 5) {
-    const when = subscription.daysLeft <= 1 ? "mañana" : `en ${subscription.daysLeft} días`;
-    return bar("bg-mustard-soft text-mustard-deep", "clock", html`Tu prueba gratis termina <strong>${when}</strong>.`, cta("Ver planes"));
+    return bar("bg-mustard-soft text-mustard-deep", "clock", html`Tu prueba gratis termina <strong>${when}</strong>.${review}`, cta("Ver planes"));
+  }
+  if (subscription.status === "ACTIVE" && subscription.daysLeft <= 5) {
+    const text = inReview
+      ? html`Tu plan vence <strong>${when}</strong>.${review}`
+      : owner
+        ? html`Tu plan vence <strong>${when}</strong> (${shortDate(subscription.endsAt)}). Renuévalo para seguir recibiendo pedidos sin interrupciones.`
+        : html`El plan vence <strong>${when}</strong>. Avísale al propietario para que lo renueve.`;
+    return bar("bg-mustard-soft text-mustard-deep", "clock", text, cta("Renovar plan"));
   }
   if (subscription.status === "PAST_DUE") {
     return bar(
       "bg-mustard text-ink",
       "circle-alert",
-      html`Tu plan venció el ${shortDate(subscription.endsAt)}. Tu tienda recibe pedidos hasta el <strong>${shortDate(subscription.graceEndsAt)}</strong>.${owner ? "" : " Avísale al propietario."}`,
+      html`Tu plan venció el ${shortDate(subscription.endsAt)}. Tu tienda recibe pedidos hasta el <strong>${shortDate(subscription.graceEndsAt)}</strong>.${owner ? review : " Avísale al propietario."}`,
       cta("Renovar plan"),
     );
   }
@@ -210,8 +230,8 @@ function planBanner(business) {
     return bar(
       "bg-tomato text-paper",
       "circle-alert",
-      html`Tu tienda <strong>no está recibiendo pedidos en línea</strong> porque el plan venció.${owner ? "" : " Avísale al propietario del negocio."}`,
-      owner ? html`<a class="btn btn-sm ml-auto border-paper bg-paper text-ink" href="/panel/plan">Renovar plan</a>` : "",
+      html`Tu tienda <strong>no está recibiendo pedidos en línea</strong> porque el plan venció.${owner ? review : " Avísale al propietario del negocio."}`,
+      owner ? html`<a class="btn btn-sm ml-auto border-paper bg-paper text-ink" href="/panel/plan">${inReview ? "Ver mi plan" : "Renovar plan"}</a>` : "",
     );
   }
   return "";

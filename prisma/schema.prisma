@@ -243,12 +243,16 @@ model BusinessSettings {
 // Suscripción del negocio a Pedify. El estado (prueba, activa, vencida) se calcula con las fechas:
 // pagado hasta `paid_until`; si no, prueba hasta `trial_ends_at`; luego unos días de gracia.
 model Subscription {
-  businessId  String    @id @map("business_id") @db.Uuid
-  plan        PlanCode  @default(NEGOCIO)
-  trialEndsAt DateTime  @map("trial_ends_at") @db.Timestamptz(3)
-  paidUntil   DateTime? @map("paid_until") @db.Timestamptz(3)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  businessId     String           @id @map("business_id") @db.Uuid
+  plan           PlanCode         @default(NEGOCIO)
+  trialEndsAt    DateTime         @map("trial_ends_at") @db.Timestamptz(3)
+  paidUntil      DateTime?        @map("paid_until") @db.Timestamptz(3)
+  /// Último recordatorio de vencimiento enviado al propietario y la fecha de fin a la que se refería:
+  /// si el plan se renueva, la fecha cambia y los recordatorios vuelven a empezar.
+  reminderStage  RenewalReminder? @map("reminder_stage")
+  reminderEndsAt DateTime?        @map("reminder_ends_at") @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
@@ -257,6 +261,13 @@ model Subscription {
 
 // Pagos de la suscripción: registrados por el equipo de Pedify (transferencia, Nequi…) o pagados
 // en línea con Wompi (method WOMPI, sin recorded_by).
+/// Recordatorios de vencimiento (correo y aviso al celular): 5 días antes, 1 día antes y al vencer.
+enum RenewalReminder {
+  DAYS_5
+  DAY_1
+  EXPIRED
+}
+
 model SubscriptionPayment {
   id           String   @id @default(uuid(7)) @db.Uuid
   businessId   String   @map("business_id") @db.Uuid

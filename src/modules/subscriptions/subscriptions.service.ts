@@ -22,7 +22,10 @@ export const subscriptionsService = {
 
   /** Resumen para el panel (va en GET /businesses/current). */
   async summary(businessId: string) {
-    const { subscription, plan, state } = await current(businessId);
+    const [{ subscription, plan, state }, inReview] = await Promise.all([
+      current(businessId),
+      prisma.planTransfer.count({ where: { businessId, status: "PENDING" } }),
+    ]);
     return {
       plan: subscription.plan,
       planName: plan.name,
@@ -31,6 +34,8 @@ export const subscriptionsService = {
       daysLeft: state.daysLeft,
       graceEndsAt: state.graceEndsAt,
       canReceiveOrders: state.canReceiveOrders,
+      /** Ya subió el comprobante de un pago directo y espera la confirmación. */
+      paymentInReview: inReview > 0,
     };
   },
 

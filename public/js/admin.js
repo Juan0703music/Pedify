@@ -12,10 +12,12 @@ const STATUS = {
   EXPIRED: { label: "Vencido", badge: "bg-tomato-soft text-tomato" },
   SUSPENDED: { label: "Suspendido", badge: "bg-ink text-paper" },
 };
-const FILTERS = [["", "Todos"], ["TRIAL", "Prueba"], ["ACTIVE", "Activos"], ["PAST_DUE", "En gracia"], ["EXPIRED", "Vencidos"], ["SUSPENDED", "Suspendidos"]];
+const FILTERS = [["", "Todos"], ["EXPIRING", "Por vencer"], ["TRIAL", "Prueba"], ["ACTIVE", "Activos"], ["PAST_DUE", "En gracia"], ["EXPIRED", "Vencidos"], ["SUSPENDED", "Suspendidos"]];
 const METHODS = [["NEQUI", "Nequi"], ["BRE_B", "Llave Bre-B"], ["DAVIPLATA", "Daviplata"], ["TRANSFERENCIA", "Transferencia"], ["EFECTIVO", "Efectivo"], ["OTRO", "Otro"]];
 const METHOD_LABEL = Object.fromEntries(METHODS);
 const PLAN_NAME = { EMPRENDEDOR: "Emprendedor", NEGOCIO: "Negocio", EMPRESA: "Empresa" };
+/** Último recordatorio de vencimiento enviado al propietario (correo y aviso al celular). */
+const REMINDER_LABEL = { DAYS_5: "5 días antes", DAY_1: "1 día antes", EXPIRED: "al vencer" };
 const TABS = [
   ["resumen", "Resumen"],
   ["pagos", "Pagos por revisar"],
@@ -78,7 +80,7 @@ function metricsView(metrics) {
     <dl class="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-3 md:grid-cols-[repeat(4,minmax(0,1fr))]">
       ${tile("Negocios", String(businesses.total), `+${businesses.new7} en 7 días · +${businesses.new30} en 30 días`)}
       ${tile("Pagando", String(businesses.active), `${businesses.trial} en prueba`)}
-      ${tile("Por renovar", String(businesses.pastDue + businesses.expired), `${businesses.pastDue} en gracia · ${businesses.expired} vencidos`)}
+      ${tile("Por vencer (7 días)", String(businesses.expiring), `${businesses.pastDue} en gracia · ${businesses.expired} vencidos`)}
       ${tile("Recibido este mes", formatCOP(revenue.month), `${formatCOP(mrr)} al mes con los planes activos`)}
       ${tile("Pedidos (24 h)", String(orders.orders1), `${orders.orders30} en 30 días`)}
       ${tile("Ventas de las tiendas (30 días)", formatCOP(orders.gmv30), "Pedidos aceptados")}
@@ -120,6 +122,11 @@ function businessRow(business) {
     <td class="px-3 py-3">
       ${statusBadge(business.subscriptionStatus)}
       <span class="mt-1 block text-xs text-muted">${business.paidUntil && new Date(business.paidUntil) > new Date(business.trialEndsAt) ? `Pagado: ${date(business.paidUntil)}` : `Prueba: ${date(business.trialEndsAt)}`}</span>
+      ${business.paymentInReview
+        ? html`<span class="mt-0.5 block text-xs font-[680] text-mustard-deep">Pago en revisión</span>`
+        : business.lastReminder
+          ? html`<span class="mt-0.5 block text-xs text-muted">Avisado ${REMINDER_LABEL[business.lastReminder]}</span>`
+          : ""}
     </td>
     <td class="num px-3 py-3 text-right">${business.products}</td>
     <td class="num px-3 py-3 text-right">${business.orders30}</td>

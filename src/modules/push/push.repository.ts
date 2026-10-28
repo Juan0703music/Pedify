@@ -37,6 +37,14 @@ export const pushRepository = {
     });
   },
 
+  /** Dispositivos de los propietarios del negocio (avisos del plan). */
+  forOwners(businessId: string): Promise<StoredPushSubscription[]> {
+    return prisma.pushSubscription.findMany({
+      where: { businessId, user: { memberships: { some: { businessId, role: "OWNER" } } } },
+      select,
+    });
+  },
+
   forUserInBusiness(userId: string, businessId: string): Promise<StoredPushSubscription[]> {
     return prisma.pushSubscription.findMany({ where: { userId, businessId }, select });
   },

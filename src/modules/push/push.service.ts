@@ -104,6 +104,13 @@ export const pushService = {
     }
   },
 
+  /** Avisa a los propietarios del negocio (p. ej. que su plan está por vencer). Devuelve a cuántos dispositivos llegó. */
+  async notifyOwners(businessId: string, message: PushMessage): Promise<number> {
+    if (!enabled) return 0;
+    const devices = await pushRepository.forOwners(businessId);
+    return (await Promise.all(devices.map((device) => pushService.deliver(device, message)))).filter(Boolean).length;
+  },
+
   /** Envía a un dispositivo. Si el navegador ya no lo acepta (se desinstaló o se quitó el permiso), lo borra. */
   async deliver(device: StoredPushSubscription, message: PushMessage): Promise<boolean> {
     const subscription = { endpoint: device.endpoint, keys: { p256dh: device.p256dh, auth: device.auth } };
