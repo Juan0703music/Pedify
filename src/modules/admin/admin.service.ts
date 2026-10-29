@@ -60,6 +60,11 @@ export const adminService = {
     };
   },
 
+  /** Datos de las gráficas del panel central (ingresos, crecimiento, pedidos y planes). */
+  analytics() {
+    return adminRepository.analytics(clock.now());
+  },
+
   async listBusinesses(query: ListBusinessesQuery) {
     const { items, total } = await adminRepository.listBusinesses({
       now: clock.now(),

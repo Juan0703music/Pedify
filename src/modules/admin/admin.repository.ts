@@ -144,6 +144,69 @@ export const adminRepository = {
     return { month: Number(row?.month ?? 0), days30: Number(row?.days30 ?? 0), total: Number(row?.total ?? 0), payments: row?.payments ?? 0, owners: row?.owners ?? 0 };
   },
 
+  /**
+   * Series de las gráficas del panel central, por calendario de Colombia: ingresos y negocios nuevos
+   * de los últimos 12 meses; pedidos y ventas de las tiendas de los últimos 30 días (con los 30
+   * anteriores para comparar), por día y por día de la semana × hora; negocios por plan y estado;
+   * y las tiendas con más pedidos.
+   */
+  async analytics(now: Date) {
+    const local = Prisma.sql`(${now}::timestamptz AT TIME ZONE 'America/Bogota')`;
+    const firstMonth = Prisma.sql`(date_trunc('month', ${local}) - interval '11 months')`;
+    const firstDay = Prisma.sql`(date_trunc('day', ${local}) - interval '29 days')`;
+    const windowStart = Prisma.sql`(${firstDay} AT TIME ZONE 'America/Bogota')`;
+    const [months, days, previous, hours, plans, topStores] = await Promise.all([
+      prisma.$queryRaw<{ month: string; revenue: bigint; payments: number; newBusinesses: number }[]>`
+        WITH m AS (SELECT generate_series(${firstMonth}, date_trunc('month', ${local}), interval '1 month') AS start)
+        SELECT to_char(m.start, 'YYYY-MM') AS month, COALESCE(p.revenue, 0)::bigint AS revenue,
+               COALESCE(p.payments, 0)::int AS payments, COALESCE(b.count, 0)::int AS "newBusinesses"
+        FROM m
+        LEFT JOIN (
+          SELECT date_trunc('month', created_at AT TIME ZONE 'America/Bogota') AS start, SUM(amount) AS revenue, COUNT(*) AS payments
+          FROM subscription_payments WHERE created_at >= ${firstMonth} AT TIME ZONE 'America/Bogota' GROUP BY 1
+        ) p ON p.start = m.start
+        LEFT JOIN (
+          SELECT date_trunc('month', created_at AT TIME ZONE 'America/Bogota') AS start, COUNT(*) AS count
+          FROM businesses WHERE created_at >= ${firstMonth} AT TIME ZONE 'America/Bogota' GROUP BY 1
+        ) b ON b.start = m.start
+        ORDER BY m.start`,
+      prisma.$queryRaw<{ day: string; orders: number; gmv: bigint }[]>`
+        WITH d AS (SELECT generate_series(${firstDay}, date_trunc('day', ${local}), interval '1 day') AS start)
+        SELECT to_char(d.start, 'YYYY-MM-DD') AS day, COALESCE(o.orders, 0)::int AS orders, COALESCE(o.gmv, 0)::bigint AS gmv
+        FROM d
+        LEFT JOIN (
+          SELECT date_trunc('day', o.created_at AT TIME ZONE 'America/Bogota') AS start, COUNT(*) AS orders,
+                 SUM(o.total) FILTER (WHERE ${ACCEPTED}) AS gmv
+          FROM orders o WHERE o.created_at >= ${windowStart} GROUP BY 1
+        ) o ON o.start = d.start
+        ORDER BY d.start`,
+      prisma.$queryRaw<{ orders: number; gmv: bigint }[]>`
+        SELECT COUNT(*)::int AS orders, COALESCE(SUM(o.total) FILTER (WHERE ${ACCEPTED}), 0)::bigint AS gmv
+        FROM orders o WHERE o.created_at >= ${windowStart} - interval '30 days' AND o.created_at < ${windowStart}`,
+      prisma.$queryRaw<{ weekday: number; hour: number; orders: number }[]>`
+        SELECT (EXTRACT(ISODOW FROM o.created_at AT TIME ZONE 'America/Bogota') - 1)::int AS weekday,
+               EXTRACT(HOUR FROM o.created_at AT TIME ZONE 'America/Bogota')::int AS hour, COUNT(*)::int AS orders
+        FROM orders o WHERE o.created_at >= ${windowStart} GROUP BY 1, 2`,
+      prisma.$queryRaw<{ plan: string; status: string; count: number }[]>`
+        SELECT plan, status, COUNT(*)::int AS count
+        FROM (SELECT s.plan::text AS plan, ${subscriptionStatus(now)} AS status FROM businesses b JOIN subscriptions s ON s.business_id = b.id) t
+        GROUP BY 1, 2`,
+      prisma.$queryRaw<{ id: string; name: string; slug: string; orders: number; gmv: bigint }[]>`
+        SELECT b.id, b.name, b.slug, COUNT(*)::int AS orders, COALESCE(SUM(o.total) FILTER (WHERE ${ACCEPTED}), 0)::bigint AS gmv
+        FROM orders o JOIN businesses b ON b.id = o.business_id
+        WHERE o.created_at >= ${windowStart}
+        GROUP BY b.id, b.name, b.slug ORDER BY orders DESC, gmv DESC, b.name LIMIT 6`,
+    ]);
+    return {
+      months: months.map((row) => ({ ...row, revenue: Number(row.revenue) })),
+      days: days.map((row) => ({ ...row, gmv: Number(row.gmv) })),
+      previous: { orders: previous[0]?.orders ?? 0, gmv: Number(previous[0]?.gmv ?? 0) },
+      hours,
+      plans,
+      topStores: topStores.map((row) => ({ ...row, gmv: Number(row.gmv) })),
+    };
+  },
+
   /** Pagos de los planes de todos los negocios, del más reciente al más antiguo. */
   async listPayments(options: { skip: number; take: number }) {
     const [items, total] = await Promise.all([

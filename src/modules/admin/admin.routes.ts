@@ -31,6 +31,9 @@ adminRoutes.use(authenticate, requirePlatformAdmin);
 const params = validate({ params: businessParamsSchema });
 
 adminRoutes.get("/metrics", adminController.metrics);
+adminRoutes.get("/analytics", async (_req: Request, res: Response) => {
+  res.json({ data: await adminService.analytics() });
+});
 adminRoutes.get("/businesses", validate({ query: listBusinessesQuerySchema }), adminController.listBusinesses);
 adminRoutes.get("/businesses/:id", params, adminController.getBusiness);
 adminRoutes.patch("/businesses/:id", validate({ params: businessParamsSchema, body: updateBusinessAdminSchema }), adminController.updateBusiness);
