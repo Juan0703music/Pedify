@@ -493,7 +493,12 @@ function page() {
       <div class="mx-auto flex max-w-[84rem] items-center gap-4 px-4 py-3 sm:px-6">
         ${brand({ onInk: true })}
         <span class="badge bg-mustard text-ink">Administración</span>
-        ${state.me.businesses.length > 0 ? html`<a href="/panel" class="ml-auto text-sm font-[620] text-ink-soft hover:text-paper">Ir a mi panel</a>` : ""}
+        <div class="ml-auto flex items-center gap-2 sm:gap-4">
+          ${state.me.businesses.length > 0 ? html`<a href="/panel" class="text-sm font-[620] whitespace-nowrap text-ink-soft hover:text-paper">Ir a mi panel</a>` : ""}
+          <button type="button" class="btn btn-quiet btn-sm text-ink-soft hover:bg-ink-3 hover:text-paper" data-logout title="Cerrar sesión">
+            ${icon("log-out")} <span class="max-sm:sr-only">Cerrar sesión</span>
+          </button>
+        </div>
       </div>
     </header>
     <main class="mx-auto grid max-w-[84rem] grid-cols-[minmax(0,1fr)] gap-6 px-4 py-8 sm:px-6">
