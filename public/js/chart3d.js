@@ -387,11 +387,16 @@ export function chart3d(container, spec) {
   entered.add(spec.key);
 
   // Se rehace al cambiar el ancho (girar el celular, abrir el menú…), sin perder la vista.
+  let pending = 0;
   const observer = new ResizeObserver(() => {
     if (!container.isConnected) return observer.disconnect();
-    if (Math.abs(container.clientWidth - width) < 4) return;
-    build();
-    fit();
+    if (Math.abs(container.clientWidth - width) < 4 || pending) return;
+    // En el siguiente cuadro, no dentro del aviso (si no, el navegador avisa de un ciclo de ResizeObserver).
+    pending = requestAnimationFrame(() => {
+      pending = 0;
+      build();
+      fit();
+    });
   });
   observer.observe(container);
 }

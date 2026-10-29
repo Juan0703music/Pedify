@@ -414,6 +414,11 @@ export async function initPanel(page) {
   let business = null;
   try {
     me = await api("/auth/me");
+    // Un administrador de Pedify sin negocio propio (p. ej. con la app del negocio instalada) va a su panel central.
+    if (me.user.isPlatformAdmin && me.businesses.length === 0) {
+      location.replace("/admin");
+      return null;
+    }
     if (me.activeBusinessId) business = await api("/businesses/current");
   } catch (error) {
     if (error.status === 401) {

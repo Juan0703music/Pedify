@@ -1651,33 +1651,6 @@
     }
   }
 
-  /* ─── Navegación del panel central ─── */
-  .admin-pill {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 2.5rem;
-    padding: 0 0.875rem;
-    border-radius: 999px;
-    font-size: 0.9375rem;
-    font-weight: 640;
-    white-space: nowrap;
-    color: #d9d7e0;
-    cursor: pointer;
-    transition:
-      background-color 150ms var(--ease-out-expo),
-      color 150ms var(--ease-out-expo);
-  }
-  .admin-pill:hover {
-    background: var(--color-ink-2);
-    color: var(--color-paper);
-  }
-  .admin-pill[aria-current="page"] {
-    background: var(--color-mustard);
-    color: var(--color-ink);
-  }
-
   /* Producto agotado en la tienda. */
   .is-sold-out .thumb img,
   .is-sold-out .product-photo img {

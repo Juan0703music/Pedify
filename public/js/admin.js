@@ -32,13 +32,15 @@ const PLAN_NAME = { EMPRENDEDOR: "Emprendedor", NEGOCIO: "Negocio", EMPRESA: "Em
 const REMINDER_LABEL = { DAYS_5: "5 días antes", DAY_1: "1 día antes", EXPIRED: "al vencer" };
 const SECTIONS = [
   { id: "resumen", label: "Resumen", icon: "house" },
-  { id: "analiticas", label: "Analíticas", icon: "chart-column" },
-  { id: "negocios", label: "Negocios", icon: "store" },
   { id: "pagos", label: "Pagos por revisar", short: "Pagos", icon: "receipt" },
+  { id: "negocios", label: "Negocios", icon: "store" },
   { id: "ingresos", label: "Ingresos", icon: "banknote" },
+  { id: "analiticas", label: "Analíticas", icon: "chart-column" },
   { id: "cuentas", label: "Cuentas de cobro", short: "Cuentas", icon: "wallet" },
   { id: "cuenta", label: "Mi cuenta", icon: "key-round" },
 ];
+/** Barra inferior del celular; las demás secciones quedan en «Más». */
+const TABBAR = ["resumen", "pagos", "negocios", "analiticas"];
 const TRANSFER_FILTERS = [["PENDING", "Por revisar"], ["APPROVED", "Aprobados"], ["REJECTED", "Rechazados"]];
 const REJECT_REASONS = ["No llegó el dinero a la cuenta.", "El valor no coincide con el plan.", "No se ve bien el comprobante."];
 /** Cada cuánto se revisa si llegaron pagos nuevos mientras el panel está abierto. */
@@ -335,7 +337,11 @@ function attentionView() {
           <span class="min-w-0 flex-1 font-[680]">${plural(metrics.pendingTransfers, "pago por revisar", "pagos por revisar")}</span>
           ${icon("arrow-right", "h-4 w-4 flex-none")}
         </button>`
-      : ""}
+      : html`<button type="button" class="flex items-center gap-3 rounded-[12px] bg-ground px-4 py-3 text-left hover:bg-line" data-tab="pagos">
+          ${icon("receipt", "h-5 w-5 flex-none text-muted")}
+          <span class="min-w-0 flex-1"><span class="block font-[680]">Pagos por revisar</span><span class="block text-sm text-muted">Ninguno ahora. Aquí ves y apruebas los pagos de los planes.</span></span>
+          ${icon("arrow-right", "h-4 w-4 flex-none text-muted")}
+        </button>`}
     <div class="grid gap-2">
       <h3 class="text-sm font-[680] text-muted">Vencen en los próximos 7 días</h3>
       ${soon.length === 0
@@ -1003,12 +1009,17 @@ function navItems() {
   );
 }
 
-function navPills() {
-  return SECTIONS.map(
-    (section) => html`<button type="button" class="admin-pill" data-tab="${section.id}" ${state.tab === section.id ? raw('aria-current="page"') : ""}>
-      ${section.short ?? section.label}${section.id === "pagos" ? pendingCount("px-1.5 py-0") : ""}
+/** Barra inferior del celular: cuatro secciones y «Más» (abre el menú con todas). */
+function tabBar() {
+  const tabs = TABBAR.map((id) => SECTIONS.find((section) => section.id === id)).map(
+    (section) => html`<button type="button" class="tab-item" data-tab="${section.id}" ${state.tab === section.id ? raw('aria-current="page"') : ""}>
+      <span class="tab-pill relative">${icon(section.icon)}${section.id === "pagos" ? pendingCount("absolute -top-1.5 -right-1 min-w-5 justify-center px-1.5 py-0") : ""}</span>${section.short ?? section.label}
     </button>`,
   );
+  return html`${tabs}
+    <button type="button" class="tab-item" data-open-drawer ${TABBAR.includes(state.tab) ? "" : raw('aria-current="page"')}>
+      <span class="tab-pill">${icon("menu")}</span>Más
+    </button>`;
 }
 
 /** «Sistema en línea» con la versión y la base de datos (abajo del menú lateral). */
@@ -1097,13 +1108,34 @@ function page() {
               ${icon("log-out")}
             </button>
           </div>
-          <nav aria-label="Secciones del panel" class="scroll-thin flex gap-1 overflow-x-auto px-3 pb-3" data-nav-pills>${navPills()}</nav>
         </header>
-        <main id="main" tabindex="-1" class="mx-auto grid w-full max-w-[84rem] grid-cols-[minmax(0,1fr)] content-start gap-6 px-4 pt-6 pb-14 outline-none sm:px-6 lg:px-10 lg:pt-10">
+        <main
+          id="main"
+          tabindex="-1"
+          class="mx-auto grid w-full max-w-[84rem] grid-cols-[minmax(0,1fr)] content-start gap-6 px-4 pt-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-10 lg:pt-10 lg:pb-14"
+        >
           <div data-section-head>${sectionHead()}</div>
           <div class="grid grid-cols-[minmax(0,1fr)] gap-6" data-tab-panel>${sectionView()}</div>
         </main>
       </div>
+
+      <nav aria-label="Secciones principales" class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden" data-tabbar>
+        ${tabBar()}
+      </nav>
+
+      <dialog id="drawer" class="on-ink drawer m-0 ml-auto h-dvh max-h-none w-[min(20rem,88vw)] bg-ink p-4 text-paper" aria-label="Menú del panel">
+        <div class="flex h-full flex-col gap-6">
+          <div class="flex items-center justify-between">
+            ${brand({ onInk: true })}
+            <button type="button" class="btn btn-quiet btn-icon text-paper hover:bg-ink-3" data-close-drawer aria-label="Cerrar menú">${icon("x")}</button>
+          </div>
+          <nav aria-label="Secciones del panel" class="grid gap-1" data-nav>${navItems()}</nav>
+          <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
+            ${state.me.businesses.length > 0 ? html`<a class="nav-item" href="/panel">${icon("store")}<span class="flex-1">Ir a mi negocio</span>${icon("arrow-right", "h-4 w-4")}</a>` : ""}
+            ${userBlock()}
+          </div>
+        </div>
+      </dialog>
     </div>
     <dialog id="business-detail" class="sheet" aria-labelledby="detail-title"></dialog>`;
 }
@@ -1161,8 +1193,8 @@ function drawTab() {
 }
 
 function drawNav() {
-  render(root.querySelector("[data-nav]"), html`${navItems()}`);
-  render(root.querySelector("[data-nav-pills]"), html`${navPills()}`);
+  for (const nav of root.querySelectorAll("[data-nav]")) render(nav, html`${navItems()}`);
+  render(root.querySelector("[data-tabbar]"), tabBar());
 }
 
 /** ¿Estás escribiendo en la sección abierta? (Entonces no se redibuja sola.) */
@@ -1187,10 +1219,11 @@ function followChecks() {
 async function openTab(tab) {
   state.tab = tab;
   history.replaceState(null, "", `#${tab}`);
+  const drawer = document.getElementById("drawer");
+  if (drawer?.open) drawer.close();
   try {
     await loadTab();
     drawTab();
-    root.querySelector("[data-nav-pills] [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
     if (window.scrollY > 0) window.scrollTo({ top: 0 });
   } catch (error) {
     toast(error.message, "error");
@@ -1201,7 +1234,6 @@ async function refresh() {
   [state.metrics] = await Promise.all([api("/admin/metrics"), loadTab()]);
   render(root, page());
   drawTab();
-  root.querySelector("[data-nav-pills] [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 
 async function openDetail(id) {
@@ -1287,11 +1319,15 @@ function watchTransfers() {
 
 function bind() {
   root.addEventListener("click", async (event) => {
+    // Tocar fuera del menú del celular lo cierra.
+    if (event.target.id === "drawer") return event.target.close();
     const row = event.target.closest("[data-business]");
     if (row) return openDetail(row.dataset.business);
     const target = event.target.closest("button");
     if (!target) return;
     if (target.matches("[data-tab]")) return openTab(target.dataset.tab);
+    if (target.matches("[data-open-drawer]")) return document.getElementById("drawer").showModal();
+    if (target.matches("[data-close-drawer]")) return document.getElementById("drawer").close();
     if (target.matches("[data-goto-filter]")) {
       state.filter = target.dataset.gotoFilter;
       state.page = 1;
