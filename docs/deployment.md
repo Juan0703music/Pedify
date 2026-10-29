@@ -142,7 +142,7 @@ Revisa salud y base de datos, cabeceras de seguridad, HTTPS (redirección y venc
 
 ### Avisos push de pedidos
 
-Con las llaves VAPID, cada persona del equipo activa los avisos en su celular o computador (Inicio, menú del panel o Configuración → Pedidos) y le llega una notificación con cada pedido nuevo aunque tenga el panel cerrado; al tocarla se abre el pedido.
+Con las llaves VAPID, cada persona del equipo activa los avisos en su celular o computador (Inicio, menú del panel o Configuración → Pedidos) y le llega una notificación con cada pedido nuevo aunque tenga el panel cerrado; al tocarla se abre el pedido. Los administradores de Pedify los activan en `/admin` (Resumen, menú lateral o Mi cuenta → En este dispositivo) y les llega uno con cada pago de un plan por revisar; el panel central se instala como su propia app, «Pedify Admin» (en iPhone, desde Safari → Compartir → Agregar a inicio, y los avisos se activan desde ese ícono).
 
 - Funcionan solo con HTTPS (en producción ya lo tienes con Caddy; en el PC, solo en `http://localhost`).
 - Android, Windows, Mac y Linux: Chrome, Edge, Firefox o Safari actualizados.

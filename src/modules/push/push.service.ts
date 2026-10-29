@@ -5,7 +5,7 @@ import type { TenantContext } from "../../types/common.js";
 import { formatCOP } from "../../utils/currency.js";
 import { conflict } from "../../utils/errors.js";
 import { logger } from "../../utils/logger.js";
-import { pushRepository, type StoredPushSubscription } from "./push.repository.js";
+import { adminPushRepository, pushRepository, type StoredPushSubscription } from "./push.repository.js";
 import type { SubscribeInput } from "./push.schemas.js";
 
 /**
@@ -28,6 +28,14 @@ if (enabled) webpush.setVapidDetails(subject, env.VAPID_PUBLIC_KEY!, env.VAPID_P
 
 type Transport = (subscription: BrowserSubscription, payload: string) => Promise<unknown>;
 
+/** Dónde está guardado un dispositivo (los del negocio y los de los administradores van aparte). */
+interface DeviceStore {
+  markSent(id: string): Promise<unknown>;
+  deleteById(id: string): Promise<unknown>;
+}
+
+const disabled = () => conflict("Las notificaciones push no están configuradas en este servidor.", "PUSH_DISABLED");
+
 /** Envío real a los servicios de push; las pruebas lo reemplazan. */
 const sendWithWebPush: Transport = (subscription, payload) =>
   webpush.sendNotification(subscription, payload, { TTL: 60 * 60, urgency: "high" });
@@ -49,7 +57,7 @@ export const pushService = {
   },
 
   async subscribe(userId: string, tenant: TenantContext, input: SubscribeInput, userAgent: string | undefined) {
-    if (!enabled) throw conflict("Las notificaciones push no están configuradas en este servidor.", "PUSH_DISABLED");
+    if (!enabled) throw disabled();
     await pushRepository.upsert({
       userId,
       businessId: tenant.businessId,
@@ -66,12 +74,12 @@ export const pushService = {
   },
 
   removeAllForUser(userId: string) {
-    return pushRepository.deleteByUser(userId);
+    return Promise.all([pushRepository.deleteByUser(userId), adminPushRepository.deleteByUser(userId)]);
   },
 
   /** Aviso de prueba a los dispositivos de esta persona en este negocio. */
   async sendTest(userId: string, tenant: TenantContext) {
-    if (!enabled) throw conflict("Las notificaciones push no están configuradas en este servidor.", "PUSH_DISABLED");
+    if (!enabled) throw disabled();
     const devices = await pushRepository.forUserInBusiness(userId, tenant.businessId);
     const results = await Promise.all(
       devices.map((device) =>
@@ -111,17 +119,54 @@ export const pushService = {
     return (await Promise.all(devices.map((device) => pushService.deliver(device, message)))).filter(Boolean).length;
   },
 
+  // ─── Administradores de Pedify: avisos de los pagos de los planes por revisar ───
+
+  /** Configuración para el panel central: llave pública y cuántos dispositivos de esta persona reciben avisos. */
+  async adminConfig(userId: string) {
+    return { ...pushService.publicKey(), devices: enabled ? await adminPushRepository.countForUser(userId) : 0 };
+  },
+
+  async subscribeAdmin(userId: string, input: SubscribeInput, userAgent: string | undefined) {
+    if (!enabled) throw disabled();
+    await adminPushRepository.upsert({ userId, endpoint: input.endpoint, p256dh: input.keys.p256dh, auth: input.keys.auth, userAgent: userAgent?.slice(0, 300) ?? null });
+    return { devices: await adminPushRepository.countForUser(userId) };
+  },
+
+  async unsubscribeAdmin(userId: string, endpoint: string) {
+    await adminPushRepository.deleteByEndpoint(userId, endpoint);
+  },
+
+  async sendAdminTest(userId: string) {
+    if (!enabled) throw disabled();
+    const devices = await adminPushRepository.forUser(userId);
+    const message: PushMessage = {
+      title: "Pedify: avisos de pagos activados",
+      body: "Así te llegará cada pago de un plan por revisar, aunque tengas el panel cerrado.",
+      url: "/admin#pagos",
+      tag: "pedify-admin-prueba",
+    };
+    const results = await Promise.all(devices.map((device) => pushService.deliver(device, message, adminPushRepository)));
+    return { sent: results.filter(Boolean).length, devices: devices.length };
+  },
+
+  /** Avisa a los administradores (p. ej. que llegó un pago por revisar). Devuelve a cuántos dispositivos llegó. */
+  async notifyAdmins(message: PushMessage): Promise<number> {
+    if (!enabled) return 0;
+    const devices = await adminPushRepository.forAdmins();
+    return (await Promise.all(devices.map((device) => pushService.deliver(device, message, adminPushRepository)))).filter(Boolean).length;
+  },
+
   /** Envía a un dispositivo. Si el navegador ya no lo acepta (se desinstaló o se quitó el permiso), lo borra. */
-  async deliver(device: StoredPushSubscription, message: PushMessage): Promise<boolean> {
+  async deliver(device: StoredPushSubscription, message: PushMessage, store: DeviceStore = pushRepository): Promise<boolean> {
     const subscription = { endpoint: device.endpoint, keys: { p256dh: device.p256dh, auth: device.auth } };
     try {
       await pushService.transport(subscription, JSON.stringify(message));
-      await pushRepository.markSent(device.id);
+      await store.markSent(device.id);
       return true;
     } catch (error) {
       const status = error instanceof WebPushError ? error.statusCode : (error as { statusCode?: number }).statusCode;
       if (status === 404 || status === 410) {
-        await pushRepository.deleteById(device.id);
+        await store.deleteById(device.id);
       } else {
         logger.warn({ err: error, status }, "Aviso push no entregado");
       }

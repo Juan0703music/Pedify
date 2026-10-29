@@ -476,6 +476,10 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 |---|---|---|---|
 | GET | `/admin/metrics` | — | `businesses` (total, trial, active, pastDue, expired, suspended, new7, new30…), `orders` (orders1, orders30, gmv30, storesWithOrders7), `mrr`, `plans`, `system` (version, uptime, memoria, latencia de la base) |
 | GET | `/admin/analytics` | — | Series de las gráficas, por calendario de Colombia: `months` (12 meses: `month`, `revenue`, `payments`, `newBusinesses`), `days` (30 días hasta hoy: `day`, `orders`, `gmv`), `previous` (pedidos y ventas de los 30 días anteriores), `hours` (`weekday` 0 = lunes, `hour`, `orders`), `plans` (`plan`, `status`, `count`) y `topStores` (las 6 tiendas con más pedidos en 30 días) |
+| GET | `/admin/push` | — | `enabled`, `publicKey` (VAPID) y `devices` (cuántos dispositivos de esta persona reciben los avisos de pagos) |
+| POST | `/admin/push/subscriptions` | `endpoint`, `keys` (como `/push/subscriptions`) | `{ devices }`: este dispositivo recibe un aviso con cada pago de un plan por revisar |
+| DELETE | `/admin/push/subscriptions` | `endpoint` | 204 |
+| POST | `/admin/push/test` | — | `{ sent, devices }`: aviso de prueba a los dispositivos de esta persona |
 | GET | `/admin/businesses?search&status&page&pageSize` | `status`: TRIAL, ACTIVE, PAST_DUE, EXPIRED, SUSPENDED | Negocios con propietario, plan, estado, productos, pedidos de 30 días |
 | GET | `/admin/businesses/:id` | — | Detalle, equipo, conteos, suscripción y pagos |
 | PATCH | `/admin/businesses/:id` | `status?` (ACTIVE/SUSPENDED), `plan?`, `extendTrialDays?` (1–90) | Detalle |

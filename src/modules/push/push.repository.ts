@@ -57,3 +57,40 @@ export const pushRepository = {
     return prisma.pushSubscription.updateMany({ where: { id }, data: { lastSentAt: new Date() } });
   },
 };
+
+/** Dispositivos de los administradores de Pedify (avisos de los pagos de los planes por revisar). */
+export const adminPushRepository = {
+  upsert(data: { userId: string; endpoint: string; p256dh: string; auth: string; userAgent: string | null }) {
+    const { endpoint, ...rest } = data;
+    return prisma.adminPushSubscription.upsert({ where: { endpoint }, create: data, update: rest, select });
+  },
+
+  deleteByEndpoint(userId: string, endpoint: string) {
+    return prisma.adminPushSubscription.deleteMany({ where: { userId, endpoint } });
+  },
+
+  deleteById(id: string) {
+    return prisma.adminPushSubscription.deleteMany({ where: { id } });
+  },
+
+  deleteByUser(userId: string) {
+    return prisma.adminPushSubscription.deleteMany({ where: { userId } });
+  },
+
+  /** Solo de quienes siguen siendo administradores (si se le quita el acceso, deja de recibirlos). */
+  forAdmins(): Promise<StoredPushSubscription[]> {
+    return prisma.adminPushSubscription.findMany({ where: { user: { isPlatformAdmin: true } }, select });
+  },
+
+  forUser(userId: string): Promise<StoredPushSubscription[]> {
+    return prisma.adminPushSubscription.findMany({ where: { userId }, select });
+  },
+
+  countForUser(userId: string) {
+    return prisma.adminPushSubscription.count({ where: { userId } });
+  },
+
+  markSent(id: string) {
+    return prisma.adminPushSubscription.updateMany({ where: { id }, data: { lastSentAt: new Date() } });
+  },
+};

@@ -95,15 +95,16 @@ model User {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  memberships         BusinessMembership[]
-  sessions            Session[]
-  statusChanges       OrderStatusHistory[]
-  passwordResetTokens PasswordResetToken[]
-  pushSubscriptions   PushSubscription[]
-  recordedPayments    SubscriptionPayment[]
-  planCheckouts       PlanCheckout[]
-  planTransfers       PlanTransfer[]        @relation("PlanTransferCreatedBy")
-  reviewedTransfers   PlanTransfer[]        @relation("PlanTransferReviewedBy")
+  memberships            BusinessMembership[]
+  sessions               Session[]
+  statusChanges          OrderStatusHistory[]
+  passwordResetTokens    PasswordResetToken[]
+  pushSubscriptions      PushSubscription[]
+  adminPushSubscriptions AdminPushSubscription[]
+  recordedPayments       SubscriptionPayment[]
+  planCheckouts          PlanCheckout[]
+  planTransfers          PlanTransfer[]          @relation("PlanTransferCreatedBy")
+  reviewedTransfers      PlanTransfer[]          @relation("PlanTransferReviewedBy")
 
   @@map("users")
 }
@@ -508,6 +509,25 @@ model PushSubscription {
   @@index([businessId])
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+/// Dispositivos de los administradores de Pedify que reciben los avisos de la plataforma (pagos de los
+/// planes por revisar). Van aparte de `push_subscriptions` porque el mismo celular puede recibir también
+/// los pedidos de un negocio con la misma URL de push.
+model AdminPushSubscription {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  userAgent  String?   @map("user_agent")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSentAt DateTime? @map("last_sent_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("admin_push_subscriptions")
 }
 
 /// Seguimiento del domiciliario de un pedido a domicilio. El negocio genera un enlace secreto

@@ -15,6 +15,7 @@ import { buildPage, type PaginationQuery } from "../../utils/pagination.js";
 import { PAYMENT_ACCOUNT_LABEL } from "../payment-accounts/payment-accounts.schemas.js";
 import { quickReading, READ_WAIT_MS, RECEIPT_TEXT_MAX } from "../payment-accounts/payment-proofs.service.js";
 import { evaluateProof, parseReceipt } from "../payment-accounts/proof-check.js";
+import { pushService } from "../push/push.service.js";
 import { platformAccountsService, type PlatformAccountKind } from "./platform-accounts.service.js";
 import { planOf, priceFor } from "./plans.js";
 import { subscriptionsService } from "./subscriptions.service.js";
@@ -88,14 +89,25 @@ async function ownerOf(businessId: string) {
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
-/** Avisa a los administradores de Pedify que hay un pago por revisar, con el resultado de la revisión. */
-async function notifyAdmins(transfer: Transfer, headline: string) {
+/**
+ * Avisa a los administradores de Pedify que hay un pago por revisar, con el resultado de la revisión:
+ * por correo y al celular (a los que activaron los avisos en el panel central).
+ */
+async function notifyAdmins(transfer: Transfer, headline: string, short: string) {
   const [admins, business] = await Promise.all([
     prisma.user.findMany({ where: { isPlatformAdmin: true }, select: { email: true } }),
     prisma.business.findUnique({ where: { id: transfer.businessId }, select: { name: true } }),
   ]);
   const what = `${business?.name ?? "Un negocio"} · plan ${planOf(transfer.plan).name} ${period(transfer.months)} · ${formatCOP(transfer.amount)} por ${methodLabel(transfer.method)}`;
   const link = new URL("/admin#pagos", env.APP_URL).toString();
+  await pushService
+    .notifyAdmins({
+      title: `Pago por revisar · ${formatCOP(transfer.amount)}`,
+      body: `${business?.name ?? "Un negocio"} · plan ${planOf(transfer.plan).name} ${period(transfer.months)} por ${methodLabel(transfer.method)}. ${short}`,
+      url: "/admin#pagos",
+      tag: `pago-plan-${transfer.id}`,
+    })
+    .catch((err: unknown) => logger.error({ err }, "No se pudo enviar el aviso del pago por revisar al celular"));
   await Promise.all(
     admins.map((admin) =>
       mailer.send({
@@ -116,6 +128,8 @@ const HEADLINE = {
   REVIEW: "no pudimos leerlo todo; revísalo.",
   MISMATCH: "algo no coincide; revísalo con cuidado.",
 } as const;
+/** El resultado de la revisión en el aviso del celular (corto). */
+const SHORT = { VERIFIED: "Todo coincide.", REVIEW: "Revísalo: no pudimos leerlo todo.", MISMATCH: "Algo no coincide: revísalo." } as const;
 
 /**
  * Lee el comprobante (OCR), lo revisa contra el plan y las cuentas de Pedify (valor, destinatario,
@@ -152,7 +166,7 @@ async function readAndCheck(transfer: Transfer, image: Buffer, imageHash: string
     data: { receiptText: text, reference, readAt: new Date(), checkStatus: result.status, checks: result.checks as object[] },
   });
   logger.info({ businessId: transfer.businessId, transferId: transfer.id, status: result.status }, "Comprobante del pago del plan verificado");
-  await notifyAdmins(transfer, HEADLINE[result.status]).catch((err: unknown) => logger.error({ err }, "No se pudo avisar del pago por revisar"));
+  await notifyAdmins(transfer, HEADLINE[result.status], SHORT[result.status]).catch((err: unknown) => logger.error({ err }, "No se pudo avisar del pago por revisar"));
   return text;
 }
 

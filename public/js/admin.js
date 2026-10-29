@@ -3,7 +3,9 @@
 // revisión, los ingresos y las cuentas de Pedify que los reciben. Solo para administradores.
 import { api, formatCOP, formatPhone, redirectToLogin } from "./api.js";
 import { chart3d } from "./chart3d.js";
+import { installApp, installLabel, installState, isInstalled, openInstallHelp } from "./install.js";
 import { mountPaymentAccounts } from "./payment-accounts-ui.js";
+import { adminPush } from "./push.js";
 import { brand, clearFieldErrors, formAlert, html, icon, initials, raw, readForm, render, setBusy, showErrors, toast } from "./ui.js";
 
 const STATUS = {
@@ -41,6 +43,18 @@ const TRANSFER_FILTERS = [["PENDING", "Por revisar"], ["APPROVED", "Aprobados"],
 const REJECT_REASONS = ["No llegó el dinero a la cuenta.", "El valor no coincide con el plan.", "No se ve bien el comprobante."];
 /** Cada cuánto se revisa si llegaron pagos nuevos mientras el panel está abierto. */
 const POLL_MS = 30_000;
+/** Avisos de pagos en este dispositivo: estado (de push.js), texto corto y explicación. */
+const PUSH_COPY = {
+  on: { label: "Activo", hint: "Te llega un aviso a este dispositivo con cada pago por revisar, aunque cierres el panel." },
+  off: { label: "Activar", hint: "Recibe en este celular o computador cada pago de un plan por revisar, aunque cierres el panel." },
+  denied: { label: "Bloqueados", hint: "Los bloqueaste en este navegador. Actívalos en la configuración del sitio (el candado junto a la dirección)." },
+  "ios-install": { label: "Ver cómo", hint: "En iPhone, primero toca Compartir → «Agregar a inicio», abre Pedify Admin desde ese ícono y activa los avisos ahí." },
+  insecure: { label: "No disponible", hint: "Los avisos solo funcionan con la dirección segura (https) de Pedify." },
+  unsupported: { label: "No disponible", hint: "Este navegador no permite avisos. Prueba con Chrome, Edge, Firefox o Safari actualizados." },
+  disabled: { label: "No configurado", hint: "Los avisos al celular aún no están configurados en este servidor." },
+};
+/** «Ahora no» en la tarjeta que invita a activar los avisos (se recuerda en este dispositivo). */
+const PUSH_CARD_KEY = "pedify:admin-push-card";
 
 // Colores de las gráficas 3D sobre la tarjeta tinta (validados: contraste ≥ 3:1 con el fondo; los
 // estados, además, separables con daltonismo gracias a los 2 px entre tramos, la leyenda y la tabla).
@@ -107,6 +121,8 @@ const state = {
   payments: { page: 1, data: null },
   /** Cuentas de Pedify para recibir los pagos (sin ellas, los negocios no ven el pago directo). */
   accounts: [],
+  /** Avisos de pagos en este dispositivo (ver PUSH_COPY); se averigua al cargar. */
+  push: null,
 };
 const root = document.getElementById("app");
 
@@ -374,6 +390,7 @@ function resumenView() {
   const months = state.analytics.months;
   const previousMonth = months.at(-2);
   return html`${pendingBanner(state.metrics)}
+    <div class="contents" data-push-card>${pushCard()}</div>
     <dl class="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-3 lg:grid-cols-[repeat(4,minmax(0,1fr))] lg:gap-4">
       ${tile("Recibido este mes", formatCOP(revenue.month), delta(revenue.month, previousMonth?.revenue ?? 0, monthLabel(previousMonth.month, true).split(" ")[0]))}
       ${tile("Ingreso mensual de los planes", formatCOP(mrr), `${plural(businesses.active, "negocio pagando", "negocios pagando")}`)}
@@ -820,6 +837,7 @@ function accountView() {
       </div>
       <button type="submit" class="btn btn-ink justify-self-start sm:col-span-2">Cambiar contraseña</button>
     </form>
+    <div class="contents" data-push-settings>${pushSettings()}</div>
     <div class="border-t border-line pt-5">
       <button type="button" class="btn btn-ghost" data-logout>${icon("log-out")} Cerrar sesión</button>
     </div>
@@ -833,6 +851,145 @@ const ACCOUNTS_INTRO = html`<div class="grid gap-1">
     pago sea a estas cuentas (por el número, la llave o el nombre del titular), así que escribe el titular tal como sale en los comprobantes.
   </p>
 </div>`;
+
+// ─── Avisos de pagos en este dispositivo y la app instalada ───
+
+const pushCopy = () => PUSH_COPY[state.push] ?? PUSH_COPY.unsupported;
+const cardDismissed = () => {
+  try {
+    return localStorage.getItem(PUSH_CARD_KEY) === "no";
+  } catch {
+    return false;
+  }
+};
+
+/** Fila del menú lateral: «Avisos de pagos · Activar/Activo» y, si no está instalada, «Instalar la app». */
+function pushBlock() {
+  if (!state.push) return "";
+  const on = state.push === "on";
+  const muted = !["on", "off", "ios-install"].includes(state.push);
+  return html`<div class="grid gap-0.5 rounded-[12px] bg-ink-2 py-1.5">
+    <button type="button" class="live-row" data-admin-push aria-pressed="${on}" ${muted ? raw("data-muted") : ""} title="${pushCopy().hint}">
+      <span class="live-row-icon">${icon(on ? "bell-ring" : "bell")}</span><span class="min-w-0 flex-1 truncate text-left">Avisos de pagos</span>
+      <span class="live-state">${pushCopy().label}</span>
+    </button>
+    ${isInstalled()
+      ? ""
+      : html`<button type="button" class="live-row" data-install>
+          <span class="live-row-icon">${icon("download")}</span><span class="min-w-0 flex-1 truncate text-left">Instalar la app</span>
+        </button>`}
+  </div>`;
+}
+
+/** Campana del encabezado en el celular. */
+function pushBell() {
+  const on = state.push === "on";
+  return html`<button type="button" class="btn btn-quiet btn-icon relative ml-auto text-paper hover:bg-ink-3" data-admin-push
+    aria-label="${on ? "Avisos de pagos activos: enviar uno de prueba" : `Avisos de pagos: ${pushCopy().label}`}" title="${pushCopy().hint}">
+    ${icon(on ? "bell-ring" : "bell")}
+    <span class="absolute top-2 right-2 h-2 w-2 rounded-full ${on ? "bg-leaf-glow" : state.push === "off" || state.push === "ios-install" ? "bg-mustard" : "bg-ink-soft"}" aria-hidden="true"></span>
+  </button>`;
+}
+
+/** Tarjeta del Resumen que invita a activar los avisos (hasta que se activen o se diga «Ahora no»). */
+function pushCard() {
+  if (!["off", "ios-install"].includes(state.push) || cardDismissed()) return "";
+  const ios = state.push === "ios-install";
+  return html`<section class="on-ink flex flex-wrap items-center gap-4 rounded-[14px] bg-ink p-4 text-paper sm:p-5" aria-labelledby="push-card-title">
+    <span class="grid h-11 w-11 flex-none place-items-center rounded-full bg-mustard text-ink" aria-hidden="true">${icon("bell-ring")}</span>
+    <div class="grid min-w-0 flex-[1_1_18rem] gap-0.5">
+      <h2 id="push-card-title" class="font-[740]">Que ningún pago se te pase</h2>
+      <p class="text-sm text-ink-soft">
+        ${ios
+          ? "En iPhone, agrega Pedify Admin a tu pantalla de inicio y activa los avisos desde ahí: te llega uno cada vez que un negocio pague su plan."
+          : "Activa los avisos y te llega uno a este dispositivo cada vez que un negocio pague su plan, aunque tengas el panel cerrado."}
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="btn btn-primary btn-sm" data-admin-push>${ios ? "Ver cómo" : "Activar avisos"}</button>
+      <button type="button" class="btn btn-quiet btn-sm text-ink-soft hover:bg-ink-3 hover:text-paper" data-push-dismiss>Ahora no</button>
+    </div>
+  </section>`;
+}
+
+/** «Avisos y app en este dispositivo», en Mi cuenta. */
+function pushSettings() {
+  if (!state.push) return "";
+  const on = state.push === "on";
+  const installed = isInstalled();
+  return html`<section class="grid gap-4 border-t border-line pt-5" aria-labelledby="device-title">
+    <h3 id="device-title" class="font-[720]">En este dispositivo</h3>
+    <div class="grid gap-3 rounded-[12px] bg-ground p-4">
+      <p class="flex items-center gap-2 font-[680]">
+        ${icon(on ? "bell-ring" : "bell", "h-[18px] w-[18px]")} Avisos de pagos
+        <span class="badge ${on ? "bg-leaf-soft text-leaf" : "bg-paper text-muted"}">${on ? "Activos" : pushCopy().label}</span>
+      </p>
+      <p class="text-sm text-muted">${pushCopy().hint}</p>
+      <div class="flex flex-wrap gap-2">
+        ${on
+          ? html`<button type="button" class="btn btn-ghost btn-sm" data-push-test>${icon("bell")} Enviar un aviso de prueba</button>
+              <button type="button" class="btn btn-quiet btn-sm" data-push-off>Desactivar</button>`
+          : ["off", "ios-install"].includes(state.push)
+            ? html`<button type="button" class="btn btn-ink btn-sm" data-admin-push>${state.push === "off" ? "Activar avisos" : "Ver cómo"}</button>`
+            : ""}
+      </div>
+    </div>
+    <div class="grid gap-3 rounded-[12px] bg-ground p-4">
+      <p class="flex items-center gap-2 font-[680]">${icon("smartphone", "h-[18px] w-[18px]")} Pedify Admin como app</p>
+      <p class="text-sm text-muted">
+        ${installed
+          ? "Ya la abriste como app: queda en tu pantalla de inicio con su propio ícono."
+          : "Instálala y queda en tu pantalla de inicio con su propio ícono, como cualquier app. Abre directo en este panel."}
+      </p>
+      ${installed ? "" : html`<button type="button" class="btn btn-ghost btn-sm justify-self-start" data-install>${icon("download")} ${installLabel()}</button>`}
+    </div>
+  </section>`;
+}
+
+function drawPush() {
+  const slots = { "[data-push-block]": pushBlock, "[data-push-bell]": pushBell, "[data-push-card]": pushCard, "[data-push-settings]": pushSettings };
+  for (const [selector, view] of Object.entries(slots)) {
+    const slot = root.querySelector(selector);
+    if (slot) render(slot, view());
+  }
+}
+
+async function refreshPush() {
+  try {
+    state.push = await adminPush.state();
+  } catch {
+    state.push = "unsupported";
+  }
+  drawPush();
+}
+
+/** Toque en «Avisos de pagos»: activa, envía una prueba si ya están activos, o explica qué hacer. */
+async function pushAction(button) {
+  if (state.push === "ios-install") return openInstallHelp("ios");
+  if (state.push === "on") return sendPushTest(button);
+  if (state.push !== "off") return toast(pushCopy().hint, "info");
+  setBusy(button, true);
+  try {
+    await adminPush.enable();
+    toast("Listo: te avisaremos aquí cada vez que llegue un pago por revisar.");
+  } catch (error) {
+    toast(error.message, "error");
+  } finally {
+    await refreshPush();
+  }
+}
+
+async function sendPushTest(button) {
+  setBusy(button, true);
+  try {
+    const result = await adminPush.test();
+    toast(result.sent > 0 ? "Te enviamos un aviso de prueba." : "No pudimos entregar el aviso. Desactívalos y vuelve a activarlos.", result.sent > 0 ? "success" : "error");
+  } catch (error) {
+    toast(error.message, "error");
+  } finally {
+    setBusy(button, false);
+  }
+}
 
 // ───────────────────────────── Estructura ─────────────────────────────
 
@@ -926,6 +1083,7 @@ function page() {
         <nav aria-label="Secciones del panel" class="grid gap-1" data-nav>${navItems()}</nav>
         <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
           ${state.me.businesses.length > 0 ? html`<a class="nav-item" href="/panel">${icon("store")}<span class="flex-1">Ir a mi negocio</span>${icon("arrow-right", "h-4 w-4")}</a>` : ""}
+          <div class="contents" data-push-block>${pushBlock()}</div>
           ${systemBlock()} ${userBlock()}
         </div>
       </aside>
@@ -934,7 +1092,8 @@ function page() {
         <header class="on-ink sticky top-0 z-30 bg-ink text-paper lg:hidden">
           <div class="flex items-center gap-2.5 px-4 pt-3 pb-2">
             ${brand({ onInk: true })} <span class="badge bg-mustard text-ink">Administración</span>
-            <button type="button" class="btn btn-quiet btn-icon ml-auto text-ink-soft hover:bg-ink-3 hover:text-paper" data-logout aria-label="Cerrar sesión" title="Cerrar sesión">
+            <span class="contents" data-push-bell>${pushBell()}</span>
+            <button type="button" class="btn btn-quiet btn-icon text-ink-soft hover:bg-ink-3 hover:text-paper" data-logout aria-label="Cerrar sesión" title="Cerrar sesión">
               ${icon("log-out")}
             </button>
           </div>
@@ -1042,6 +1201,7 @@ async function refresh() {
   [state.metrics] = await Promise.all([api("/admin/metrics"), loadTab()]);
   render(root, page());
   drawTab();
+  root.querySelector("[data-nav-pills] [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 
 async function openDetail(id) {
@@ -1174,8 +1334,31 @@ function bind() {
       input.value = target.dataset.reason;
       input.focus();
     }
+    if (target.matches("[data-admin-push]")) return pushAction(target);
+    if (target.matches("[data-push-test]")) return sendPushTest(target);
+    if (target.matches("[data-push-off]")) {
+      setBusy(target, true);
+      await adminPush.disable().catch(() => {});
+      toast("Listo: este dispositivo ya no recibe los avisos de pagos.");
+      return refreshPush();
+    }
+    if (target.matches("[data-push-dismiss]")) {
+      try {
+        localStorage.setItem(PUSH_CARD_KEY, "no");
+      } catch {
+        // Sin almacenamiento: vuelve a aparecer la próxima vez.
+      }
+      return drawPush();
+    }
+    if (target.matches("[data-install]")) {
+      if (installState() === "ios") return openInstallHelp("ios");
+      await installApp();
+      return drawPush();
+    }
     if (target.matches("[data-logout]")) {
       setBusy(target, true);
+      // Este dispositivo deja de recibir los avisos de pagos de la cuenta (sin esperar más de 2 s).
+      await Promise.race([adminPush.disable().catch(() => {}), new Promise((resolve) => setTimeout(resolve, 2000))]);
       await api("/auth/logout", { method: "POST" }).catch(() => {});
       location.assign("/login");
     }
@@ -1302,6 +1485,13 @@ try {
     await refresh();
     bind();
     watchTransfers();
+    void refreshPush();
+    window.addEventListener("pedify:install", drawPush);
+    // Al tocar un aviso con el panel abierto, el navegador cambia la dirección a #pagos.
+    window.addEventListener("hashchange", () => {
+      const tab = sectionFromHash();
+      if (tab !== state.tab) void openTab(tab);
+    });
   }
 } catch (error) {
   if (error.status === 401) redirectToLogin();

@@ -8,7 +8,7 @@ import { escapeHtml } from "../../utils/html.js";
 import { logger } from "../../utils/logger.js";
 import { businessesRepository } from "../businesses/businesses.repository.js";
 import { businessesService } from "../businesses/businesses.service.js";
-import { pushRepository } from "../push/push.repository.js";
+import { adminPushRepository, pushRepository } from "../push/push.repository.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { authRepository } from "./auth.repository.js";
 import type {
@@ -186,8 +186,8 @@ export const authService = {
   /** Cierra la sesión en todos los dispositivos (incluido el actual). */
   async logoutAll(auth: AuthContext) {
     await authRepository.revokeUserSessions(auth.userId);
-    // Ningún dispositivo sigue recibiendo avisos de pedidos de esta cuenta.
-    await pushRepository.deleteByUser(auth.userId);
+    // Ningún dispositivo sigue recibiendo avisos de pedidos (ni de pagos, si es administrador) de esta cuenta.
+    await Promise.all([pushRepository.deleteByUser(auth.userId), adminPushRepository.deleteByUser(auth.userId)]);
   },
 
   /**
@@ -234,6 +234,7 @@ export const authService = {
       await authRepository.updateUser(reset.userId, { passwordHash }, tx);
       await authRepository.revokeUserSessions(reset.userId, undefined, tx);
       await tx.pushSubscription.deleteMany({ where: { userId: reset.userId } });
+      await tx.adminPushSubscription.deleteMany({ where: { userId: reset.userId } });
     });
   },
 };

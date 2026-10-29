@@ -212,6 +212,11 @@ export function createApp() {
     res.set("Cache-Control", "no-cache").type("application/manifest+json");
     res.sendFile(path.join(publicDir, "manifest.webmanifest"));
   });
+  // App aparte para el panel central de Pedify («Pedify Admin»): abre directo en /admin.
+  app.get("/admin.webmanifest", (_req, res) => {
+    res.set("Cache-Control", "no-cache").type("application/manifest+json");
+    res.sendFile(path.join(publicDir, "admin.webmanifest"));
+  });
   // Código QR de /app: desde el computador, la persona lo escanea para instalar la app en su celular.
   app.get("/app/qr.svg", async (_req, res) => {
     const url = `${publicAppUrl()}/app`;

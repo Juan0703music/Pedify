@@ -70,4 +70,14 @@ describe("Pedify como app en el celular y en el computador", () => {
     }
     expect(readFileSync("public/js/dashboard.js", "utf8")).toContain('from "./install.js"');
   });
+
+  it("el panel central se instala como otra app, «Pedify Admin», que abre directo en /admin", async () => {
+    const res = await request(app).get("/admin.webmanifest").expect(200);
+    expect(res.headers["content-type"]).toContain("application/manifest+json");
+    const manifest = JSON.parse(res.text);
+    expect(manifest).toMatchObject({ id: "/admin", name: "Pedify Admin", start_url: "/admin", scope: "/", display: "standalone" });
+    expect(manifest.shortcuts.map((shortcut: { url: string }) => shortcut.url)).toContain("/admin#pagos");
+    expect(readFileSync("public/pages/admin/index.html", "utf8")).toContain('<link rel="manifest" href="/admin.webmanifest" />');
+    expect(readFileSync("public/js/admin.js", "utf8")).toContain('from "./install.js"');
+  });
 });

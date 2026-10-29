@@ -67,8 +67,9 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-      // Si el panel ya está abierto, se usa esa pestaña.
-      const panel = windows.find((client) => new URL(client.url).pathname.startsWith("/panel"));
+      // Si el panel ya está abierto (el del negocio o el central de Pedify, según el aviso), se usa esa pestaña.
+      const section = target.pathname.startsWith("/admin") ? "/admin" : "/panel";
+      const panel = windows.find((client) => new URL(client.url).pathname.startsWith(section));
       if (panel) {
         await panel.focus();
         if ("navigate" in panel) return panel.navigate(target.href).catch(() => self.clients.openWindow(target.href));

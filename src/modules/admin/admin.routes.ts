@@ -6,6 +6,8 @@ import { imageBody } from "../../middlewares/upload.js";
 import { validate } from "../../middlewares/validate.js";
 import { paginationQuerySchema, type PaginationQuery } from "../../utils/pagination.js";
 import { updatePaymentAccountSchema, type UpdatePaymentAccountInput } from "../payment-accounts/payment-accounts.schemas.js";
+import { subscribeSchema, unsubscribeSchema, type SubscribeInput, type UnsubscribeInput } from "../push/push.schemas.js";
+import { pushService } from "../push/push.service.js";
 import { planTransfersService } from "../subscriptions/plan-transfers.service.js";
 import { platformAccountsService } from "../subscriptions/platform-accounts.service.js";
 import { adminController } from "./admin.controller.js";
@@ -61,6 +63,24 @@ adminRoutes.post("/transfers/:id/approve", validate({ params: transferParamsSche
 
 adminRoutes.post("/transfers/:id/reject", validate({ params: transferParamsSchema, body: rejectTransferSchema }), async (req: Request, res: Response) => {
   res.json({ data: await planTransfersService.reject(getAuth(req).userId, transferId(req), (req.body as { reason: string }).reason) });
+});
+
+// ─── Avisos al celular de los administradores (pagos por revisar), aunque el panel esté cerrado ───
+adminRoutes.get("/push", async (req: Request, res: Response) => {
+  res.json({ data: await pushService.adminConfig(getAuth(req).userId) });
+});
+
+adminRoutes.post("/push/subscriptions", validate({ body: subscribeSchema }), async (req: Request, res: Response) => {
+  res.status(201).json({ data: await pushService.subscribeAdmin(getAuth(req).userId, req.body as SubscribeInput, req.get("user-agent")) });
+});
+
+adminRoutes.delete("/push/subscriptions", validate({ body: unsubscribeSchema }), async (req: Request, res: Response) => {
+  await pushService.unsubscribeAdmin(getAuth(req).userId, (req.body as UnsubscribeInput).endpoint);
+  res.status(204).end();
+});
+
+adminRoutes.post("/push/test", async (req: Request, res: Response) => {
+  res.json({ data: await pushService.sendAdminTest(getAuth(req).userId) });
 });
 
 // ─── Cuentas de Pedify para recibir el pago de los planes ───
