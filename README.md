@@ -24,7 +24,7 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - Sesiones seguras en cookie `httpOnly` (token aleatorio, en la base solo su hash SHA-256), con renovación y revocación.
 - Multiempresa: el acceso al negocio se verifica en la base de datos en **cada** petición.
 - Negocios: datos, enlace público (slug único), configuración (horario semanal, WhatsApp, domicilio, pedido mínimo, métodos de pago), equipo con roles propietario/empleado, varios negocios por cuenta.
-- Seguridad: Helmet (CSP estricta), CORS, protección CSRF por origen, límites de solicitudes, Argon2id, validación con Zod, errores sin datos sensibles.
+- Seguridad: Helmet (CSP estricta), CORS, protección CSRF por origen, límites de solicitudes, «No soy un robot» propio (sin terceros) para subir comprobantes y hacer pedidos en la tienda, Argon2id, validación con Zod, errores sin datos sensibles.
 - Interfaz: portada, inicio de sesión, registro, panel (inicio + configuración) adaptable a celular y escritorio.
 - 47 pruebas (Vitest + Supertest) contra un PostgreSQL real.
 

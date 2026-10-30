@@ -10,7 +10,7 @@ import { prisma } from "./config/database.js";
 import { env, environmentName, isProduction, isStaging } from "./config/env.js";
 import { announceChanges } from "./middlewares/announceChanges.js";
 import { apiNotFound, errorHandler } from "./middlewares/errorHandler.js";
-import { apiLimiter } from "./middlewares/rateLimiter.js";
+import { apiLimiter, captchaLimiter } from "./middlewares/rateLimiter.js";
 import { requestContext } from "./middlewares/requestContext.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { readSessionToken } from "./modules/auth/session-cookie.js";
@@ -29,6 +29,7 @@ import { storePaymentProofRoutes, storePaymentQrRoutes } from "./modules/payment
 import { pushRoutes } from "./modules/push/push.routes.js";
 import { pushService } from "./modules/push/push.service.js";
 import { subscriptionRoutes, wompiWebhookRoutes } from "./modules/subscriptions/subscriptions.routes.js";
+import { captchaService } from "./services/captcha.service.js";
 import { metrics } from "./services/metrics.service.js";
 import { imageOrigin, PRIVATE_PREFIX } from "./services/storage.service.js";
 import { publicDir, sendPage } from "./utils/pages.js";
@@ -136,6 +137,10 @@ function apiRouter(): Router {
   api.use("/push", pushRoutes);
   api.use("/courier", courierRoutes);
   api.use("/admin", adminRoutes);
+  // «No soy un robot» de la tienda: el reto para subir un comprobante o hacer un pedido.
+  api.get("/captcha/challenge", captchaLimiter, (_req, res) => {
+    res.set("Cache-Control", "no-store").json({ data: captchaService.challenge() });
+  });
   api.use("/store/:slug/orders", storeOrderRoutes);
   api.use("/store/:slug/payment-proofs", storePaymentProofRoutes);
   api.use("/store/:slug/payment-qr", storePaymentQrRoutes);

@@ -296,6 +296,8 @@ Sin sesión.
 
 Sin sesión (secciones 4, 8 y 9 del documento). Límite: 15 pedidos cada 10 minutos por IP. Las peticiones desde otro sitio web se rechazan (403).
 
+**«No soy un robot».** Hacer un pedido y subir un comprobante (`POST /store/:slug/payment-proofs`) exigen la cabecera `X-Captcha`: el navegador pide un reto con `GET /captcha/challenge` (`{ algorithm: "SHA-256", salt, challenge, maxnumber, signature }`; 60 cada 10 minutos por IP), busca el número `n` de 0 a `maxnumber` con `SHA-256(salt + n) = challenge` y envía `base64url(JSON { salt, number, signature })`. El reto vence a los 10 minutos y cada solución sirve una sola vez. Sin ella responde 400 `CAPTCHA_REQUIRED`; vencida, repetida o falsa, 400 `CAPTCHA_INVALID`.
+
 ### `POST /store/:slug/orders`
 
 ```json

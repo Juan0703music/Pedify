@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
+import { requireCaptcha } from "../../middlewares/captcha.js";
 import { proofLimiter } from "../../middlewares/rateLimiter.js";
 import { imageBody } from "../../middlewares/upload.js";
 import { validate } from "../../middlewares/validate.js";
@@ -20,6 +21,7 @@ const proofQuerySchema = z.object({ total: z.coerce.number().int().min(0).max(50
 storePaymentProofRoutes.post(
   "/",
   proofLimiter,
+  requireCaptcha,
   validate({ params: storeOrderParamsSchema, query: proofQuerySchema }),
   imageBody,
   async (req: Request, res: Response) => {

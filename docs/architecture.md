@@ -49,6 +49,7 @@ Socket.IO (fase 4) usará la misma cookie para autenticar y unirse a la sala `bu
 | Datos de entrada | Zod en el servidor (y validación nativa en el navegador) |
 | Fugas en registros | `pino` con redacción de cookies, contraseñas y tokens |
 | Precios manipulados | El total se calcula en el backend (fase 3); el navegador nunca define precios |
+| Bots en la tienda | «No soy un robot» propio (sin terceros) para subir un comprobante y hacer un pedido: reto de prueba de trabajo SHA-256 firmado con HMAC, que vence a los 10 minutos y sirve una sola vez (`services/captcha.service.ts`, `middlewares/captcha.ts`); se suma a los límites por IP |
 
 ## Catálogo y tienda pública (fase 2)
 

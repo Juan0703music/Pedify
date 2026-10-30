@@ -7,6 +7,7 @@
 // En la mesa (comer en el local) no se paga al pedir: al terminar de comer el cliente paga en el local
 // (escanea con su app el QR de pago del negocio, o en efectivo) y el negocio marca «Cobrado» en el panel.
 import { formatCOP, formatPhone } from "./api.js";
+import { CAPTCHA_MISSING, captchaBox, storeCaptcha } from "./captcha.js";
 import { checkImageFile, clearFieldErrors, copyText, formAlert, html, icon, raw, render, setBusy, showErrors } from "./ui.js";
 import { deliveryReachKm, feeForDistance, formatKm } from "./delivery-fee.js";
 import { currentPosition, deliveryMap, distanceLabel, distanceMeters, pickerMap } from "./map.js";
@@ -133,6 +134,9 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
   let proof = null;
   /** Cuenta elegida en las pestañas del pago por adelantado. */
   let payKind = null;
+  /** «No soy un robot»: se marca una vez antes de subir el comprobante o hacer el pedido. */
+  const captcha = storeCaptcha();
+  captcha.onChange(() => drawCaptcha());
   /** Último pedido de este dispositivo: { id, key, number, createdAt } y su estado más reciente. */
   let active = load(keys.order);
   if (active && Date.now() - active.createdAt > ORDER_TTL_MS) {
@@ -531,6 +535,8 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
       showErrors(form, { message: problem, fields: { paymentProof: problem } });
       return;
     }
+    const captchaToken = await captcha.take();
+    if (!captchaToken) return askForCaptcha(form);
     const zone = input.closest("label");
     zone?.setAttribute("aria-busy", "true");
     zone?.classList.add("opacity-60", "pointer-events-none");
@@ -541,11 +547,18 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
     try {
       const response = await fetch(`/api/v1/store/${encodeURIComponent(slug)}/payment-proofs?total=${total}`, {
         method: "POST",
-        headers: { Accept: "application/json", "Content-Type": file.type || "application/octet-stream" },
+        headers: { Accept: "application/json", "Content-Type": file.type || "application/octet-stream", "X-Captcha": captchaToken },
         body: file,
       });
       const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(payload?.error?.message ?? "No pudimos subir el comprobante. Intenta de nuevo.");
+      if (!response.ok) {
+        const failed = new Error(payload?.error?.message ?? "No pudimos subir el comprobante. Intenta de nuevo.");
+        if (payload?.error?.code?.startsWith("CAPTCHA_")) {
+          captcha.reset();
+          failed.field = "captcha";
+        }
+        throw failed;
+      }
       if (proof) URL.revokeObjectURL(proof.url);
       proof = { id: payload.data.id, url: URL.createObjectURL(file), total, reading: payload.data.reading };
       clearFieldErrors(form);
@@ -560,8 +573,24 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
       zone?.classList.remove("opacity-60", "pointer-events-none");
       if (label) label.textContent = "Subir comprobante de pago";
       const message = error instanceof TypeError ? "Sin conexión. Revisa tu internet y vuelve a subir el comprobante." : error.message;
-      showErrors(form, { message, fields: { paymentProof: message } });
+      showErrors(form, { message, fields: { [error.field ?? "paymentProof"]: message } });
     }
+  }
+
+  /** Redibuja la casilla «No soy un robot» (y quita su error cuando ya quedó verificada). */
+  function drawCaptcha() {
+    const slot = dialog.querySelector("[data-captcha-slot]");
+    if (!slot) return;
+    const focused = slot.contains(document.activeElement);
+    render(slot, captchaBox(captcha.state));
+    if (focused) slot.querySelector("[data-captcha]")?.focus();
+    if (captcha.state === "done") dialog.querySelector('[data-error-for="captcha"]')?.remove();
+  }
+
+  /** Sin la casilla marcada (o vencida): se lo pide al cliente junto a la casilla. */
+  function askForCaptcha(form, message = CAPTCHA_MISSING) {
+    showErrors(form, { message, fields: { captcha: message } });
+    dialog.querySelector("[data-captcha]")?.scrollIntoView({ block: "center", behavior: "smooth" });
   }
 
   function checkoutView() {
@@ -643,6 +672,11 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
                     )}
                   </div>
                 </fieldset>
+
+                <div class="grid gap-2" data-error-anchor="captcha">
+                  <p class="text-[0.9375rem] font-[680]">Antes de pagar, confirma que eres una persona</p>
+                  <div data-captcha-slot>${captchaBox(captcha.state)}</div>
+                </div>
 
                 <div data-prepay>${prepaySection()}</div>
 
@@ -1083,13 +1117,16 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
       checkout.signature = signature;
     }
 
+    const captchaToken = await captcha.take();
+    if (!captchaToken) return askForCaptcha(form);
+
     setBusy(button, true);
     let response;
     let payload = null;
     try {
       response = await fetch(`/api/v1/store/${encodeURIComponent(slug)}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json", "X-Captcha": captchaToken },
         body: JSON.stringify({ ...body, idempotencyKey: checkout.key }),
       });
       payload = await response.json().catch(() => null);
@@ -1111,6 +1148,11 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
         persistCart();
         checkout.signature = null;
         refresh();
+      }
+      if (error.code?.startsWith("CAPTCHA_")) {
+        captcha.reset();
+        askForCaptcha(dialog.querySelector("[data-checkout]") ?? form, error.message);
+        return;
       }
       if (error.code === "PAYMENT_PROOF_INVALID" || error.code === "PAYMENT_PROOF_REQUIRED") {
         if (proof) URL.revokeObjectURL(proof.url);
@@ -1228,6 +1270,7 @@ export function initCart({ store, slug, root, orderable = true, inStore = null }
         if (form) showErrors(form, { message: error.message });
       }
     }
+    if (button?.matches("[data-captcha]")) void captcha.check();
     if (button?.matches("[data-prepay-kind]")) {
       payKind = button.dataset.prepayKind;
       drawPrepay();

@@ -14,6 +14,9 @@ const common = {
   skip: () => isTest,
 } satisfies Partial<Options>;
 
+/** Retos «No soy un robot» de la tienda: uno por comprobante o pedido, con margen para reintentos. */
+export const captchaLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 60 });
+
 /** Límite general de la API por IP. */
 export const apiLimiter = rateLimit({ ...common, windowMs: 60_000, limit: 300 });
 

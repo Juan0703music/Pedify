@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
 import { getTenant, requireBusiness } from "../../middlewares/authorize.js";
+import { requireCaptcha } from "../../middlewares/captcha.js";
 import { orderLimiter, trackingLimiter } from "../../middlewares/rateLimiter.js";
 import { validate } from "../../middlewares/validate.js";
 import { paymentProofsService } from "../payment-accounts/payment-proofs.service.js";
@@ -39,6 +40,7 @@ export const storeOrderRoutes = Router({ mergeParams: true });
 storeOrderRoutes.post(
   "/",
   orderLimiter,
+  requireCaptcha,
   validate({ params: storeOrderParamsSchema, body: createOrderSchema }),
   ordersController.createFromStore,
 );

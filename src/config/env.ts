@@ -73,6 +73,10 @@ const EnvSchema = z
     // Contacto del responsable para los servicios de push: mailto:… o https://… (por defecto, el de MAIL_FROM).
     VAPID_SUBJECT: optional(z.string().regex(/^(mailto:|https:\/\/)/, "VAPID_SUBJECT debe empezar por mailto: o https://.")),
 
+    // Firma de los retos «No soy un robot» de la tienda. Sin ella se genera una al arrancar (basta con un
+    // solo servidor; con varios, todos deben compartir la misma).
+    CAPTCHA_SECRET: optional(z.string().min(32, "CAPTCHA_SECRET debe tener al menos 32 caracteres.")),
+
     // Mapa del seguimiento de domicilios: teselas raster ({z}/{x}/{y}) y su atribución.
     MAP_TILE_URL: z.preprocess(
       (value) => (value === "" ? undefined : value),

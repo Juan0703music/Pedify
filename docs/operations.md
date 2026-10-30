@@ -32,6 +32,7 @@ En desarrollo están en [`.env.example`](../.env.example); en el servidor, en [`
 | `SUPPORT_WHATSAPP` | WhatsApp del equipo (57XXXXXXXXXX). Lo usan "Mi plan" y los botones de pago. |
 | `WOMPI_PUBLIC_KEY`, `WOMPI_PRIVATE_KEY`, `WOMPI_EVENTS_SECRET`, `WOMPI_INTEGRITY_SECRET` | Pago de los planes en línea con Wompi (las cuatro juntas; de prueba o de producción, sin mezclar). Sin ellas, «Mi plan» lleva al WhatsApp. La privada y los secretos son secretos. |
 | `METRICS_TOKEN` | Activa `/metrics` (mínimo 16 caracteres). Sin token, la ruta no existe. |
+| `CAPTCHA_SECRET` | Opcional. Firma los retos «No soy un robot» de la tienda; sin ella se genera una al arrancar (los clientes que estaban pagando justo en un reinicio vuelven a marcar la casilla). Con varios servidores detrás del proxy, todos deben tener la misma (32 caracteres o más, p. ej. `openssl rand -hex 32`). |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Avisos push de pedidos nuevos en los dispositivos del negocio, y de los pagos de los planes por revisar en los de los administradores de Pedify. Se generan con `npm run push:keys`; la privada es un secreto. Si se cambian, cada dispositivo debe volver a activar los avisos. |
 
 ## 3. Planes, suscripciones y panel central
