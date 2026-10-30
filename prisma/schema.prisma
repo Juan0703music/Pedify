@@ -92,6 +92,8 @@ model User {
   isPlatformAdmin   Boolean   @default(false) @map("is_platform_admin")
   // Autorización del tratamiento de datos personales (Ley 1581 de 2012) al registrarse.
   privacyAcceptedAt DateTime? @map("privacy_accepted_at") @db.Timestamptz(3)
+  /// Cuándo aceptó los Términos y condiciones de Pedify (al registrarse).
+  termsAcceptedAt   DateTime? @map("terms_accepted_at") @db.Timestamptz(3)
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -143,25 +145,56 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+/// Documento de identidad de quien vende o presta el servicio.
+enum IdDocumentType {
+  CC
+  NIT
+  CE
+  PPT
+  PA
+}
+
+/// Datos legales de Pedify (una sola fila): el responsable que aparece en la política de datos y en
+/// los Términos y condiciones. Se llenan desde el panel central y viven en la base, no en el código.
+model PlatformLegal {
+  id        Int            @id @default(1)
+  legalName String         @map("legal_name")
+  idType    IdDocumentType @map("id_type")
+  idNumber  String         @map("id_number")
+  address   String
+  city      String
+  email     String
+  phone     String?
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("platform_legal")
+}
+
 model Business {
-  id              String         @id @default(uuid(7)) @db.Uuid
+  id              String          @id @default(uuid(7)) @db.Uuid
   name            String
   // Identificador público para la tienda (pedifyai.com/tienda/<slug>). No reemplaza al id interno.
-  slug            String         @unique
+  slug            String          @unique
   phone           String
-  status          BusinessStatus @default(ACTIVE)
+  status          BusinessStatus  @default(ACTIVE)
   description     String?
   city            String?
   address         String?
   // Imágenes de la tienda: URL pública y clave en el almacenamiento (para reemplazarlas o borrarlas).
-  logoUrl         String?        @map("logo_url")
-  logoKey         String?        @map("logo_key")
-  bannerUrl       String?        @map("banner_url")
-  bannerKey       String?        @map("banner_key")
+  logoUrl         String?         @map("logo_url")
+  logoKey         String?         @map("logo_key")
+  bannerUrl       String?         @map("banner_url")
+  bannerKey       String?         @map("banner_key")
   // Consecutivo de pedidos del negocio (Pedido #1, #2, …). Se incrementa dentro de la transacción del pedido.
-  lastOrderNumber Int            @default(0) @map("last_order_number")
-  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  lastOrderNumber Int             @default(0) @map("last_order_number")
+  // Quién vende, como lo exige el Estatuto del Consumidor (Ley 1480 de 2011, arts. 50 y 53): nombre o
+  // razón social, cédula o NIT y un correo para los clientes. Se muestran en la tienda.
+  legalName       String?         @map("legal_name")
+  idType          IdDocumentType? @map("id_type")
+  idNumber        String?         @map("id_number")
+  contactEmail    String?         @map("contact_email")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   memberships       BusinessMembership[]
   settings          BusinessSettings?

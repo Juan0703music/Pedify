@@ -8,6 +8,8 @@ import { paginationQuerySchema, type PaginationQuery } from "../../utils/paginat
 import { updatePaymentAccountSchema, type UpdatePaymentAccountInput } from "../payment-accounts/payment-accounts.schemas.js";
 import { subscribeSchema, unsubscribeSchema, type SubscribeInput, type UnsubscribeInput } from "../push/push.schemas.js";
 import { pushService } from "../push/push.service.js";
+import { updateLegalSchema, type UpdateLegalInput } from "../legal/legal.schemas.js";
+import { legalService } from "../legal/legal.service.js";
 import { planTransfersService } from "../subscriptions/plan-transfers.service.js";
 import { platformAccountsService } from "../subscriptions/platform-accounts.service.js";
 import { adminController } from "./admin.controller.js";
@@ -81,6 +83,15 @@ adminRoutes.delete("/push/subscriptions", validate({ body: unsubscribeSchema }),
 
 adminRoutes.post("/push/test", async (req: Request, res: Response) => {
   res.json({ data: await pushService.sendAdminTest(getAuth(req).userId) });
+});
+
+// ─── Datos legales de Pedify (aparecen en la política de datos y en los Términos y condiciones) ───
+adminRoutes.get("/legal", async (_req: Request, res: Response) => {
+  res.json({ data: await legalService.get() });
+});
+
+adminRoutes.put("/legal", validate({ body: updateLegalSchema }), async (req: Request, res: Response) => {
+  res.json({ data: await legalService.update(req.body as UpdateLegalInput) });
 });
 
 // ─── Cuentas de Pedify para recibir el pago de los planes ───

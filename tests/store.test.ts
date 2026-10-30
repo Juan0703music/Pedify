@@ -89,6 +89,8 @@ describe("Tienda pública", () => {
       phone: "573001234567",
       logoUrl: null,
       bannerUrl: null,
+      // Quién vende (Estatuto del Consumidor): la cédula del registro; el correo, cuando el negocio lo ponga.
+      seller: { legalName: "Ana Pérez", idType: "CC", idNumber: "1102345678", email: null },
     });
     expect(store.settings).toMatchObject({ deliveryFee: 4000, whatsappPhone: "573001234567", timezone: BOGOTA });
     expect(store.status).toMatchObject({ acceptingOrders: true });

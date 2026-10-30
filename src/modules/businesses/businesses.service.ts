@@ -10,7 +10,7 @@ import { DEFAULT_TRIAL_PLAN } from "../subscriptions/plans.js";
 import { newTrialEnd, subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { authRepository } from "../auth/auth.repository.js";
 import { hashPassword } from "../auth/password.js";
-import { businessesRepository } from "./businesses.repository.js";
+import { businessesRepository, type BusinessLegal } from "./businesses.repository.js";
 import type {
   AddMemberInput,
   UpdateMemberInput,
@@ -88,7 +88,7 @@ export const businessesService = {
    * Registra un negocio con el usuario como propietario y empieza la prueba gratis del plan elegido.
    * Acepta un cliente de transacción.
    */
-  async createForOwner(ownerId: string, input: CreateBusinessInput, db: DbClient = prisma, trialPlan: PlanCode = DEFAULT_TRIAL_PLAN) {
+  async createForOwner(ownerId: string, input: CreateBusinessInput, db: DbClient = prisma, trialPlan: PlanCode = DEFAULT_TRIAL_PLAN, legal?: BusinessLegal) {
     const slug = await generateUniqueSlug(input.name, db);
     return businessesRepository.createWithOwner(
       {
@@ -98,6 +98,7 @@ export const businessesService = {
         ownerId,
         trialPlan,
         trialEndsAt: newTrialEnd(),
+        legal,
         settings: {
           openingHours: DEFAULT_OPENING_HOURS,
           // Si el teléfono del negocio es celular, se usa también como WhatsApp inicial.
@@ -115,7 +116,19 @@ export const businessesService = {
       // Bloquea a la persona: dos solicitudes al mismo tiempo no pasan juntas el límite de negocios.
       await tx.$queryRaw`SELECT 1 FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
       await subscriptionsService.assertCanCreateBusiness(userId, tx);
-      return businessesService.createForOwner(userId, input, tx);
+      // El negocio nuevo vende con el mismo documento que los otros del propietario (se puede cambiar).
+      const legal = await tx.business.findFirst({
+        where: { idNumber: { not: null }, memberships: { some: { userId, role: "OWNER" } } },
+        orderBy: { createdAt: "desc" },
+        select: { legalName: true, idType: true, idNumber: true },
+      });
+      return businessesService.createForOwner(
+        userId,
+        input,
+        tx,
+        undefined,
+        legal?.legalName && legal.idType && legal.idNumber ? { legalName: legal.legalName, idType: legal.idType, idNumber: legal.idNumber } : undefined,
+      );
     });
   },
 

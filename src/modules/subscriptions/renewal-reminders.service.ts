@@ -4,6 +4,7 @@ import { mailer } from "../../services/mail.service.js";
 import { wompi } from "../../services/wompi.service.js";
 import { clock } from "../../utils/clock.js";
 import { formatCOP } from "../../utils/currency.js";
+import { isColombianHoliday } from "../../utils/holidays.js";
 import { escapeHtml } from "../../utils/html.js";
 import { logger } from "../../utils/logger.js";
 import { pushService } from "../push/push.service.js";
@@ -16,7 +17,7 @@ import { subscriptionState, type SubscriptionState } from "./subscription-state.
  * de que termine su plan (o su prueba gratis), 1 día antes y el día que vence (con los días de gracia
  * que le quedan). Cada uno se envía una sola vez por fecha de fin (`subscriptions.reminder_*`): si
  * renueva, la fecha cambia y vuelven a empezar. No se envían si ya tiene un pago en revisión ni a un
- * negocio suspendido, y solo de día (hora de Colombia). Corre cada hora en el servidor de producción;
+ * negocio suspendido, y solo en los horarios de la Ley 2300 de 2023. Corre cada hora en el servidor de producción;
  * si estuvo apagado, envía solo el recordatorio que corresponde ahora (no los atrasados).
  */
 const STAGES = ["DAYS_5", "DAY_1", "EXPIRED"] as const;
@@ -25,13 +26,22 @@ type Stage = (typeof STAGES)[number];
 const DAY = 86_400_000;
 const DAYS_BEFORE = 5;
 const RUN_EVERY_MS = 60 * 60_000;
-/** Se envían entre las 8:00 a. m. y las 8:00 p. m. (hora de Colombia). */
-const SEND_FROM_HOUR = 8;
-const SEND_UNTIL_HOUR = 20;
 
 const bogotaHour = (date: Date) => Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: "America/Bogota" }).format(date));
 const bogotaDay = (date: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(date);
 const longDate = (date: Date) => new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", timeZone: "America/Bogota" }).format(date);
+
+/**
+ * Ley 2300 de 2023 («Dejen de fregar»): recordatorios de pago de lunes a viernes de 7:00 a. m. a 7:00 p. m.
+ * y los sábados de 8:00 a. m. a 3:00 p. m. (hora de Colombia); nunca domingos ni festivos.
+ */
+export function canContact(now: Date): boolean {
+  const day = bogotaDay(now);
+  const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
+  if (weekday === 0 || isColombianHoliday(day)) return false;
+  const hour = bogotaHour(now);
+  return weekday === 6 ? hour >= 8 && hour < 15 : hour >= 7 && hour < 19;
+}
 
 /** «hoy», «mañana» o «en 4 días», según el calendario de Colombia. */
 function whenLabel(end: Date, now: Date) {
@@ -174,8 +184,7 @@ let timer: NodeJS.Timeout | null = null;
 export const renewalReminders = {
   /** Revisa todos los negocios y envía los recordatorios que tocan. Devuelve cuántos envió. */
   async run(now = clock.now()): Promise<number> {
-    const hour = bogotaHour(now);
-    if (hour < SEND_FROM_HOUR || hour >= SEND_UNTIL_HOUR) return 0;
+    if (!canContact(now)) return 0;
     let sent = 0;
     for (const businessId of await candidates(now)) {
       try {

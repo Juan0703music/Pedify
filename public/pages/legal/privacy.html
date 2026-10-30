@@ -22,31 +22,31 @@
     </header>
 
     <main class="mx-auto max-w-[48rem] px-5 py-10 sm:py-14">
-      <!-- Borrador: completar los datos entre corchetes y revisar con asesoría legal antes de publicar. -->
+      <!--legal-pending-->
       <p class="mb-8 rounded-[12px] border border-mustard-press bg-mustard-soft px-4 py-3 text-[0.9375rem] text-mustard-deep">
-        Versión preliminar. Los datos marcados entre corchetes se completan antes de publicar el servicio.
+        Faltan los datos de Pedify como responsable (nombre, documento, dirección y correo). Se completan en el panel de administración.
       </p>
+      <!--/legal-pending-->
 
       <h1 class="text-[2.25rem] leading-tight font-[800]">Política de tratamiento de datos personales</h1>
-      <p class="mt-2 text-muted">Ley 1581 de 2012 y Decreto 1377 de 2013 (compilado en el Decreto 1074 de 2015). Vigente desde [fecha].</p>
+      <p class="mt-2 text-muted">Ley 1581 de 2012 y Decreto 1377 de 2013 (compilado en el Decreto 1074 de 2015). Vigente desde el 29 de octubre de 2026.</p>
 
       <div class="mt-10 grid gap-9 text-[1.0625rem] leading-relaxed [&_h2]:text-[1.375rem] [&_h2]:leading-tight [&_h2]:font-[760] [&_li]:mt-1.5 [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-6">
         <section>
           <h2>1. Quién es responsable</h2>
           <p>
-            <strong>[Razón social de Pedify]</strong>, NIT [número], con domicilio en [dirección], Sincelejo, Sucre (en adelante,
-            “Pedify”). Correo para asuntos de datos personales: <strong>[correo de contacto]</strong>.
+            <strong>{{legal.name}}</strong>, {{legal.id}}, con domicilio en {{legal.address}} (en adelante, “Pedify”). Correo para asuntos de
+            datos personales: <strong>{{legal.email}}</strong>.
           </p>
           <p>Pedify tiene dos papeles distintos:</p>
           <ul>
             <li>
-              <strong>Responsable</strong> de los datos de los comerciantes que crean una cuenta (nombre, correo, celular del negocio y
-              de las personas de su equipo).
+              <strong>Responsable</strong> de los datos de los comerciantes que crean una cuenta y de las personas de su equipo.
             </li>
             <li>
               <strong>Encargado</strong> de los datos de los clientes que hacen pedidos en la tienda de cada negocio. En ese caso el
               <strong>responsable es el negocio</strong>, y Pedify trata esos datos solo para prestarle el servicio y según sus
-              instrucciones.
+              instrucciones (ver los <a href="/terminos" class="underline">Términos y condiciones</a>).
             </li>
           </ul>
         </section>
@@ -55,15 +55,24 @@
           <h2>2. Qué datos tratamos</h2>
           <ul>
             <li>Comerciantes y su equipo: nombre, correo, celular, contraseña (guardada cifrada con un algoritmo de un solo sentido) y registros de acceso.</li>
-            <li>Negocios: nombre, dirección, horario, fotos del menú, logo y configuración de la tienda.</li>
+            <li>
+              Negocios: nombre, dirección, horario, fotos del menú, logo y configuración de la tienda; y quién vende (nombre o razón social, cédula o
+              NIT y un correo de contacto), que se muestra en la tienda porque lo exige el Estatuto del Consumidor (Ley 1480 de 2011, artículos 50 y 53).
+            </li>
             <li>Clientes de las tiendas: nombre, celular, dirección y referencias de entrega, productos pedidos, método de pago elegido y notas del pedido. Si el cliente lo decide, también la ubicación GPS de su punto de entrega (es necesaria cuando el negocio cobra el domicilio según la distancia).</li>
+            <li>Comprobantes de pago: el pantallazo que sube el cliente al pagar un pedido por adelantado, o el comerciante al pagar su plan. Puede incluir nombres, números de celular o de cuenta, valores y referencias.</li>
             <li>Domiciliarios: la ubicación de su celular, solo mientras llevan un pedido y solo si la comparten desde el enlace de la entrega.</li>
+            <li>Avisos al celular o al computador: si la persona los activa, la dirección técnica que da su navegador para enviarle notificaciones.</li>
           </ul>
-          <p>No pedimos datos sensibles ni datos de tarjetas. Los pagos de los pedidos se acuerdan directamente entre el cliente y el negocio.</p>
           <p>
-            El plan de Pedify se paga en Wompi, la pasarela de pagos de Bancolombia: los datos de la tarjeta o de la cuenta se escriben en la página de
-            Wompi y Pedify no los ve ni los guarda. Pedify solo le envía a Wompi el nombre y el correo del propietario y recibe el resultado del pago y
-            el medio usado.
+            No pedimos datos sensibles ni datos de tarjetas. La verificación «No soy un robot» se resuelve en el navegador, sin servicios de
+            terceros y sin guardar datos. Solo usamos la cookie de sesión, necesaria para entrar al panel; no usamos cookies de publicidad ni de
+            seguimiento.
+          </p>
+          <p>
+            Los pagos de los pedidos se hacen directamente al negocio: Pedify no recibe ese dinero. Los planes de Pedify se pagan a las cuentas de
+            Pedify (Nequi o llave Bre-B) subiendo el comprobante, o en línea con Wompi, la pasarela de pagos de Bancolombia, cuando está disponible:
+            en ese caso los datos de la tarjeta o de la cuenta se escriben en la página de Wompi y Pedify no los ve ni los guarda.
           </p>
         </section>
 
@@ -73,10 +82,12 @@
             <li>Crear y proteger las cuentas, y permitir el acceso al panel.</li>
             <li>Recibir, preparar y entregar los pedidos, y mostrarle al cliente el estado de su pedido.</li>
             <li>Mostrarle al cliente, en un mapa, dónde va su domicilio. Solo se guarda la última ubicación del domiciliario y se borra, junto con la del cliente, cuando el pedido se entrega o se cancela.</li>
-            <li>Leer automáticamente el comprobante de pago que sube el cliente (valor, destinatario, fecha y referencia) para ayudarle al negocio a verificarlo antes de aceptar el pedido. La lectura se hace en los servidores de Pedify, sin enviar el comprobante a terceros, y el texto leído se borra junto con el comprobante.</li>
+            <li>Leer automáticamente los comprobantes de pago (valor, destinatario, fecha y referencia) para ayudar a verificarlos antes de aceptar un pedido o de activar un plan. La lectura se hace en los servidores de Pedify, sin enviar el comprobante a terceros.</li>
+            <li>Mostrar en la tienda quién vende, y entregar esos datos a un cliente que quiera presentar una queja o a la autoridad que los pida (Ley 1480 de 2011, artículo 53).</li>
             <li>Mostrar al negocio su historial de pedidos, sus clientes y sus estadísticas.</li>
-            <li>Facturar y administrar la suscripción del negocio a Pedify.</li>
-            <li>Atender solicitudes de soporte y enviar mensajes necesarios para el servicio (por ejemplo, recuperar la contraseña).</li>
+            <li>Administrar la suscripción del negocio a Pedify y llevar la contabilidad de los pagos.</li>
+            <li>Enviar los avisos necesarios para el servicio por correo y al celular (pedidos nuevos, pagos por revisar, vencimiento del plan, recuperar la contraseña). Los recordatorios de pago se envían solo en los horarios que permite la Ley 2300 de 2023.</li>
+            <li>Atender solicitudes de soporte.</li>
           </ul>
           <p>No vendemos datos personales ni los usamos para publicidad de terceros.</p>
         </section>
@@ -104,9 +115,9 @@
         <section>
           <h2>6. Cómo ejercerlos</h2>
           <p>
-            Escribe a <strong>[correo de contacto]</strong> indicando tu nombre, tu solicitud y un dato para verificar tu identidad. Si
-            eres cliente de una tienda, también puedes pedírselo directamente al negocio: desde su panel puede eliminar tus datos
-            personales, conservando solo los valores de los pedidos que necesita para su contabilidad.
+            Escribe a <strong>{{legal.email}}</strong> indicando tu nombre, tu solicitud y un dato para verificar tu identidad. Si eres
+            cliente de una tienda, también puedes pedírselo directamente al negocio: desde su panel puede eliminar tus datos personales y
+            los comprobantes de tus pedidos, conservando solo los valores que necesita para su contabilidad.
           </p>
           <p>Respondemos las consultas en máximo 10 días hábiles y los reclamos en máximo 15 días hábiles, como lo establece la ley.</p>
         </section>
@@ -114,21 +125,38 @@
         <section>
           <h2>7. Seguridad y conservación</h2>
           <p>
-            Usamos conexiones cifradas, contraseñas cifradas, control de acceso por negocio y por rol, registros de actividad y copias
-            de seguridad periódicas. Conservamos los datos mientras la cuenta esté activa y el tiempo que exijan las normas contables
-            y tributarias; después se eliminan o se anonimizan.
+            Usamos conexiones cifradas, contraseñas cifradas, control de acceso por negocio y por rol, límites de intentos, registros de
+            actividad y copias de seguridad periódicas. Conservamos los datos mientras la cuenta esté activa y el tiempo que exijan las
+            normas contables y tributarias; después se eliminan o se anonimizan. En particular:
+          </p>
+          <ul>
+            <li>Los comprobantes de pago de los pedidos se borran automáticamente a los 180 días (o antes, si el cliente pide suprimir sus datos). Los que se suben y no se usan en un pedido se borran al día siguiente.</li>
+            <li>Los comprobantes de pago de los planes de Pedify se conservan 5 años como soporte contable y luego se borran.</li>
+            <li>La ubicación del domiciliario y la del cliente se borran cuando el pedido se entrega o se cancela.</li>
+          </ul>
+          <p>Si ocurre un incidente de seguridad que afecte datos personales, lo informaremos a la SIC y a los afectados como lo exige la ley.</p>
+        </section>
+
+        <section>
+          <h2>8. Dónde están los datos</h2>
+          <p>
+            Los servidores de Pedify pueden estar en Colombia o en otros países, con proveedores de alojamiento en la nube. Solo usamos
+            proveedores en países con un nivel adecuado de protección de datos según la SIC, o con contratos que garantizan ese mismo nivel
+            (Ley 1581 de 2012, artículo 26).
           </p>
         </section>
 
         <section>
-          <h2>8. Cambios</h2>
+          <h2>9. Cambios</h2>
           <p>Si cambiamos esta política, publicaremos la nueva versión en esta página y avisaremos a los comerciantes por correo.</p>
         </section>
       </div>
     </main>
 
     <footer class="border-t border-line bg-ground">
-      <p class="mx-auto max-w-[48rem] px-5 py-6 text-sm text-muted">© Pedify · <a href="/" class="text-ink">Inicio</a></p>
+      <p class="mx-auto max-w-[48rem] px-5 py-6 text-sm text-muted">
+        © Pedify · <a href="/" class="text-ink">Inicio</a> · <a href="/terminos" class="text-ink">Términos y condiciones</a>
+      </p>
     </footer>
   </body>
 </html>

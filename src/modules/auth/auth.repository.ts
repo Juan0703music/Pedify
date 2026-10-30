@@ -20,7 +20,7 @@ export const authRepository = {
     return db.user.findUnique({ where: { email }, select: publicUserSelect });
   },
 
-  createUser(data: { name: string; email: string; passwordHash: string; privacyAcceptedAt?: Date }, db: DbClient = prisma) {
+  createUser(data: { name: string; email: string; passwordHash: string; privacyAcceptedAt?: Date; termsAcceptedAt?: Date }, db: DbClient = prisma) {
     return db.user.create({ data, select: publicUserSelect });
   },
 

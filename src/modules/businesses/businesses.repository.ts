@@ -1,6 +1,6 @@
 import { prisma, type DbClient } from "../../config/database.js";
 import { permissionColumnsSelect, type PermissionColumns } from "./permissions.js";
-import type { MembershipRole, PaymentMethod, PlanCode } from "../../generated/prisma/enums.js";
+import type { IdDocumentType, MembershipRole, PaymentMethod, PlanCode } from "../../generated/prisma/enums.js";
 import type { Prisma } from "../../generated/prisma/client.js";
 
 export const businessSelect = {
@@ -14,8 +14,19 @@ export const businessSelect = {
   address: true,
   logoUrl: true,
   bannerUrl: true,
+  legalName: true,
+  idType: true,
+  idNumber: true,
+  contactEmail: true,
   createdAt: true,
 } as const;
+
+/** Quién vende: nombre o razón social y documento (se muestran en la tienda). */
+export interface BusinessLegal {
+  legalName: string;
+  idType: IdDocumentType;
+  idNumber: string;
+}
 
 export const settingsSelect = {
   openingHours: true,
@@ -65,6 +76,7 @@ export const businessesRepository = {
       ownerId: string;
       trialPlan: PlanCode;
       trialEndsAt: Date;
+      legal?: BusinessLegal;
       settings: {
         openingHours: Prisma.InputJsonValue;
         whatsappPhone: string | null;
@@ -78,6 +90,7 @@ export const businessesRepository = {
         name: data.name,
         slug: data.slug,
         phone: data.phone,
+        ...data.legal,
         memberships: { create: { userId: data.ownerId, role: "OWNER" } },
         settings: { create: data.settings },
         subscription: { create: { plan: data.trialPlan, trialEndsAt: data.trialEndsAt } },
@@ -105,6 +118,10 @@ export const businessesRepository = {
         phone: true,
         logoUrl: true,
         bannerUrl: true,
+        legalName: true,
+        idType: true,
+        idNumber: true,
+        contactEmail: true,
         settings: { select: settingsSelect },
       },
     });

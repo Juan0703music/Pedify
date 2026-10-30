@@ -37,7 +37,16 @@ const SECTIONS = [
   { id: "ingresos", label: "Ingresos", icon: "banknote" },
   { id: "analiticas", label: "Analíticas", icon: "chart-column" },
   { id: "cuentas", label: "Cuentas de cobro", short: "Cuentas", icon: "wallet" },
+  { id: "legal", label: "Datos legales", icon: "shield" },
   { id: "cuenta", label: "Mi cuenta", icon: "key-round" },
+];
+/** Documentos (como en el registro de los negocios). */
+const ID_TYPES = [
+  ["CC", "Cédula (C.C.)"],
+  ["NIT", "NIT"],
+  ["CE", "Cédula de extranjería"],
+  ["PPT", "PPT"],
+  ["PA", "Pasaporte"],
 ];
 /** Barra inferior del celular; las demás secciones quedan en «Más». */
 const TABBAR = ["resumen", "pagos", "negocios", "analiticas"];
@@ -125,6 +134,8 @@ const state = {
   accounts: [],
   /** Avisos de pagos en este dispositivo (ver PUSH_COPY); se averigua al cargar. */
   push: null,
+  /** Datos legales de Pedify (null = aún no se llenan) y si ya se consultaron. */
+  legal: undefined,
 };
 const root = document.getElementById("app");
 
@@ -395,7 +406,7 @@ function resumenView() {
   const activity = last30();
   const months = state.analytics.months;
   const previousMonth = months.at(-2);
-  return html`${pendingBanner(state.metrics)}
+  return html`${pendingBanner(state.metrics)} ${legalNotice()}
     <div class="contents" data-push-card>${pushCard()}</div>
     <dl class="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-3 lg:grid-cols-[repeat(4,minmax(0,1fr))] lg:gap-4">
       ${tile("Recibido este mes", formatCOP(revenue.month), delta(revenue.month, previousMonth?.revenue ?? 0, monthLabel(previousMonth.month, true).split(" ")[0]))}
@@ -858,6 +869,56 @@ const ACCOUNTS_INTRO = html`<div class="grid gap-1">
   </p>
 </div>`;
 
+// ─── Datos legales de Pedify ───
+
+/** En el Resumen, mientras falten: sin ellos la política de datos y los términos dicen «[pendiente]». */
+function legalNotice() {
+  if (state.legal !== null) return "";
+  return html`<div class="flex flex-wrap items-center gap-3 rounded-[14px] border border-mustard-press bg-mustard-soft px-4 py-3 text-mustard-deep" role="status">
+    ${icon("shield", "h-5 w-5 flex-none")}
+    <p class="min-w-0 flex-1">
+      <strong class="font-[720]">Completa los datos legales de Pedify.</strong> Aparecen en la política de datos y en los Términos y condiciones,
+      que hoy dicen «pendiente».
+    </p>
+    <button type="button" class="btn btn-ink btn-sm" data-tab="legal">Completar</button>
+  </div>`;
+}
+
+function legalView() {
+  const legal = state.legal ?? {};
+  const field = (id, name, label, value, attributes = "", hint = "") => html`<div class="field">
+    <label class="label" for="${id}">${label}</label>
+    <input class="input" id="${id}" name="${name}" value="${value ?? ""}" ${raw(attributes)} />
+    ${hint ? html`<p class="hint">${hint}</p>` : ""}
+  </div>`;
+  return html`<section class="panel grid max-w-3xl gap-5 p-5 sm:p-6">
+    <p class="max-w-[65ch] text-[0.9375rem] text-muted">
+      Son los datos de quien presta el servicio. Aparecen en la <a class="font-[650] text-ink underline" href="/privacidad" target="_blank" rel="noopener">política de
+      datos</a> y en los <a class="font-[650] text-ink underline" href="/terminos" target="_blank" rel="noopener">Términos y condiciones</a>. Se guardan en la base de
+      datos, no en el código. Si creas una empresa (por ejemplo, una SAS), cambia aquí su razón social y su NIT.
+    </p>
+    <form class="grid gap-4 sm:grid-cols-2" data-legal-form novalidate>
+      <div class="sm:col-span-2">${formAlert()}</div>
+      <div class="sm:col-span-2">${field("l-name", "legalName", "Nombre o razón social", legal.legalName, 'maxlength="120" required autocomplete="name"')}</div>
+      <div class="field">
+        <label class="label" for="l-id-type">Documento</label>
+        <select class="input" id="l-id-type" name="idType" required>
+          ${ID_TYPES.map(([value, label]) => html`<option value="${value}" ${(legal.idType ?? "CC") === value ? "selected" : ""}>${label}</option>`)}
+        </select>
+      </div>
+      ${field("l-id-number", "idNumber", "Número de documento", legal.idNumber, 'maxlength="20" required autocomplete="off"')}
+      ${field("l-address", "address", "Dirección", legal.address, 'maxlength="160" required autocomplete="street-address"')}
+      ${field("l-city", "city", "Ciudad", legal.city, 'maxlength="80" required placeholder="Sincelejo, Sucre"')}
+      ${field("l-email", "email", "Correo para datos personales y soporte", legal.email, 'type="email" inputmode="email" required', "Lo ven los comerciantes y sus clientes para ejercer sus derechos.")}
+      ${field("l-phone", "phone", "Teléfono (opcional)", legal.phone ? formatPhone(legal.phone) : "", 'type="tel" inputmode="tel"')}
+      <div class="flex flex-wrap items-center gap-3 sm:col-span-2">
+        <button type="submit" class="btn btn-ink">${icon("check")} Guardar datos legales</button>
+        ${state.legal ? html`<span class="text-sm text-muted">Última actualización: ${dateTime(state.legal.updatedAt)}</span>` : ""}
+      </div>
+    </form>
+  </section>`;
+}
+
 // ─── Avisos de pagos en este dispositivo y la app instalada ───
 
 const pushCopy = () => PUSH_COPY[state.push] ?? PUSH_COPY.unsupported;
@@ -1059,6 +1120,7 @@ function sectionHead() {
     ],
     ingresos: ["Ingresos", "Lo que has recibido por los planes, mes a mes y pago por pago."],
     cuentas: ["Cuentas de cobro", "Las cuentas donde los negocios te pagan su plan."],
+    legal: ["Datos legales", "Quién presta el servicio de Pedify, para la política de datos y los términos."],
     cuenta: ["Mi cuenta", "Tu contraseña y tu sesión."],
   };
   const [title, subtitle] = heads[state.tab];
@@ -1080,6 +1142,8 @@ function sectionView() {
       return revenueView();
     case "cuentas":
       return html`<section class="panel p-4 sm:p-5" data-platform-accounts></section>`;
+    case "legal":
+      return legalView();
     case "cuenta":
       return accountView();
     default:
@@ -1158,6 +1222,10 @@ async function loadPayments() {
   state.payments.data = await api(`/admin/payments?page=${state.payments.page}&pageSize=25`);
 }
 
+async function loadLegal() {
+  state.legal = await api("/admin/legal");
+}
+
 async function loadAnalytics() {
   state.analytics = await api("/admin/analytics");
 }
@@ -1166,8 +1234,9 @@ async function loadAnalytics() {
 async function loadTab() {
   const tab = state.tab;
   if (tab === "resumen") {
-    await Promise.all([loadAnalytics(), api("/admin/businesses?status=EXPIRING&page=1&pageSize=5").then((list) => (state.expiring = list))]);
+    await Promise.all([loadAnalytics(), loadLegal(), api("/admin/businesses?status=EXPIRING&page=1&pageSize=5").then((list) => (state.expiring = list))]);
   }
+  if (tab === "legal") await loadLegal();
   if (tab === "analiticas") await loadAnalytics();
   if (tab === "negocios") await loadList();
   if (tab === "pagos") await loadTransfers();
@@ -1423,6 +1492,23 @@ function bind() {
   });
 
   root.addEventListener("submit", async (event) => {
+    const legalForm = event.target.closest("[data-legal-form]");
+    if (legalForm) {
+      event.preventDefault();
+      const button = legalForm.querySelector('[type="submit"]');
+      clearFieldErrors(legalForm);
+      setBusy(button, true);
+      try {
+        const data = readForm(legalForm);
+        state.legal = await api("/admin/legal", { method: "PUT", body: { ...data, phone: data.phone || null } });
+        toast("Datos legales guardados. Ya aparecen en la política de datos y en los términos.");
+        drawTab();
+      } catch (error) {
+        setBusy(button, false);
+        showErrors(legalForm, error);
+      }
+      return;
+    }
     const rejectForm = event.target.closest("[data-reject-form]");
     if (rejectForm) {
       event.preventDefault();

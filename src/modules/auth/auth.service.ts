@@ -74,7 +74,7 @@ export const authService = {
 
     return prisma.$transaction(async (tx) => {
       const user = await authRepository.createUser(
-        { name: input.name, email: input.email, passwordHash, privacyAcceptedAt: new Date() },
+        { name: input.name, email: input.email, passwordHash, privacyAcceptedAt: new Date(), termsAcceptedAt: new Date() },
         tx,
       );
       const business = await businessesService.createForOwner(
@@ -82,6 +82,8 @@ export const authService = {
         { name: input.businessName, phone: input.businessPhone },
         tx,
         input.plan,
+        // Con NIT, la razón social se ajusta después en Configuración; con cédula, vende la persona.
+        { legalName: input.idType === "NIT" ? input.businessName : input.name, idType: input.idType, idNumber: input.idNumber },
       );
       return openSession(user.id, business.id, meta, tx);
     });

@@ -31,7 +31,7 @@ describe("Registro de comerciante", () => {
         password: PASSWORD,
         businessName: "Pizzería Napoli",
         businessPhone: "3109876543",
-        acceptPrivacy: true,
+        acceptPrivacy: true, acceptTerms: true, idType: "CC", idNumber: "1102345678",
       })
       .expect(201);
 
@@ -54,7 +54,7 @@ describe("Registro de comerciante", () => {
     await registerMerchant({ email: "Ana@Ejemplo.com" });
     const res = await newAgent()
       .post("/api/v1/auth/register")
-      .send({ name: "Otra", email: "ana@ejemplo.com", password: PASSWORD, businessName: "Otro", businessPhone: "3001112233", acceptPrivacy: true })
+      .send({ name: "Otra", email: "ana@ejemplo.com", password: PASSWORD, businessName: "Otro", businessPhone: "3001112233", acceptPrivacy: true, acceptTerms: true, idType: "CC", idNumber: "1102345678" })
       .expect(409);
     expect(res.body.error.code).toBe("EMAIL_TAKEN");
   });
@@ -67,7 +67,7 @@ describe("Registro de comerciante", () => {
 
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
     expect(Object.keys(res.body.error.fields)).toEqual(
-      expect.arrayContaining(["name", "email", "password", "businessName", "businessPhone", "acceptPrivacy"]),
+      expect.arrayContaining(["name", "email", "password", "businessName", "businessPhone", "idType", "idNumber", "acceptPrivacy", "acceptTerms"]),
     );
   });
 
@@ -118,7 +118,7 @@ describe("Sesiones", () => {
   it("guarda en la base solo el hash SHA-256 del token", async () => {
     const res = await newAgent()
       .post("/api/v1/auth/register")
-      .send({ name: "Eva", email: uniqueEmail(), password: PASSWORD, businessName: "Repostería Eva", businessPhone: "3201234567", acceptPrivacy: true })
+      .send({ name: "Eva", email: uniqueEmail(), password: PASSWORD, businessName: "Repostería Eva", businessPhone: "3201234567", acceptPrivacy: true, acceptTerms: true, idType: "CC", idNumber: "1102345678" })
       .expect(201);
     const token = sessionCookieFrom(res);
     expect(token).toBeTruthy();
@@ -132,7 +132,7 @@ describe("Sesiones", () => {
   it("al cerrar sesión el token queda revocado aunque se reutilice", async () => {
     const res = await newAgent()
       .post("/api/v1/auth/register")
-      .send({ name: "Eva", email: uniqueEmail(), password: PASSWORD, businessName: "Repostería Eva", businessPhone: "3201234567", acceptPrivacy: true });
+      .send({ name: "Eva", email: uniqueEmail(), password: PASSWORD, businessName: "Repostería Eva", businessPhone: "3201234567", acceptPrivacy: true, acceptTerms: true, idType: "CC", idNumber: "1102345678" });
     const token = sessionCookieFrom(res)!;
     const cookie = `pedify_sid=${token}`;
 

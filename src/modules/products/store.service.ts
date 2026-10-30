@@ -78,6 +78,13 @@ export const storeService = {
         phone: business.phone,
         logoUrl: business.logoUrl,
         bannerUrl: business.bannerUrl,
+        /** Quién vende (Estatuto del Consumidor, art. 50): nombre o razón social, documento y correo. */
+        seller: {
+          legalName: business.legalName,
+          idType: business.idType,
+          idNumber: business.idNumber,
+          email: business.contactEmail,
+        },
       },
       settings: {
         openingHours,

@@ -326,14 +326,38 @@ function menu(store) {
     </div>`;
 }
 
+/** Cómo se escribe el documento de quien vende. */
+const ID_LABEL = { CC: "C.C.", NIT: "NIT", CE: "C.E.", PPT: "PPT", PA: "Pasaporte" };
+
+/** «por correo, por WhatsApp o al teléfono», con los canales que tenga el negocio. */
+function complaintChannels(email, whatsapp) {
+  const channels = [
+    email ? html`por <a class="text-paper underline" href="mailto:${email}">correo</a>` : null,
+    whatsapp ? html`por <a class="text-paper underline" href="https://wa.me/${whatsapp}" target="_blank" rel="noopener">WhatsApp</a>` : null,
+    "al teléfono",
+  ].filter(Boolean);
+  return channels.length === 1 ? channels[0] : html`${channels.slice(0, -1).map((channel, index) => html`${index ? ", " : ""}${channel}`)} o ${channels.at(-1)}`;
+}
+
 function footer(store) {
   const { business } = store;
+  const seller = business.seller ?? {};
+  const whatsapp = store.settings.whatsappPhone;
   return html`<footer class="mt-24 border-t border-paper/10">
     <div class="mx-auto grid max-w-[72rem] gap-2 px-4 pt-10 pb-28 text-sm text-paper/60 sm:px-8">
       <p class="display text-[2.25rem] text-paper">${business.name}</p>
       ${business.address ? html`<p>${[business.address, business.city].filter(Boolean).join(", ")}</p>` : ""}
       <p>Teléfono: <a class="text-paper underline" href="tel:+${business.phone}">${formatPhone(business.phone)}</a></p>
-      <p class="mt-5">Tienda creada con <a class="font-[700] text-mustard" href="/">Pedify</a></p>
+      ${seller.legalName || seller.idNumber
+        ? html`<p>Vende: <span class="text-paper">${[seller.legalName, seller.idNumber ? `${ID_LABEL[seller.idType] ?? ""} ${seller.idNumber}`.trim() : ""].filter(Boolean).join(" · ")}</span></p>`
+        : ""}
+      ${seller.email ? html`<p>Correo: <a class="text-paper underline" href="mailto:${seller.email}">${seller.email}</a></p>` : ""}
+      <p>¿Una petición, queja o reclamo? Comunícate con el negocio ${complaintChannels(seller.email, whatsapp)}.</p>
+      <p class="mt-5">
+        Tienda creada con <a class="font-[700] text-mustard" href="/">Pedify</a> ·
+        <a class="underline" href="/terminos" target="_blank" rel="noopener">Términos</a> ·
+        <a class="underline" href="/privacidad" target="_blank" rel="noopener">Datos personales</a>
+      </p>
     </div>
   </footer>`;
 }

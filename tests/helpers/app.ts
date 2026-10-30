@@ -30,7 +30,7 @@ export async function registerMerchant(overrides: Partial<MerchantInput> = {}) {
     ...overrides,
   };
   const agent = newAgent();
-  const res = await agent.post("/api/v1/auth/register").send({ ...input, acceptPrivacy: true });
+  const res = await agent.post("/api/v1/auth/register").send({ ...input, acceptPrivacy: true, acceptTerms: true, idType: "CC", idNumber: "1102345678" });
   if (res.status !== 201) throw new Error(`Registro falló (${res.status}): ${JSON.stringify(res.body)}`);
   const profile = res.body.data as {
     user: { id: string; name: string; email: string };

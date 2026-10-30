@@ -106,6 +106,15 @@ function switchRow(id, name, checked, title, text, { disabled = false } = {}) {
   </label>`;
 }
 
+/** Documentos de quien vende (como en el registro). */
+const ID_TYPES = [
+  ["CC", "Cédula (C.C.)"],
+  ["NIT", "NIT"],
+  ["CE", "Cédula de extranjería"],
+  ["PPT", "PPT"],
+  ["PA", "Pasaporte"],
+];
+
 // ───────────────────────────── Secciones ─────────────────────────────
 
 function businessSection() {
@@ -148,6 +157,33 @@ function businessSection() {
             <input class="input" id="b-slug" name="slug" value="${business.slug}" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="50" />
           </div>
           <p class="hint">Solo letras minúsculas sin tildes, números y guiones. Si lo cambias, el enlace anterior dejará de funcionar.</p>
+        </div>
+        <div class="grid scroll-mt-40 gap-1 border-t border-line pt-5 sm:col-span-2 lg:scroll-mt-8" id="quien-vende">
+          <h3 class="font-[720]">Quién vende</h3>
+          <p class="text-sm text-muted">
+            La ley (Estatuto del Consumidor) exige que tu tienda muestre estos datos para que tus clientes sepan a quién le compran. Si tienes
+            empresa, usa su razón social y su NIT.
+          </p>
+        </div>
+        <div class="field sm:col-span-2">
+          <label class="label" for="b-legal-name">Nombre o razón social</label>
+          <input class="input" id="b-legal-name" name="legalName" value="${business.legalName ?? ""}" maxlength="120" placeholder="Ana Pérez o Sabores del Caribe S.A.S." />
+        </div>
+        <div class="field">
+          <label class="label" for="b-id-type">Documento</label>
+          <select class="input" id="b-id-type" name="idType">
+            <option value="" ${business.idType ? "" : "selected"}>Elige</option>
+            ${ID_TYPES.map(([value, label]) => html`<option value="${value}" ${business.idType === value ? "selected" : ""}>${label}</option>`)}
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="b-id-number">Número de documento</label>
+          <input class="input" id="b-id-number" name="idNumber" value="${business.idNumber ?? ""}" maxlength="20" autocomplete="off" placeholder="1102345678 o 900123456-7" />
+        </div>
+        <div class="field sm:col-span-2">
+          <label class="label" for="b-contact-email">Correo para tus clientes</label>
+          <input class="input" id="b-contact-email" name="contactEmail" type="email" inputmode="email" value="${business.contactEmail ?? ""}" placeholder="contacto@tunegocio.com" maxlength="254" />
+          <p class="hint">Aparece en tu tienda para que tus clientes te escriban sus peticiones, quejas o reclamos.</p>
         </div>
       </fieldset>
       ${isOwner ? saveBar() : ""}

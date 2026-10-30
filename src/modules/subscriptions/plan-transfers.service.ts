@@ -276,7 +276,8 @@ export const planTransfersService = {
   /** Imagen del comprobante, solo para los administradores. */
   async image(id: string) {
     const transfer = await prisma.planTransfer.findUnique({ where: { id }, select: { imageKey: true } });
-    const data = transfer ? await storage.get(transfer.imageKey) : null;
+    // Pasados 5 años la imagen se borra (data-retention.service): queda el registro del pago.
+    const data = transfer?.imageKey ? await storage.get(transfer.imageKey) : null;
     if (!data) throw notFound("No encontramos ese comprobante.", "TRANSFER_NOT_FOUND");
     return data;
   },

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DeliveryPricing, MembershipRole, PaymentMethod, SalesPolicy } from "../../generated/prisma/enums.js";
 import { copAmountSchema } from "../../utils/currency.js";
+import { idNumberSchema, idTypeSchema } from "../../utils/id-document.js";
 import { mobilePhoneSchema, phoneSchema } from "../../utils/phone.js";
 import { businessNameSchema, emailSchema, newPasswordSchema, personNameSchema } from "../auth/auth.schemas.js";
 
@@ -35,6 +36,11 @@ export const updateBusinessSchema = z
     description: optionalText(300, "La descripción"),
     city: optionalText(80, "La ciudad"),
     address: optionalText(160, "La dirección"),
+    // Quién vende (Estatuto del Consumidor): se muestra en la tienda. Vacío = sin dato.
+    legalName: optionalText(120, "El nombre o la razón social"),
+    idType: z.preprocess((value) => (value === "" ? null : value), idTypeSchema.nullable()),
+    idNumber: z.preprocess((value) => (typeof value === "string" && value.trim() === "" ? null : value), idNumberSchema.nullable()),
+    contactEmail: z.preprocess((value) => (typeof value === "string" && value.trim() === "" ? null : value), emailSchema.nullable()),
   })
   .partial();
 

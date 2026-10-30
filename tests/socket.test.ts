@@ -41,7 +41,7 @@ async function merchant(businessName: string, businessPhone: string) {
   const agent = newAgent();
   const res = await agent
     .post("/api/v1/auth/register")
-    .send({ name: "Ana", email: uniqueEmail(), password: PASSWORD, businessName, businessPhone, acceptPrivacy: true })
+    .send({ name: "Ana", email: uniqueEmail(), password: PASSWORD, businessName, businessPhone, acceptPrivacy: true, acceptTerms: true, idType: "CC", idNumber: "1102345678" })
     .expect(201);
   const slug = res.body.data.businesses[0].slug as string;
   const product = (await agent.post("/api/v1/products").send({ name: "Salchipapa", price: 15000 }).expect(201)).body.data;

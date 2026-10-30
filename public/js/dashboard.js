@@ -195,6 +195,16 @@ function untilLabel(value) {
  * Aviso de la suscripción: prueba o plan por terminar (5 días antes), plan vencido (con gracia) o tienda
  * sin pedidos en línea. Si el propietario ya subió el comprobante, se le dice que está en revisión.
  */
+/** Al propietario: le faltan los datos de quién vende que la ley exige mostrar en la tienda. */
+function legalBanner(business) {
+  if (business?.role !== "OWNER" || (business.idNumber && business.contactEmail)) return "";
+  return html`<div class="flex flex-wrap items-center gap-x-3 gap-y-2 bg-mustard-soft px-4 py-2.5 text-[0.9375rem] text-mustard-deep sm:px-6 lg:px-10" role="status">
+    ${icon("shield", "flex-none")}
+    <p class="min-w-0 flex-1">Completa quién vende (cédula o NIT y un correo para tus clientes): la ley exige que tu tienda lo muestre.</p>
+    <a class="btn btn-ink btn-sm ml-auto" href="/panel/configuracion#quien-vende">Completar</a>
+  </div>`;
+}
+
 function planBanner(business) {
   const subscription = business?.subscription;
   if (!subscription) return "";
@@ -304,7 +314,7 @@ function shell(me, business, page) {
         ${business ? liveControl({ compact: true }) : ""}
       </header>
 
-      <div data-plan-banner>${planBanner(business)}</div>
+      <div data-plan-banner>${planBanner(business)}${legalBanner(business)}</div>
       <main id="main" tabindex="-1" class="mx-auto w-full max-w-[76rem] flex-1 px-4 pt-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-10 lg:pt-10 lg:pb-14"></main>
     </div>
 
@@ -544,7 +554,7 @@ async function refreshBusiness(root) {
   } catch {
     return; // Sin conexión: al reconectarse, cada pantalla vuelve a consultar.
   }
-  root.querySelectorAll("[data-plan-banner]").forEach((slot) => render(slot, planBanner(business)));
+  root.querySelectorAll("[data-plan-banner]").forEach((slot) => render(slot, html`${planBanner(business)}${legalBanner(business)}`));
   root.querySelectorAll("[data-plan-link]").forEach((slot) => render(slot, planLink(business)));
   root.querySelectorAll("[data-business-name]").forEach((name) => (name.textContent = business.name));
   root.querySelectorAll("[data-business-logo]").forEach((logo) => business.logoUrl && (logo.src = business.logoUrl));

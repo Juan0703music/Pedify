@@ -37,7 +37,7 @@ Teléfonos: se aceptan en cualquier formato colombiano (`300 123 4567`, `+57 300
 
 | Método | Ruta | Sesión | Cuerpo | Respuesta |
 |---|---|---|---|---|
-| POST | `/auth/register` | — | `name, email, password, businessName, businessPhone` | 201 perfil + cookie |
+| POST | `/auth/register` | — | `name, email, password, businessName, businessPhone, idType, idNumber, acceptTerms, acceptPrivacy` | 201 perfil + cookie |
 | POST | `/auth/login` | — | `email, password` | 200 perfil + cookie |
 | GET | `/auth/me` | ✔ | — | perfil: `user`, `businesses`, `activeBusinessId` y `newBusiness { allowed, owned, max, planName, message }` (si puede crear otro negocio según su plan) |
 | PATCH | `/auth/me` | ✔ | `name` | `{ user }` |
@@ -48,7 +48,7 @@ Teléfonos: se aceptan en cualquier formato colombiano (`300 123 4567`, `+57 300
 | POST | `/auth/forgot-password` | — | `email` | `{ ok }` siempre (no revela si existe la cuenta); envía un enlace de 30 min |
 | POST | `/auth/reset-password` | — | `token, newPassword` | `{ ok }`; cierra todas las sesiones · 400 `RESET_LINK_INVALID` |
 
-`POST /auth/register` exige `acceptPrivacy: true` (autorización de tratamiento de datos, Ley 1581) y crea el negocio con 7 días de prueba del plan `plan` (`EMPRENDEDOR`, `NEGOCIO` o `EMPRESA`; opcional, por defecto `NEGOCIO`). El perfil incluye `user.isPlatformAdmin`.
+`POST /auth/register` exige `acceptPrivacy: true` (autorización de tratamiento de datos, Ley 1581), `acceptTerms: true` (Términos y condiciones; se guarda `terms_accepted_at`) y el documento de quien vende: `idType` (`CC`, `NIT`, `CE`, `PPT` o `PA`) e `idNumber` (Estatuto del Consumidor, arts. 50 y 53). Con cédula, `legalName` del negocio es el nombre de la persona; con NIT, el del negocio (se ajusta en Configuración). Crea el negocio con 7 días de prueba del plan `plan` (`EMPRENDEDOR`, `NEGOCIO` o `EMPRESA`; opcional, por defecto `NEGOCIO`). El perfil incluye `user.isPlatformAdmin`.
 
 Perfil:
 
@@ -69,7 +69,7 @@ Todas requieren sesión. Las rutas `/current…` actúan sobre el **negocio acti
 | GET | `/businesses` | — | Negocios del usuario |
 | POST | `/businesses` | — | `name, phone` → crea otro negocio (queda activo, con su propia prueba). 409 `PLAN_LIMIT` si ya tiene los negocios que permite su plan (Emprendedor 1, Negocio 3, Empresa ilimitados; cuenta el plan más amplio entre los negocios de los que es propietario) |
 | GET | `/businesses/current` | miembro | — |
-| PATCH | `/businesses/current` | OWNER | `name, phone, slug, description, city, address` (parcial) |
+| PATCH | `/businesses/current` | OWNER | `name, phone, slug, description, city, address, legalName, idType, idNumber, contactEmail` (parcial; vacío borra los cuatro últimos). Quién vende y su correo se muestran en la tienda (`business.seller` de `GET /store/:slug`) |
 | GET | `/businesses/current/settings` | miembro | — |
 | PATCH | `/businesses/current/settings` | OWNER | `openingHours, acceptingOrders, whatsappPhone, deliveryEnabled, deliveryPricing, deliveryFee, deliveryTiers, deliveryExtraKmFee, deliveryMaxKm, location, deliveryArea, pickupEnabled, dineInEnabled, minimumOrder, paymentMethods, salesPolicy` (parcial). Ver «Domicilio según la distancia» |
 | GET | `/businesses/current/members` | OWNER | — |
@@ -478,6 +478,8 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 |---|---|---|---|
 | GET | `/admin/metrics` | — | `businesses` (total, trial, active, pastDue, expired, suspended, new7, new30…), `orders` (orders1, orders30, gmv30, storesWithOrders7), `mrr`, `plans`, `system` (version, uptime, memoria, latencia de la base) |
 | GET | `/admin/analytics` | — | Series de las gráficas, por calendario de Colombia: `months` (12 meses: `month`, `revenue`, `payments`, `newBusinesses`), `days` (30 días hasta hoy: `day`, `orders`, `gmv`), `previous` (pedidos y ventas de los 30 días anteriores), `hours` (`weekday` 0 = lunes, `hour`, `orders`), `plans` (`plan`, `status`, `count`) y `topStores` (las 6 tiendas con más pedidos en 30 días) |
+| GET | `/admin/legal` | — | Datos legales de Pedify (`legalName, idType, idNumber, address, city, email, phone, updatedAt`) o `null` |
+| PUT | `/admin/legal` | `legalName, idType, idNumber, address, city, email, phone?` | Los guarda. `/privacidad` y `/terminos` los muestran en lugar de `{{legal.*}}` (escapados); sin ellos dicen «[pendiente]» |
 | GET | `/admin/push` | — | `enabled`, `publicKey` (VAPID) y `devices` (cuántos dispositivos de esta persona reciben los avisos de pagos) |
 | POST | `/admin/push/subscriptions` | `endpoint`, `keys` (como `/push/subscriptions`) | `{ devices }`: este dispositivo recibe un aviso con cada pago de un plan por revisar |
 | DELETE | `/admin/push/subscriptions` | `endpoint` | 204 |
@@ -516,6 +518,7 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 | `/panel/plan` | `public/pages/dashboard/plan.html` |
 | `/admin` | `public/pages/admin/index.html` (panel central de Pedify) |
 | `/recuperar` · `/restablecer` | `public/pages/auth/forgot.html` · `reset.html` |
-| `/privacidad` | `public/pages/legal/privacy.html` |
+| `/privacidad` | `public/pages/legal/privacy.html` (con los datos de `/admin/legal`) |
+| `/terminos` | `public/pages/legal/terms.html` (con los datos de `/admin/legal`) |
 | `/tienda/:slug` | `public/pages/store/index.html` con las etiquetas Open Graph del negocio (404 si no existe; mayúsculas → redirección 301) |
 | `/uploads/…` | Imágenes con `STORAGE_DRIVER=local` |

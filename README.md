@@ -68,7 +68,7 @@ El nombre comercial es **Pedify** (antes PedifyAI). Los identificadores técnico
 - **Monitoreo**: identificador por petición (`X-Request-Id`) en los registros y código de soporte en los errores 500; `/api/v1/health` con estado de la base (503 si falla); métricas Prometheus en `/metrics` protegidas con `METRICS_TOKEN`.
 - **Copias de seguridad**: `npm run db:backup`, `db:backup:verify` (restaura en una base temporal y compara) y `db:restore` (solo en una base vacía); en Docker, servicio `backup` con `pg_dump` diario y prueba de restauración.
 - **Recuperación de contraseña** (sección 12): enlace de un solo uso por correo (SMTP), válido 30 minutos, del que solo se guarda el hash; al usarlo se cierran todas las sesiones. La respuesta no revela si el correo tiene cuenta.
-- **Datos personales** (Ley 1581): autorización registrada al crear la cuenta, aviso al cliente antes de enviar su pedido, página `/privacidad` (borrador por completar) y supresión de los datos de un cliente desde el panel.
+- **Datos personales y consumidor** (Ley 1581 de 2012, Ley 1480 de 2011, Ley 2300 de 2023): autorización y aceptación de los **Términos y condiciones** (`/terminos`) registradas al crear la cuenta; aviso al cliente antes de enviar su pedido; `/privacidad` y `/terminos` con los datos de Pedify que se llenan en `/admin` → Datos legales; cédula o NIT de cada negocio (se pide al registrarse) y «Vende: …», correo y canal de quejas en su tienda; supresión de los datos de un cliente desde el panel; borrado automático de comprobantes (pedidos a los 180 días, imagen de los de planes a los 5 años); recordatorios de pago solo en los horarios de la Ley 2300.
 - 123 pruebas en total (19 nuevas). Guía de operación: [`docs/operations.md`](docs/operations.md).
 
 ### Incluido en la puesta en producción
@@ -179,7 +179,7 @@ npm run db:seed            # opcional: comerciante demo con menú (demo@pedifyai
 npm run dev                # terminal 2: API + Tailwind en modo observación → http://localhost:3000
 ```
 
-Páginas: `/` portada · `/registro` · `/login` · `/recuperar` · `/privacidad` · `/admin` (equipo de Pedify) · `/panel/plan` · `/panel` · `/panel/pedidos` · `/panel/menu` · `/panel/clientes` · `/panel/analiticas` · `/panel/tienda` · `/panel/configuracion` · `/tienda/<slug>` (tienda pública, p. ej. `/tienda/sabores-del-caribe`).
+Páginas: `/` portada · `/registro` · `/login` · `/recuperar` · `/privacidad` · `/terminos` · `/admin` (equipo de Pedify) · `/panel/plan` · `/panel` · `/panel/pedidos` · `/panel/menu` · `/panel/clientes` · `/panel/analiticas` · `/panel/tienda` · `/panel/configuracion` · `/tienda/<slug>` (tienda pública, p. ej. `/tienda/sabores-del-caribe`).
 
 **Probar desde el celular:** los QR y enlaces que se abren en otro dispositivo (tienda, mesas, domiciliario) usan la IP del computador en el Wi-Fi, así que el celular debe estar en la misma red. Para probar desde cualquier red (también con datos), usa `npm run dev:public` en lugar de `npm run dev`: abre un túnel temporal de Cloudflare (`https://….trycloudflare.com`, requiere `cloudflared`) y los QR lo usan. El enlace cambia en cada encendido: no imprimas esos QR para el local.
 

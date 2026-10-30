@@ -49,7 +49,7 @@ describe("Suscripción del negocio", () => {
     const register = (agent: ReturnType<typeof newAgent>, plan: string) =>
       agent
         .post("/api/v1/auth/register")
-        .send({ name: "Ana Pérez", email: uniqueEmail(), password: PASSWORD, businessName: "Pizzería Napoli", businessPhone: "300 123 4567", acceptPrivacy: true, plan });
+        .send({ name: "Ana Pérez", email: uniqueEmail(), password: PASSWORD, businessName: "Pizzería Napoli", businessPhone: "300 123 4567", acceptPrivacy: true, acceptTerms: true, idType: "CC", idNumber: "1102345678", plan });
     for (const [plan, limits] of [
       ["EMPRENDEDOR", { products: 15, members: 1 }],
       ["EMPRESA", { products: null, members: null }],

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/database.js";
 import { pushService } from "../src/modules/push/push.service.js";
-import { renewalReminders } from "../src/modules/subscriptions/renewal-reminders.service.js";
+import { canContact, renewalReminders } from "../src/modules/subscriptions/renewal-reminders.service.js";
+import { colombianHolidays } from "../src/utils/holidays.js";
 import { mailer } from "../src/services/mail.service.js";
 import { registerMerchant } from "./helpers/app.js";
 import { resetDatabase } from "./helpers/db.js";
@@ -55,11 +56,14 @@ describe("Recordatorios de vencimiento del plan", () => {
     expect(await renewalReminders.run(at(3.2))).toBe(1); // 2:48 p. m. del día anterior
     expect(mailsTo(input.email)[1]?.subject).toBe("Tu plan de Pedify vence mañana");
 
-    expect(await renewalReminders.run(at(5))).toBe(1);
+    // Venció el sábado: el domingo y el lunes festivo (16 de noviembre) no se escribe; sale el martes.
+    expect(await renewalReminders.run(at(5))).toBe(0);
+    expect(await renewalReminders.run(at(6))).toBe(0);
+    expect(await renewalReminders.run(at(7))).toBe(1);
     const expired = mailsTo(input.email)[2];
     expect(expired?.subject).toBe("Tu plan de Pedify venció: renuévalo para seguir recibiendo pedidos");
     expect(expired?.text).toContain("Tu tienda sigue recibiendo pedidos hasta el 19 de noviembre");
-    expect(await renewalReminders.run(at(6))).toBe(0);
+    expect(await renewalReminders.run(at(8))).toBe(0);
     expect(pushed).toHaveLength(3);
   });
 
@@ -69,8 +73,8 @@ describe("Recordatorios de vencimiento del plan", () => {
 
     await prisma.subscription.update({ where: { businessId }, data: { paidUntil: at(32) } });
     expect(await renewalReminders.run(NOW)).toBe(0);
-    expect(await renewalReminders.run(at(28))).toBe(1);
-    expect(mailer.outbox.at(-1)?.subject).toBe("Tu plan de Pedify vence en 4 días");
+    expect(await renewalReminders.run(at(29))).toBe(1); // miércoles 9 de diciembre (el 8 es festivo)
+    expect(mailer.outbox.at(-1)?.subject).toBe("Tu plan de Pedify vence en 3 días");
   });
 
   it("también avisa cuando termina la prueba gratis", async () => {
@@ -97,6 +101,26 @@ describe("Recordatorios de vencimiento del plan", () => {
     // En el panel, el dueño ve que su pago está en revisión.
     const summary = (await paid.agent.get("/api/v1/businesses/current").expect(200)).body.data.subscription;
     expect(summary).toMatchObject({ status: "ACTIVE", paymentInReview: true });
+  });
+
+  it("solo en los horarios de la Ley 2300 de 2023: lunes a viernes de 7 a 7, sábados de 8 a 3, nunca domingos ni festivos", () => {
+    const bogota = (local: string) => new Date(`${local}-05:00`);
+    expect(canContact(bogota("2026-11-10T07:00:00"))).toBe(true); // martes
+    expect(canContact(bogota("2026-11-10T06:59:00"))).toBe(false);
+    expect(canContact(bogota("2026-11-10T18:59:00"))).toBe(true);
+    expect(canContact(bogota("2026-11-10T19:00:00"))).toBe(false);
+    expect(canContact(bogota("2026-11-14T08:00:00"))).toBe(true); // sábado
+    expect(canContact(bogota("2026-11-14T15:00:00"))).toBe(false);
+    expect(canContact(bogota("2026-11-15T10:00:00"))).toBe(false); // domingo
+    expect(canContact(bogota("2026-11-16T10:00:00"))).toBe(false); // lunes festivo
+  });
+
+  it("calcula los festivos de Colombia (fijos, los del lunes y los de Semana Santa)", () => {
+    expect([...colombianHolidays(2026)].sort()).toEqual([
+      "2026-01-01", "2026-01-12", "2026-03-23", "2026-04-02", "2026-04-03", "2026-05-01", "2026-05-18", "2026-06-08", "2026-06-15",
+      "2026-06-29", "2026-07-20", "2026-08-07", "2026-08-17", "2026-10-12", "2026-11-02", "2026-11-16", "2026-12-08", "2026-12-25",
+    ]);
+    expect(colombianHolidays(2027).has("2027-03-25")).toBe(true); // Jueves Santo 2027
   });
 
   it("el panel central muestra los negocios por vencer, con el recordatorio enviado", async () => {

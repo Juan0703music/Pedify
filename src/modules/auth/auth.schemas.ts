@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PlanCode } from "../../generated/prisma/enums.js";
+import { idNumberSchema, idTypeSchema } from "../../utils/id-document.js";
 import { phoneSchema } from "../../utils/phone.js";
 
 export const emailSchema = z
@@ -33,10 +34,14 @@ export const registerSchema = z.object({
   password: newPasswordSchema,
   businessName: businessNameSchema,
   businessPhone: phoneSchema,
+  /** Quién vende (Estatuto del Consumidor): cédula o NIT del negocio. */
+  idType: idTypeSchema,
+  idNumber: idNumberSchema,
   /** Plan que el negocio quiere probar (7 días gratis); por defecto, Negocio. */
   plan: z.enum(PlanCode, { error: "Elige uno de los planes." }).optional(),
   /** Autorización del tratamiento de datos personales (Ley 1581 de 2012). */
   acceptPrivacy: z.literal(true, { error: "Para crear la cuenta debes aceptar la política de tratamiento de datos." }),
+  acceptTerms: z.literal(true, { error: "Para crear la cuenta debes aceptar los Términos y condiciones." }),
 });
 
 export const loginSchema = z.object({

@@ -18,6 +18,7 @@ import { businessesRoutes } from "./modules/businesses/businesses.routes.js";
 import { adminRoutes } from "./modules/admin/admin.routes.js";
 import { analyticsRoutes } from "./modules/analytics/analytics.routes.js";
 import { customersRoutes } from "./modules/customers/customers.routes.js";
+import { LEGAL_PAGES, legalService } from "./modules/legal/legal.service.js";
 import { ordersRoutes, storeOrderRoutes } from "./modules/orders/orders.routes.js";
 import { categoriesRoutes, productsRoutes } from "./modules/products/products.routes.js";
 import { storeController } from "./modules/products/store.controller.js";
@@ -46,7 +47,6 @@ const PUBLIC_PAGES: Record<string, string> = {
   "/registro": "pages/auth/register.html",
   "/recuperar": "pages/auth/forgot.html",
   "/restablecer": "pages/auth/reset.html",
-  "/privacidad": "pages/legal/privacy.html",
   // Página del domiciliario (la clave del pedido va después de "#").
   "/domicilio": "pages/courier/index.html",
   // Instalar Pedify como app en el celular y en el computador.
@@ -192,6 +192,12 @@ export function createApp() {
   app.use("/api", apiNotFound);
 
   // ─── Páginas ───
+  // Política de datos y Términos y condiciones, con los datos de Pedify del panel central.
+  for (const [route, file] of Object.entries(LEGAL_PAGES)) {
+    app.get(route, async (_req, res) => {
+      res.set("Cache-Control", "no-cache").type("html").send(await legalService.render(file));
+    });
+  }
   for (const [route, file] of Object.entries(PUBLIC_PAGES)) {
     app.get(route, async (_req, res) => {
       res.set("Cache-Control", "no-cache");

@@ -122,6 +122,23 @@
                 <input class="input" id="businessPhone" name="businessPhone" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="300 123 4567" required />
                 <p class="hint">Si es celular, también lo mostraremos en tu tienda como WhatsApp de contacto. Puedes cambiarlo después.</p>
               </div>
+              <div class="grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
+                <div class="field">
+                  <label class="label" for="idType">Documento</label>
+                  <select class="input" id="idType" name="idType" required>
+                    <option value="CC" selected>Cédula (C.C.)</option>
+                    <option value="NIT">NIT</option>
+                    <option value="CE">Cédula de extranjería</option>
+                    <option value="PPT">PPT</option>
+                    <option value="PA">Pasaporte</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="label" for="idNumber">Número de documento</label>
+                  <input class="input" id="idNumber" name="idNumber" autocomplete="off" placeholder="1102345678" required maxlength="20" />
+                </div>
+                <p class="hint sm:col-span-2">La ley exige que tu tienda muestre quién vende (Estatuto del Consumidor). Si tienes empresa, usa su NIT.</p>
+              </div>
             </fieldset>
 
             <fieldset class="grid gap-5">
@@ -147,6 +164,12 @@
             </fieldset>
 
             <div class="grid gap-4">
+              <label class="flex cursor-pointer items-start gap-3 text-[0.9375rem] leading-snug" data-error-anchor="acceptTerms">
+                <input type="checkbox" name="acceptTerms" class="mt-0.5 h-5 w-5 flex-none" required />
+                <span>
+                  Acepto los <a href="/terminos" target="_blank" rel="noopener" class="font-semibold underline">Términos y condiciones</a> de Pedify.
+                </span>
+              </label>
               <label class="flex cursor-pointer items-start gap-3 text-[0.9375rem] leading-snug" data-error-anchor="acceptPrivacy">
                 <input type="checkbox" name="acceptPrivacy" class="mt-0.5 h-5 w-5 flex-none" required />
                 <span>
