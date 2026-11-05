@@ -26,13 +26,20 @@ if (existsSync(".env")) process.loadEnvFile(".env");
 /** Orden de restauración: cada tabla después de las que referencia. */
 const TABLES = [
   "users",
+  "platform_payment_accounts",
+  "platform_legal",
   "businesses",
   "business_memberships",
   "business_settings",
   "subscriptions",
   "subscription_payments",
+  "plan_checkouts",
+  "plan_transfers",
   "sessions",
   "password_reset_tokens",
+  "push_subscriptions",
+  "admin_push_subscriptions",
+  "payment_accounts",
   "categories",
   "products",
   "customers",
@@ -40,6 +47,8 @@ const TABLES = [
   "orders",
   "order_items",
   "order_status_history",
+  "courier_tracking",
+  "payment_proofs",
 ];
 
 interface Manifest {
