@@ -103,6 +103,8 @@ model User {
   passwordResetTokens    PasswordResetToken[]
   pushSubscriptions      PushSubscription[]
   adminPushSubscriptions AdminPushSubscription[]
+  supportTickets         SupportTicket[]
+  supportMessages        SupportMessage[]
   recordedPayments       SubscriptionPayment[]
   planCheckouts          PlanCheckout[]
   planTransfers          PlanTransfer[]          @relation("PlanTransferCreatedBy")
@@ -143,6 +145,79 @@ model PasswordResetToken {
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+/// Tipo de solicitud a Pedify: una duda o una PQRS (petición, queja, reclamo o sugerencia).
+enum SupportKind {
+  CONSULTA
+  PETICION
+  QUEJA
+  RECLAMO
+  SUGERENCIA
+}
+
+/// OPEN: Pedify debe responder · ANSWERED: Pedify respondió · CLOSED: resuelta.
+enum SupportStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+enum SupportAuthor {
+  REQUESTER
+  PEDIFY
+}
+
+/// Solicitudes de soporte y PQRS que los negocios (desde su panel) o cualquier persona (desde /soporte)
+/// le envían a Pedify; el equipo las responde desde el panel central.
+model SupportTicket {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  /// Número del caso (PQRS-00012), consecutivo.
+  number          Int           @unique @default(autoincrement())
+  kind            SupportKind
+  status          SupportStatus @default(OPEN)
+  subject         String
+  /// Quien la envía: una cuenta de Pedify (con su negocio activo) o, desde /soporte, solo sus datos.
+  userId          String?       @map("user_id") @db.Uuid
+  businessId      String?       @map("business_id") @db.Uuid
+  name            String
+  email           String
+  phone           String?
+  /// Clave del enlace para ver y responder el caso sin cuenta (solo las que llegan por /soporte). Da
+  /// acceso solo a este caso, que ya está en la base: guardarla tal cual no expone nada más.
+  accessKey       String?       @unique @map("access_key")
+  /// Plazo para responder: 15 días hábiles desde que llega.
+  dueAt           DateTime      @map("due_at") @db.Timestamptz(3)
+  lastMessageAt   DateTime      @default(now()) @map("last_message_at") @db.Timestamptz(3)
+  /// La última vez que quien la envió abrió la conversación (para avisarle de una respuesta nueva).
+  requesterSeenAt DateTime?     @map("requester_seen_at") @db.Timestamptz(3)
+  closedAt        DateTime?     @map("closed_at") @db.Timestamptz(3)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user     User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  business Business?        @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  messages SupportMessage[]
+
+  @@index([status, lastMessageAt])
+  @@index([userId, lastMessageAt])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id        String        @id @default(uuid(7)) @db.Uuid
+  ticketId  String        @map("ticket_id") @db.Uuid
+  author    SupportAuthor
+  /// La cuenta que escribió (quien la envió o la persona del equipo de Pedify que respondió).
+  userId    String?       @map("user_id") @db.Uuid
+  body      String
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+  @@map("support_messages")
 }
 
 /// Documento de identidad de quien vende o presta el servicio.
@@ -206,6 +281,7 @@ model Business {
   payments          SubscriptionPayment[]
   planCheckouts     PlanCheckout[]
   planTransfers     PlanTransfer[]
+  supportTickets    SupportTicket[]
   categories        Category[]
   products          Product[]
   customers         Customer[]

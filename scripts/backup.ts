@@ -49,6 +49,8 @@ const TABLES = [
   "order_status_history",
   "courier_tracking",
   "payment_proofs",
+  "support_tickets",
+  "support_messages",
 ];
 
 interface Manifest {

@@ -112,6 +112,13 @@ export const pushService = {
     }
   },
 
+  /** Avisa a una persona en sus dispositivos de ese negocio (p. ej. que Pedify respondió su solicitud). */
+  async notifyUserInBusiness(userId: string, businessId: string, message: PushMessage): Promise<number> {
+    if (!enabled) return 0;
+    const devices = await pushRepository.forUserInBusiness(userId, businessId);
+    return (await Promise.all(devices.map((device) => pushService.deliver(device, message)))).filter(Boolean).length;
+  },
+
   /** Avisa a los propietarios del negocio (p. ej. que su plan está por vencer). Devuelve a cuántos dispositivos llegó. */
   async notifyOwners(businessId: string, message: PushMessage): Promise<number> {
     if (!enabled) return 0;

@@ -6,11 +6,13 @@ import { deleteImage } from "./storage.service.js";
 /**
  * Conservación de datos (política de datos, sección 7): los comprobantes de pago de los pedidos se borran
  * a los 180 días; los de los planes de Pedify se conservan 5 años como soporte contable y luego se borra
- * la imagen y su texto (el registro del pago se queda). Corre una vez al día en el servidor de producción.
+ * la imagen y su texto (el registro del pago se queda); las solicitudes de soporte y PQRS se borran 2 años
+ * después de cerradas. Corre una vez al día en el servidor de producción.
  */
 const DAY = 86_400_000;
 export const ORDER_PROOF_DAYS = 180;
 export const PLAN_PROOF_DAYS = 5 * 365;
+export const SUPPORT_TICKET_DAYS = 2 * 365;
 const BATCH = 100;
 const RUN_EVERY_MS = DAY;
 
@@ -46,8 +48,12 @@ export const dataRetention = {
       planProofs += old.length;
     }
 
-    if (orderProofs || planProofs) logger.info({ orderProofs, planProofs }, "Comprobantes de pago vencidos borrados");
-    return { orderProofs, planProofs };
+    const supportTickets = (
+      await prisma.supportTicket.deleteMany({ where: { status: "CLOSED", closedAt: { lt: new Date(now.getTime() - SUPPORT_TICKET_DAYS * DAY) } } })
+    ).count;
+
+    if (orderProofs || planProofs || supportTickets) logger.info({ orderProofs, planProofs, supportTickets }, "Datos vencidos borrados");
+    return { orderProofs, planProofs, supportTickets };
   },
 
   /** Programa la limpieza: cinco minutos después de arrancar y luego una vez al día. */

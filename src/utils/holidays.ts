@@ -50,3 +50,25 @@ export function colombianHolidays(year: number): Set<string> {
 
 /** ¿Es festivo en Colombia? (`day` en formato AAAA-MM-DD). */
 export const isColombianHoliday = (day: string) => colombianHolidays(Number(day.slice(0, 4))).has(day);
+
+const bogotaDay = (date: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(date);
+
+/** ¿Día hábil en Colombia? (de lunes a viernes y no festivo; `day` en formato AAAA-MM-DD). */
+export function isBusinessDay(day: string): boolean {
+  const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
+  return weekday !== 0 && weekday !== 6 && !isColombianHoliday(day);
+}
+
+/**
+ * El final (11:59 p. m., hora de Colombia) del día hábil número `days` contado desde el siguiente a
+ * `from`: el plazo para responder una solicitud («15 días hábiles»).
+ */
+export function businessDaysAfter(from: Date, days: number): Date {
+  let day = bogotaDay(from);
+  let counted = 0;
+  while (counted < days) {
+    day = new Date(new Date(`${day}T12:00:00Z`).getTime() + DAY).toISOString().slice(0, 10);
+    if (isBusinessDay(day)) counted += 1;
+  }
+  return new Date(`${day}T23:59:59.999-05:00`);
+}

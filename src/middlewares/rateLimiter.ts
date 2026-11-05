@@ -17,6 +17,12 @@ const common = {
 /** Retos «No soy un robot» de la tienda: uno por comprobante o pedido, con margen para reintentos. */
 export const captchaLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 60 });
 
+/** Solicitudes nuevas de soporte y PQRS por IP. */
+export const supportLimiter = rateLimit({ ...common, windowMs: 60 * 60_000, limit: 10 });
+
+/** Mensajes en una solicitud de soporte. */
+export const supportMessageLimiter = rateLimit({ ...common, windowMs: 10 * 60_000, limit: 30 });
+
 /** Límite general de la API por IP. */
 export const apiLimiter = rateLimit({ ...common, windowMs: 60_000, limit: 300 });
 

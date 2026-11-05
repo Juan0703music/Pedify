@@ -6,6 +6,7 @@ import { chart3d } from "./chart3d.js";
 import { installApp, installLabel, installState, isInstalled, openInstallHelp } from "./install.js";
 import { mountPaymentAccounts } from "./payment-accounts-ui.js";
 import { adminPush } from "./push.js";
+import { conversation, dateTime as supportDateTime, longDate as supportLongDate } from "./support-ui.js";
 import { brand, clearFieldErrors, formAlert, html, icon, initials, raw, readForm, render, setBusy, showErrors, toast } from "./ui.js";
 
 const STATUS = {
@@ -33,6 +34,7 @@ const REMINDER_LABEL = { DAYS_5: "5 días antes", DAY_1: "1 día antes", EXPIRED
 const SECTIONS = [
   { id: "resumen", label: "Resumen", icon: "house" },
   { id: "pagos", label: "Pagos por revisar", short: "Pagos", icon: "receipt" },
+  { id: "soporte", label: "Soporte y PQRS", short: "Soporte", icon: "message-circle" },
   { id: "negocios", label: "Negocios", icon: "store" },
   { id: "ingresos", label: "Ingresos", icon: "banknote" },
   { id: "analiticas", label: "Analíticas", icon: "chart-column" },
@@ -49,7 +51,14 @@ const ID_TYPES = [
   ["PA", "Pasaporte"],
 ];
 /** Barra inferior del celular; las demás secciones quedan en «Más». */
-const TABBAR = ["resumen", "pagos", "negocios", "analiticas"];
+const TABBAR = ["resumen", "pagos", "soporte", "negocios"];
+/** Estados de una solicitud de soporte, vistos desde Pedify. */
+const SUPPORT_STATUS = {
+  OPEN: { label: "Por responder", badge: "bg-mustard text-ink" },
+  ANSWERED: { label: "Respondida", badge: "bg-leaf-soft text-leaf" },
+  CLOSED: { label: "Cerrada", badge: "bg-ground text-muted" },
+};
+const SUPPORT_FILTERS = [["OPEN", "Por responder"], ["ANSWERED", "Respondidas"], ["CLOSED", "Cerradas"], ["ALL", "Todas"]];
 const TRANSFER_FILTERS = [["PENDING", "Por revisar"], ["APPROVED", "Aprobados"], ["REJECTED", "Rechazados"]];
 const REJECT_REASONS = ["No llegó el dinero a la cuenta.", "El valor no coincide con el plan.", "No se ve bien el comprobante."];
 /** Cada cuánto se revisa si llegaron pagos nuevos mientras el panel está abierto. */
@@ -134,6 +143,8 @@ const state = {
   accounts: [],
   /** Avisos de pagos en este dispositivo (ver PUSH_COPY); se averigua al cargar. */
   push: null,
+  /** Solicitudes de soporte y PQRS. */
+  support: { status: "OPEN", page: 1, data: null },
   /** Datos legales de Pedify (null = aún no se llenan) y si ya se consultaron. */
   legal: undefined,
 };
@@ -334,12 +345,12 @@ function attentionView() {
   const { metrics } = state;
   const soon = state.expiring?.items ?? [];
   const { pastDue, expired } = metrics.businesses;
-  const clear = !metrics.pendingTransfers && soon.length === 0 && !pastDue && !expired;
+  const clear = !metrics.pendingTransfers && !metrics.support?.open && soon.length === 0 && !pastDue && !expired;
   return html`<section class="panel grid content-start gap-4 p-4 sm:p-5" aria-labelledby="attention-title">
     <h2 id="attention-title" class="text-lg font-[740]">Para atender</h2>
     ${clear
       ? html`<p class="flex items-start gap-3 rounded-[12px] bg-leaf-soft px-4 py-3 text-leaf">
-          ${icon("circle-check", "mt-0.5 h-5 w-5 flex-none")} <span><strong class="font-[720]">Todo al día.</strong> No hay pagos por revisar ni planes por vencer esta semana.</span>
+          ${icon("circle-check", "mt-0.5 h-5 w-5 flex-none")} <span><strong class="font-[720]">Todo al día.</strong> No hay pagos por revisar, solicitudes por responder ni planes por vencer esta semana.</span>
         </p>`
       : ""}
     ${metrics.pendingTransfers
@@ -353,6 +364,15 @@ function attentionView() {
           <span class="min-w-0 flex-1"><span class="block font-[680]">Pagos por revisar</span><span class="block text-sm text-muted">Ninguno ahora. Aquí ves y apruebas los pagos de los planes.</span></span>
           ${icon("arrow-right", "h-4 w-4 flex-none text-muted")}
         </button>`}
+    ${metrics.support?.open
+      ? html`<button type="button" class="flex items-center gap-3 rounded-[12px] px-4 py-3 text-left ${metrics.support.overdue ? "bg-tomato-soft text-tomato" : "bg-mustard-soft text-mustard-deep"}" data-tab="soporte">
+          ${icon("message-circle", "h-5 w-5 flex-none")}
+          <span class="min-w-0 flex-1 font-[680]">
+            ${plural(metrics.support.open, "solicitud de soporte por responder", "solicitudes de soporte por responder")}${metrics.support.overdue ? html` <span class="font-normal">(${plural(metrics.support.overdue, "vencida", "vencidas")})</span>` : ""}
+          </span>
+          ${icon("arrow-right", "h-4 w-4 flex-none")}
+        </button>`
+      : ""}
     <div class="grid gap-2">
       <h3 class="text-sm font-[680] text-muted">Vencen en los próximos 7 días</h3>
       ${soon.length === 0
@@ -792,6 +812,115 @@ function transfersView() {
   </div>`;
 }
 
+// ─── Soporte y PQRS ───
+
+/** «Responder antes del 26 de noviembre» o «Vencida» (en tomate) para las que esperan respuesta. */
+function supportDue(ticket) {
+  if (ticket.status !== "OPEN") return "";
+  return ticket.overdue
+    ? html`<span class="badge bg-tomato text-paper">Vencida el ${supportLongDate(ticket.dueAt)}</span>`
+    : html`<span class="text-sm text-muted">Responder antes del ${supportLongDate(ticket.dueAt)}</span>`;
+}
+
+const requesterOf = (ticket) => (ticket.business ? `${ticket.business.name} · ${ticket.name}` : `${ticket.name} · sin cuenta`);
+
+function supportView() {
+  const { data, status } = state.support;
+  return html`<div class="grid gap-4">
+    <div class="flex flex-wrap gap-2">
+      ${SUPPORT_FILTERS.map(
+        ([value, label]) => html`<button type="button" class="cat-chip" aria-pressed="${status === value}" data-support-filter="${value}">
+          ${label}${value === "OPEN" && state.metrics.support?.open ? html`<span class="num ml-1.5 opacity-70">${state.metrics.support.open}</span>` : ""}
+        </button>`,
+      )}
+    </div>
+    ${data.items.length === 0
+      ? html`<p class="panel px-5 py-8 text-center text-muted">
+          ${status === "OPEN" ? "No hay solicitudes por responder. Cuando un negocio o alguien desde /soporte escriba, aparece aquí y te llega un aviso." : "Todavía no hay solicitudes aquí."}
+        </p>`
+      : html`<ul class="grid gap-3">
+          ${data.items.map(
+            (ticket) => html`<li>
+              <button type="button" class="panel grid w-full gap-2 p-4 text-left hover:border-ink sm:p-5" data-support-ticket="${ticket.id}">
+                <span class="flex flex-wrap items-center gap-2 text-sm">
+                  <span class="num font-[720]">${ticket.code}</span>
+                  <span class="badge bg-ink text-paper">${ticket.kindLabel}</span>
+                  <span class="badge ${SUPPORT_STATUS[ticket.status].badge}">${SUPPORT_STATUS[ticket.status].label}</span>
+                  <span class="ml-auto">${supportDue(ticket)}</span>
+                </span>
+                <span class="text-[1.0625rem] font-[720] [overflow-wrap:anywhere]">${ticket.subject}</span>
+                <span class="text-sm text-muted">${requesterOf(ticket)} · ${ticket.email}</span>
+                ${ticket.lastMessage
+                  ? html`<span class="line-clamp-2 text-[0.9375rem] text-ink/80">${ticket.lastMessage.author === "PEDIFY" ? "Tú: " : ""}${ticket.lastMessage.body}</span>`
+                  : ""}
+                <span class="text-xs text-muted">Último mensaje: ${supportDateTime(ticket.lastMessageAt)}</span>
+              </button>
+            </li>`,
+          )}
+        </ul>`}
+    ${pager(data, "data-support-page")}
+  </div>`;
+}
+
+function supportDetailView(ticket) {
+  const status = SUPPORT_STATUS[ticket.status];
+  return html`<div class="flex min-h-0 flex-auto flex-col">
+    <header class="flex items-center gap-3 border-b border-line py-3 pr-3 pl-5">
+      <h2 id="support-title" class="min-w-0 truncate text-lg font-[780] outline-none" tabindex="-1">${ticket.code} · ${ticket.subject}</h2>
+      <button type="button" class="btn btn-quiet btn-icon ml-auto" data-close aria-label="Cerrar">${icon("x")}</button>
+    </header>
+    <div class="min-h-0 flex-auto overflow-y-auto px-5 py-5">
+      <div class="grid gap-5">
+        <section class="grid gap-1.5 text-[0.9375rem]">
+          <p class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="badge bg-ink text-paper">${ticket.kindLabel}</span>
+            <span class="badge ${status.badge}">${status.label}</span>
+            ${supportDue(ticket)}
+          </p>
+          <p><span class="font-[680]">${ticket.name}</span> · <a class="underline" href="mailto:${ticket.email}">${ticket.email}</a>${ticket.phone ? ` · ${formatPhone(ticket.phone)}` : ""}</p>
+          <p class="text-muted">${ticket.business ? `Negocio: ${ticket.business.name} (/tienda/${ticket.business.slug})` : "Escribió desde /soporte, sin cuenta."} · llegó el ${supportDateTime(ticket.createdAt)}</p>
+        </section>
+        ${conversation(ticket, "pedify")}
+        <form class="grid gap-3 border-t border-line pt-4" data-support-reply="${ticket.id}" novalidate>
+          ${formAlert()}
+          <div class="field">
+            <label class="label" for="support-reply">Tu respuesta</label>
+            <textarea class="input min-h-[7rem]" id="support-reply" name="body" rows="5" maxlength="4000" required></textarea>
+            <p class="hint">Le llega a ${ticket.email}${ticket.business ? " y a su panel (y a su celular si activó los avisos)" : " con el enlace para ver la conversación"}.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-ink">${icon("message-circle")} Responder</button>
+            <button type="submit" class="btn btn-ghost" data-close-after>${icon("check")} Responder y cerrar</button>
+          </div>
+        </form>
+        <div class="flex flex-wrap gap-2 border-t border-line pt-4">
+          ${ticket.status === "CLOSED"
+            ? html`<button type="button" class="btn btn-ghost btn-sm" data-support-status="OPEN">Reabrir</button>`
+            : html`<button type="button" class="btn btn-quiet btn-sm" data-support-status="CLOSED">Cerrar sin responder</button>`}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function openSupport(id) {
+  const dialog = document.getElementById("support-detail");
+  try {
+    const ticket = await api(`/admin/support/${id}`);
+    render(dialog, supportDetailView(ticket));
+    if (!dialog.open) dialog.showModal();
+    dialog.querySelector("#support-title")?.focus();
+  } catch (error) {
+    toast(error.message, "error");
+  }
+}
+
+async function afterSupportChange(ticket, message) {
+  render(document.getElementById("support-detail"), supportDetailView(ticket));
+  toast(message);
+  await reloadAll();
+}
+
 // ─── Ingresos ───
 
 function revenueView() {
@@ -1060,12 +1189,16 @@ async function sendPushTest(button) {
 
 // ───────────────────────────── Estructura ─────────────────────────────
 
-const pendingCount = (extra = "") => (state.metrics.pendingTransfers > 0 ? html`<span class="badge num bg-tomato text-paper ${extra}">${state.metrics.pendingTransfers}</span>` : "");
+/** Contador del menú: pagos por revisar o solicitudes de soporte por responder. */
+function pendingCount(section, extra = "") {
+  const count = section === "pagos" ? state.metrics.pendingTransfers : section === "soporte" ? (state.metrics.support?.open ?? 0) : 0;
+  return count > 0 ? html`<span class="badge num bg-tomato text-paper ${extra}">${count}</span>` : "";
+}
 
 function navItems() {
   return SECTIONS.map(
     (section) => html`<button type="button" class="nav-item w-full text-left" data-tab="${section.id}" ${state.tab === section.id ? raw('aria-current="page"') : ""}>
-      ${icon(section.icon)}<span class="flex-1">${section.label}</span>${section.id === "pagos" ? pendingCount() : ""}
+      ${icon(section.icon)}<span class="flex-1">${section.label}</span>${pendingCount(section.id)}
     </button>`,
   );
 }
@@ -1074,7 +1207,7 @@ function navItems() {
 function tabBar() {
   const tabs = TABBAR.map((id) => SECTIONS.find((section) => section.id === id)).map(
     (section) => html`<button type="button" class="tab-item" data-tab="${section.id}" ${state.tab === section.id ? raw('aria-current="page"') : ""}>
-      <span class="tab-pill relative">${icon(section.icon)}${section.id === "pagos" ? pendingCount("absolute -top-1.5 -right-1 min-w-5 justify-center px-1.5 py-0") : ""}</span>${section.short ?? section.label}
+      <span class="tab-pill relative">${icon(section.icon)}${pendingCount(section.id, "absolute -top-1.5 -right-1 min-w-5 justify-center px-1.5 py-0")}</span>${section.short ?? section.label}
     </button>`,
   );
   return html`${tabs}
@@ -1118,6 +1251,10 @@ function sectionHead() {
       "Pagos por revisar",
       "Los negocios pagan su plan a tu Nequi o a tu llave Bre-B y suben el comprobante. Pedify lo lee, te avisa por correo y, cuando apruebas, su plan se activa al instante.",
     ],
+    soporte: [
+      "Soporte y PQRS",
+      "Las dudas, peticiones, quejas, reclamos y sugerencias de los negocios (desde su panel) y de cualquier persona (desde /soporte). El plazo para responder es de 15 días hábiles.",
+    ],
     ingresos: ["Ingresos", "Lo que has recibido por los planes, mes a mes y pago por pago."],
     cuentas: ["Cuentas de cobro", "Las cuentas donde los negocios te pagan su plan."],
     legal: ["Datos legales", "Quién presta el servicio de Pedify, para la política de datos y los términos."],
@@ -1138,6 +1275,8 @@ function sectionView() {
       return html`<div class="grid gap-4" data-list>${listView()}</div>`;
     case "pagos":
       return transfersView();
+    case "soporte":
+      return supportView();
     case "ingresos":
       return revenueView();
     case "cuentas":
@@ -1201,7 +1340,8 @@ function page() {
         </div>
       </dialog>
     </div>
-    <dialog id="business-detail" class="sheet" aria-labelledby="detail-title"></dialog>`;
+    <dialog id="business-detail" class="sheet" aria-labelledby="detail-title"></dialog>
+    <dialog id="support-detail" class="sheet" aria-labelledby="support-title"></dialog>`;
 }
 
 // ───────────────────────────── Datos y acciones ─────────────────────────────
@@ -1216,6 +1356,11 @@ async function loadList() {
 async function loadTransfers() {
   const params = new URLSearchParams({ status: state.transfers.status, page: String(state.transfers.page), pageSize: "20" });
   [state.transfers.data, state.accounts] = await Promise.all([api(`/admin/transfers?${params}`), api("/admin/payment-accounts")]);
+}
+
+async function loadSupport() {
+  const params = new URLSearchParams({ status: state.support.status, page: String(state.support.page), pageSize: "25" });
+  state.support.data = await api(`/admin/support?${params}`);
 }
 
 async function loadPayments() {
@@ -1240,6 +1385,7 @@ async function loadTab() {
   if (tab === "analiticas") await loadAnalytics();
   if (tab === "negocios") await loadList();
   if (tab === "pagos") await loadTransfers();
+  if (tab === "soporte") await loadSupport();
   if (tab === "ingresos") await Promise.all([loadPayments(), loadAnalytics()]);
 }
 
@@ -1369,10 +1515,10 @@ function watchTransfers() {
     if (document.visibilityState !== "visible") return;
     try {
       const metrics = await api("/admin/metrics");
-      const changed = metrics.pendingTransfers !== state.metrics.pendingTransfers;
+      const changed = metrics.pendingTransfers !== state.metrics.pendingTransfers || metrics.support?.open !== state.metrics.support?.open;
       state.metrics = metrics;
       if (!changed) return;
-      if (isTyping() || document.getElementById("business-detail").open || !["resumen", "pagos"].includes(state.tab)) {
+      if (isTyping() || document.getElementById("business-detail").open || document.getElementById("support-detail").open || !["resumen", "pagos", "soporte"].includes(state.tab)) {
         drawNav();
         return;
       }
@@ -1390,6 +1536,23 @@ function bind() {
   root.addEventListener("click", async (event) => {
     // Tocar fuera del menú del celular lo cierra.
     if (event.target.id === "drawer") return event.target.close();
+    const supportDialog = document.getElementById("support-detail");
+    if (supportDialog?.open && supportDialog.contains(event.target)) {
+      if (event.target === supportDialog || event.target.closest("[data-close]")) return supportDialog.close();
+      const action = event.target.closest("[data-support-status]");
+      if (!action) return;
+      setBusy(action, true);
+      try {
+        const id = supportDialog.querySelector("[data-support-reply]").dataset.supportReply;
+        const ticket = await api(`/admin/support/${id}`, { method: "PATCH", body: { status: action.dataset.supportStatus } });
+        return afterSupportChange(ticket, action.dataset.supportStatus === "CLOSED" ? "Solicitud cerrada." : "Solicitud reabierta.");
+      } catch (error) {
+        setBusy(action, false);
+        return toast(error.message, "error");
+      }
+    }
+    const supportTicket = event.target.closest("[data-support-ticket]");
+    if (supportTicket) return openSupport(supportTicket.dataset.supportTicket);
     const row = event.target.closest("[data-business]");
     if (row) return openDetail(row.dataset.business);
     const target = event.target.closest("button");
@@ -1412,6 +1575,16 @@ function bind() {
       state.page = Number(target.dataset.page);
       await loadList();
       render(root.querySelector("[data-list]"), listView());
+    }
+    if (target.matches("[data-support-filter]")) {
+      state.support = { ...state.support, status: target.dataset.supportFilter, page: 1 };
+      await loadSupport();
+      drawTab();
+    }
+    if (target.matches("[data-support-page]")) {
+      state.support.page = Number(target.dataset.supportPage);
+      await loadSupport();
+      drawTab();
     }
     if (target.matches("[data-transfer-filter]")) {
       state.transfers = { ...state.transfers, status: target.dataset.transferFilter, page: 1 };
@@ -1492,6 +1665,22 @@ function bind() {
   });
 
   root.addEventListener("submit", async (event) => {
+    const supportForm = event.target.closest("[data-support-reply]");
+    if (supportForm) {
+      event.preventDefault();
+      const button = event.submitter ?? supportForm.querySelector('[type="submit"]');
+      const close = Boolean(button?.matches("[data-close-after]"));
+      clearFieldErrors(supportForm);
+      setBusy(button, true);
+      try {
+        const ticket = await api(`/admin/support/${supportForm.dataset.supportReply}/messages`, { method: "POST", body: { body: readForm(supportForm).body ?? "", close } });
+        await afterSupportChange(ticket, close ? "Respuesta enviada y solicitud cerrada." : "Respuesta enviada.");
+      } catch (error) {
+        setBusy(button, false);
+        showErrors(supportForm, error);
+      }
+      return;
+    }
     const legalForm = event.target.closest("[data-legal-form]");
     if (legalForm) {
       event.preventDefault();

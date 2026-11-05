@@ -470,6 +470,21 @@ Pago en línea con Wompi (OWNER):
 
 Límites del plan: crear o restaurar productos y agregar personas al equipo responde 409 `PLAN_LIMIT` al llegar al tope. Con la suscripción vencida (después de 5 días de gracia), `POST /store/:slug/orders` responde 409 `STORE_UNAVAILABLE` y la tienda informa `status.onlineOrdering: false`.
 
+## Soporte y PQRS — `/support`
+
+Dudas, peticiones, quejas, reclamos y sugerencias para Pedify (`kind`: `CONSULTA`, `PETICION`, `QUEJA`, `RECLAMO`, `SUGERENCIA`). Cada caso tiene número (`code`, p. ej. `PQRS-00012`), estado (`OPEN` por responder · `ANSWERED` respondido · `CLOSED`) y plazo (`dueAt`: 15 días hábiles de Colombia, sin fines de semana ni festivos). A quien escribe le llega el acuse y cada respuesta por correo (y al celular si es un negocio con avisos); a los administradores, cada caso nuevo y cada respuesta por correo y al celular. Límites: 10 casos por hora y 30 mensajes cada 10 minutos por IP.
+
+| Método | Ruta | Acceso | Cuerpo | Respuesta |
+|---|---|---|---|---|
+| GET | `/support/tickets` | sesión | — | Casos de la persona (`unread`: Pedify respondió y no lo ha visto) |
+| GET | `/support/unread` | sesión | — | `{ unread }` (el aviso «Nueva respuesta» del menú) |
+| POST | `/support/tickets` | sesión | `kind, subject, message` | 201 el caso con sus `messages` (con el negocio activo) |
+| GET | `/support/tickets/:id` | sesión | — | El caso; quedan vistas las respuestas |
+| POST | `/support/tickets/:id/messages` | sesión | `body` | 201; el caso vuelve a `OPEN` |
+| POST | `/support/public` | público + `X-Captcha` | `name, email, phone?, kind, subject, message, acceptPrivacy: true` | 201 el caso y su `key` (enlace `/soporte#<id>.<key>`) |
+| GET | `/support/public/:id` | `X-Support-Key` | — | El caso (404 con otra clave) |
+| POST | `/support/public/:id/messages` | `X-Support-Key` | `body` | 201; vuelve a `OPEN` |
+
 ## Panel central — `/admin`
 
 Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
@@ -478,6 +493,10 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 |---|---|---|---|
 | GET | `/admin/metrics` | — | `businesses` (total, trial, active, pastDue, expired, suspended, new7, new30…), `orders` (orders1, orders30, gmv30, storesWithOrders7), `mrr`, `plans`, `system` (version, uptime, memoria, latencia de la base) |
 | GET | `/admin/analytics` | — | Series de las gráficas, por calendario de Colombia: `months` (12 meses: `month`, `revenue`, `payments`, `newBusinesses`), `days` (30 días hasta hoy: `day`, `orders`, `gmv`), `previous` (pedidos y ventas de los 30 días anteriores), `hours` (`weekday` 0 = lunes, `hour`, `orders`), `plans` (`plan`, `status`, `count`) y `topStores` (las 6 tiendas con más pedidos en 30 días) |
+| GET | `/admin/support?status&page&pageSize` | `status`: `OPEN` (por defecto, el que vence primero arriba), `ANSWERED`, `CLOSED` o `ALL` | Casos con `overdue` y el último mensaje |
+| GET | `/admin/support/:id` | — | El caso con la conversación |
+| POST | `/admin/support/:id/messages` | `body, close?` | 201: responde (y cierra si `close`); le llega a quien escribió |
+| PATCH | `/admin/support/:id` | `status`: `OPEN` o `CLOSED` | Reabre o cierra sin responder |
 | GET | `/admin/legal` | — | Datos legales de Pedify (`legalName, idType, idNumber, address, city, email, phone, updatedAt`) o `null` |
 | PUT | `/admin/legal` | `legalName, idType, idNumber, address, city, email, phone?` | Los guarda. `/privacidad` y `/terminos` los muestran en lugar de `{{legal.*}}` (escapados); sin ellos dicen «[pendiente]» |
 | GET | `/admin/push` | — | `enabled`, `publicKey` (VAPID) y `devices` (cuántos dispositivos de esta persona reciben los avisos de pagos) |
@@ -520,5 +539,7 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 | `/recuperar` · `/restablecer` | `public/pages/auth/forgot.html` · `reset.html` |
 | `/privacidad` | `public/pages/legal/privacy.html` (con los datos de `/admin/legal`) |
 | `/terminos` | `public/pages/legal/terms.html` (con los datos de `/admin/legal`) |
+| `/soporte` | `public/pages/support/index.html` (Soporte y PQRS sin cuenta; el caso se sigue con `#<id>.<clave>`) |
+| `/panel/soporte` | `public/pages/dashboard/support.html` (Soporte y PQRS del negocio) |
 | `/tienda/:slug` | `public/pages/store/index.html` con las etiquetas Open Graph del negocio (404 si no existe; mayúsculas → redirección 301) |
 | `/uploads/…` | Imágenes con `STORAGE_DRIVER=local` |

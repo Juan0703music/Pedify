@@ -284,6 +284,23 @@ function paintInstall(root) {
   });
 }
 
+/** «Soporte y PQRS»: el negocio le escribe al equipo de Pedify; el punto avisa de una respuesta nueva. */
+function supportLink(page) {
+  return html`<a href="/panel/soporte" class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-sm no-underline hover:bg-ink-2 hover:text-paper ${page === "soporte" ? "bg-ink-2 text-paper" : "text-ink-soft"}">
+    ${icon("message-circle", "h-4 w-4")}<span class="min-w-0 flex-1 truncate">Soporte y PQRS</span>
+    <span class="badge hidden bg-tomato text-paper" data-support-badge>Nueva respuesta</span>
+  </a>`;
+}
+
+/** Muestra en el menú si Pedify respondió una solicitud que la persona aún no ha visto. */
+async function paintSupport(root) {
+  const { unread } = await api("/support/unread").catch(() => ({ unread: 0 }));
+  root.querySelectorAll("[data-support-badge]").forEach((badge) => {
+    badge.textContent = unread === 1 ? "Nueva respuesta" : `${unread} respuestas`;
+    badge.classList.toggle("hidden", unread === 0);
+  });
+}
+
 function adminLink(me) {
   return me.user.isPlatformAdmin
     ? html`<a href="/admin" class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-sm text-ink-soft no-underline hover:bg-ink-2 hover:text-paper">
@@ -300,7 +317,7 @@ function shell(me, business, page) {
       ${business ? businessSwitcher(me, business, "business-menu") : ""}
       <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, business)}</nav>
       <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
-        <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5"><div class="contents" data-plan-link>${planLink(business)}</div> ${adminLink(me)} ${installLink()}</div>
+        <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5"><div class="contents" data-plan-link>${planLink(business)}</div> ${supportLink(page)} ${adminLink(me)} ${installLink()}</div>
         ${business ? liveControl() : ""} ${userBlock(me)}
       </div>
     </aside>
@@ -330,7 +347,7 @@ function shell(me, business, page) {
         </div>
         <nav aria-label="Secciones del panel" class="grid gap-1">${navLinks(page, business)}</nav>
         <div class="mt-auto grid grid-cols-[minmax(0,1fr)] gap-3">
-          <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5"><div class="contents" data-plan-link>${planLink(business)}</div> ${adminLink(me)} ${installLink()}</div>
+          <div class="grid grid-cols-[minmax(0,1fr)] gap-0.5"><div class="contents" data-plan-link>${planLink(business)}</div> ${supportLink(page)} ${adminLink(me)} ${installLink()}</div>
           ${business ? liveControl() : ""} ${userBlock(me)}
         </div>
       </div>
@@ -441,6 +458,8 @@ export async function initPanel(page) {
 
   render(root, shell(me, business, page));
   bindShell(root);
+  void paintSupport(root);
+  window.addEventListener("pedify:support-read", () => void paintSupport(root));
   if (business) startLive(root);
   return { me, business, main: root.querySelector("#main") };
 }

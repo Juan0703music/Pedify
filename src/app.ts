@@ -21,6 +21,7 @@ import { customersRoutes } from "./modules/customers/customers.routes.js";
 import { LEGAL_PAGES, legalService } from "./modules/legal/legal.service.js";
 import { ordersRoutes, storeOrderRoutes } from "./modules/orders/orders.routes.js";
 import { siteService } from "./modules/site/site.service.js";
+import { publicSupportRoutes, supportRoutes } from "./modules/support/support.routes.js";
 import { categoriesRoutes, productsRoutes } from "./modules/products/products.routes.js";
 import { storeController } from "./modules/products/store.controller.js";
 import { storeRoutes } from "./modules/products/store.routes.js";
@@ -49,6 +50,8 @@ const PUBLIC_PAGES: Record<string, string> = {
   "/restablecer": "pages/auth/reset.html",
   // Página del domiciliario (la clave del pedido va después de "#").
   "/domicilio": "pages/courier/index.html",
+  // Soporte y PQRS para cualquier persona, sin cuenta (el caso se sigue con el enlace del correo).
+  "/soporte": "pages/support/index.html",
   // Instalar Pedify como app en el celular y en el computador.
   "/app": "pages/app/index.html",
 };
@@ -65,6 +68,7 @@ const PANEL_PAGES: Record<string, string> = {
   "/panel/tienda/mesas": "pages/dashboard/tables.html",
   "/panel/configuracion": "pages/dashboard/settings.html",
   "/panel/plan": "pages/dashboard/plan.html",
+  "/panel/soporte": "pages/dashboard/support.html",
   "/admin": "pages/admin/index.html",
 };
 
@@ -133,6 +137,9 @@ function apiRouter(): Router {
   api.use("/push", pushRoutes);
   api.use("/courier", courierRoutes);
   api.use("/admin", adminRoutes);
+  // Soporte y PQRS: sin cuenta (/support/public) y desde el panel del negocio (/support).
+  api.use("/support/public", publicSupportRoutes);
+  api.use("/support", supportRoutes);
   // «No soy un robot» de la tienda: el reto para subir un comprobante o hacer un pedido.
   api.get("/captcha/challenge", captchaLimiter, (_req, res) => {
     res.set("Cache-Control", "no-store").json({ data: captchaService.challenge() });

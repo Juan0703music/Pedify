@@ -56,7 +56,7 @@ describe("Conservación de los comprobantes de pago", () => {
       data: { businessId, plan: "NEGOCIO", months: 1, amount: 399_900, method: "NEQUI", imageKey: planImage, receiptText: "Para JUAN", createdAt: new Date(Date.now() - 6 * 365 * DAY) },
     });
 
-    expect(await dataRetention.run()).toEqual({ orderProofs: 1, planProofs: 1 });
+    expect(await dataRetention.run()).toEqual({ orderProofs: 1, planProofs: 1, supportTickets: 0 });
     expect(await prisma.paymentProof.findFirst({ where: { orderId: old.order.id } })).toBeNull();
     expect(existsSync(fileOf(old.imageKey))).toBe(false);
     // El pedido viejo se queda (para las cuentas del negocio); solo se va el comprobante.
@@ -66,6 +66,6 @@ describe("Conservación de los comprobantes de pago", () => {
 
     expect(await prisma.planTransfer.findUniqueOrThrow({ where: { id: plan.id } })).toMatchObject({ imageKey: "", receiptText: null });
     expect(existsSync(fileOf(planImage))).toBe(false);
-    expect(await dataRetention.run()).toEqual({ orderProofs: 0, planProofs: 0 });
+    expect(await dataRetention.run()).toEqual({ orderProofs: 0, planProofs: 0, supportTickets: 0 });
   });
 });

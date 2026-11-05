@@ -10,6 +10,7 @@ import { buildPage } from "../../utils/pagination.js";
 import { storeUrl } from "../businesses/businesses.controller.js";
 import { planOf, PLANS, priceFor } from "../subscriptions/plans.js";
 import { planTransfersService } from "../subscriptions/plan-transfers.service.js";
+import { supportService } from "../support/support.service.js";
 import { latest, subscriptionState } from "../subscriptions/subscription-state.js";
 import { subscriptionsRepository } from "../subscriptions/subscriptions.repository.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
@@ -27,11 +28,12 @@ export const adminService = {
     const started = performance.now();
     await prisma.$queryRaw`SELECT 1`;
     const dbLatencyMs = Math.round(performance.now() - started);
-    const [businesses, orders, revenue, pendingTransfers] = await Promise.all([
+    const [businesses, orders, revenue, pendingTransfers, support] = await Promise.all([
       adminRepository.businessMetrics(now),
       adminRepository.orderMetrics(now),
       adminRepository.revenueMetrics(now),
       planTransfersService.pendingCount(),
+      supportService.counts(),
     ]);
     const mrr =
       (businesses?.activeEmprendedor ?? 0) * PLANS.EMPRENDEDOR.priceMonthly +
@@ -44,6 +46,8 @@ export const adminService = {
       revenue,
       /** Pagos directos (Nequi o Bre-B) que esperan revisión. */
       pendingTransfers,
+      /** Solicitudes de soporte y PQRS por responder (y las que ya pasaron el plazo). */
+      support,
       /** Ingreso mensual recurrente estimado con los precios de lista de las suscripciones activas. */
       mrr,
       plans: Object.values(PLANS),

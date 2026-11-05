@@ -10,6 +10,8 @@ import { subscribeSchema, unsubscribeSchema, type SubscribeInput, type Unsubscri
 import { pushService } from "../push/push.service.js";
 import { updateLegalSchema, type UpdateLegalInput } from "../legal/legal.schemas.js";
 import { legalService } from "../legal/legal.service.js";
+import { adminReplySchema, adminTicketsQuerySchema, ticketParamsSchema, ticketStatusSchema, type AdminTicketsQuery } from "../support/support.schemas.js";
+import { supportService } from "../support/support.service.js";
 import { planTransfersService } from "../subscriptions/plan-transfers.service.js";
 import { platformAccountsService } from "../subscriptions/platform-accounts.service.js";
 import { adminController } from "./admin.controller.js";
@@ -83,6 +85,26 @@ adminRoutes.delete("/push/subscriptions", validate({ body: unsubscribeSchema }),
 
 adminRoutes.post("/push/test", async (req: Request, res: Response) => {
   res.json({ data: await pushService.sendAdminTest(getAuth(req).userId) });
+});
+
+// ─── Soporte y PQRS: las solicitudes de los negocios y de /soporte ───
+const ticketOf = (req: Request) => (req.params as { id: string }).id;
+
+adminRoutes.get("/support", validate({ query: adminTicketsQuerySchema }), async (req: Request, res: Response) => {
+  res.json({ data: await supportService.adminList(req.query as unknown as AdminTicketsQuery) });
+});
+
+adminRoutes.get("/support/:id", validate({ params: ticketParamsSchema }), async (req: Request, res: Response) => {
+  res.json({ data: await supportService.adminGet(ticketOf(req)) });
+});
+
+adminRoutes.post("/support/:id/messages", validate({ params: ticketParamsSchema, body: adminReplySchema }), async (req: Request, res: Response) => {
+  const { body, close } = req.body as { body: string; close?: boolean };
+  res.status(201).json({ data: await supportService.adminReply(getAuth(req).userId, ticketOf(req), body, close) });
+});
+
+adminRoutes.patch("/support/:id", validate({ params: ticketParamsSchema, body: ticketStatusSchema }), async (req: Request, res: Response) => {
+  res.json({ data: await supportService.adminSetStatus(ticketOf(req), (req.body as { status: "OPEN" | "CLOSED" }).status) });
 });
 
 // ─── Datos legales de Pedify (aparecen en la política de datos y en los Términos y condiciones) ───

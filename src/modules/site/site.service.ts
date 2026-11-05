@@ -11,7 +11,7 @@ import { PLANS } from "../subscriptions/plans.js";
  * planes (datos estructurados de schema.org) y la verificación de Search Console; el mapa del sitio con
  * las páginas públicas y las tiendas; y robots.txt, que deja fuera el panel y la API.
  */
-const PUBLIC_PATHS = ["/", "/registro", "/app", "/terminos", "/privacidad"];
+const PUBLIC_PATHS = ["/", "/registro", "/app", "/soporte", "/terminos", "/privacidad"];
 /** Límite de direcciones de un mapa del sitio (protocolo sitemaps.org). */
 const SITEMAP_LIMIT = 50_000;
 
