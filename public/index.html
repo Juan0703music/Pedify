@@ -9,10 +9,20 @@
       content="Tienda digital para salchipaperías, pizzerías, hamburgueserías y negocios de comida rápida. Tus clientes arman el pedido en tu tienda y tú lo recibes al instante en tu panel."
     />
     <meta name="theme-color" content="#17161c" />
+    <link rel="canonical" href="{{site.url}}/" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Pedify" />
+    <meta property="og:locale" content="es_CO" />
+    <meta property="og:url" content="{{site.url}}/" />
     <meta property="og:title" content="Pedify · Tu tienda en un enlace, tus pedidos en orden" />
     <meta property="og:description" content="Menú digital con fotos, pedidos directos a tu panel con el total calculado y seguimiento en vivo para tus clientes." />
-    <meta property="og:image" content="/assets/images/food/burger-closeup-960.webp" />
+    <meta property="og:image" content="{{site.url}}/assets/images/og-pedify.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Una hamburguesa con el logo de Pedify" />
+    <meta name="twitter:card" content="summary_large_image" />
+    {{site.verification}}
+    <script type="application/ld+json">{{site.jsonld}}</script>
     <link rel="icon" href="/assets/icons/logo.svg" type="image/svg+xml" />
     <link rel="preload" href="/assets/fonts/archivo-latin-wdth.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/css/app.css" />
@@ -530,7 +540,7 @@
           </div>
           <div class="border-t border-ink-3 py-5">
             <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Tu configuración</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Horario, domicilio, pedido mínimo y pagos: efectivo, Nequi, Daviplata, transferencia o datáfono.</dd>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Horario, domicilio, pedido mínimo y pagos: efectivo, Nequi, Daviplata, transferencia, llave Bre-B o datáfono.</dd>
           </div>
         </dl>
       </div>
@@ -586,7 +596,7 @@
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end" data-reveal>
           <h2 id="plans-title" class="display text-[clamp(2.75rem,6vw,5.25rem)] leading-[0.88]">Planes claros, <span class="text-outline-ink">en pesos</span></h2>
           <p class="max-w-[30rem] text-[1.125rem] leading-relaxed text-ink/80 lg:justify-self-end">
-            Prueba cualquier plan 7 días gratis, con todo incluido y sin tarjeta. Después pagas mes a mes, o el año completo con descuento, por Nequi, Daviplata o transferencia.
+            Prueba cualquier plan 7 días gratis, con todo incluido y sin tarjeta. Después pagas mes a mes, o el año completo con descuento, por Nequi o llave Bre-B.
           </p>
         </div>
         <div class="grid gap-8 md:grid-cols-2 xl:grid-cols-3" data-reveal>

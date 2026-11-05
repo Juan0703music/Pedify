@@ -76,6 +76,7 @@ La comida es la protagonista: fotos grandes, con recortes generosos y esquinas r
 - **Banco propio**: `public/assets/images/food/` (WebP de 960 y 480 px), generado por `scripts/photos.ts` desde StockSnap y Rawpixel. Todas son de **dominio público (CC0)**; el script registra la fuente y el autor de cada una.
 - Se usan con `srcset` (480w/960w), `width`/`height` para no saltar al cargar, `loading="lazy"` fuera de la primera pantalla y `object-position` cuando el plato no está centrado.
 - **Las fotos de stock nunca representan a un negocio real en su tienda**: allí solo van las fotos que sube el comerciante (la excepción es el negocio ficticio de demostración del seed). En el panel, una foto de stock solo decora cuando el negocio aún no tiene portada.
+- **Imagen para compartir** (`public/assets/images/og-pedify.jpg`, 1200 × 630 JPG): la hamburguesa en primer plano con un degradado tinta desde la izquierda y la comanda mostaza del logo arriba a la izquierda. Es la que muestran WhatsApp, Facebook y Google al compartir la portada (las tiendas usan su portada o su logo).
 - `.photo` (contenedor con fondo tinta mientras carga), `.food-card` (foto a sangre con degradado inferior y título en `.display` blanco; se acerca al pasar el mouse), `.food-placeholder` (producto sin foto: mostaza claro con puntos y el ícono de cubiertos), `.dots` (textura de puntos de letrero sobre el mostaza).
 
 ## Portada

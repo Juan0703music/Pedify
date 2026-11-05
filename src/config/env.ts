@@ -54,6 +54,9 @@ const EnvSchema = z
     SMTP_URL: optional(z.string()),
     MAIL_FROM: z.string().default("Pedify <no-responder@pedifyai.com>"),
 
+    // Código de verificación de Google Search Console (método «Etiqueta HTML»: solo el valor de content).
+    GOOGLE_SITE_VERIFICATION: optional(z.string().regex(/^[\w-]{10,100}$/, "Copia solo el código de content=\"…\" que te da Search Console.")),
+
     // WhatsApp del equipo de Pedify para pagos y soporte (formato 57XXXXXXXXXX).
     SUPPORT_WHATSAPP: optional(z.string().regex(/^57\d{10}$/, "Usa el formato 57XXXXXXXXXX.")),
 

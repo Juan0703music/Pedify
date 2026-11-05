@@ -20,6 +20,7 @@ import { analyticsRoutes } from "./modules/analytics/analytics.routes.js";
 import { customersRoutes } from "./modules/customers/customers.routes.js";
 import { LEGAL_PAGES, legalService } from "./modules/legal/legal.service.js";
 import { ordersRoutes, storeOrderRoutes } from "./modules/orders/orders.routes.js";
+import { siteService } from "./modules/site/site.service.js";
 import { categoriesRoutes, productsRoutes } from "./modules/products/products.routes.js";
 import { storeController } from "./modules/products/store.controller.js";
 import { storeRoutes } from "./modules/products/store.routes.js";
@@ -42,7 +43,6 @@ z.config(z.locales.es());
 
 /** Páginas del frontend con URLs limpias → archivo dentro de public/. */
 const PUBLIC_PAGES: Record<string, string> = {
-  "/": "index.html",
   "/login": "pages/auth/login.html",
   "/registro": "pages/auth/register.html",
   "/recuperar": "pages/auth/forgot.html",
@@ -75,10 +75,6 @@ let appQr: { url: string; svg: string } | undefined;
 /**
  * robots.txt: el entorno de pruebas no se indexa; en producción solo las tiendas y las páginas públicas.
  */
-const ROBOTS = isStaging
-  ? "User-agent: *\nDisallow: /\n"
-  : ["User-agent: *", "Disallow: /panel", "Disallow: /admin", "Disallow: /api/", "Disallow: /restablecer", ""].join("\n");
-
 /** /metrics (Prometheus): solo con `Authorization: Bearer <METRICS_TOKEN>`; sin token configurado, no existe. */
 const metricsEndpoint: RequestHandler = (req, res, next) => {
   if (!env.METRICS_TOKEN) return next();
@@ -178,7 +174,12 @@ export function createApp() {
     });
   }
   app.get("/metrics", metricsEndpoint);
-  app.get("/robots.txt", (_req, res) => res.type("text").set("Cache-Control", "public, max-age=3600").send(ROBOTS));
+  app.get("/robots.txt", (_req, res) => res.type("text").set("Cache-Control", "public, max-age=3600").send(siteService.robots()));
+  // Mapa del sitio para Google (páginas públicas y tiendas). En el entorno de pruebas no existe.
+  app.get("/sitemap.xml", async (_req, res, next) => {
+    if (isStaging) return next();
+    res.type("application/xml").set("Cache-Control", "public, max-age=3600").send(await siteService.sitemap());
+  });
 
   // ─── API ───
   app.use(
@@ -192,6 +193,11 @@ export function createApp() {
   app.use("/api", apiNotFound);
 
   // ─── Páginas ───
+  // Portada: con su dirección oficial, los datos para Google y la imagen para compartir.
+  app.get("/", async (_req, res) => {
+    res.set("Cache-Control", "no-cache").type("html").send(await siteService.landing());
+  });
+  app.get("/index.html", (_req, res) => res.redirect(301, "/"));
   // Política de datos y Términos y condiciones, con los datos de Pedify del panel central.
   for (const [route, file] of Object.entries(LEGAL_PAGES)) {
     app.get(route, async (_req, res) => {

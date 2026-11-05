@@ -171,6 +171,15 @@ Cada pago aprobado extiende el plan aunque el aviso de Wompi tarde: al volver a 
 - El domiciliario debe dejar la página abierta: si apaga la pantalla o cambia de aplicación, el celular deja de enviar la ubicación hasta que vuelva.
 - OpenStreetMap permite un uso moderado de sus mapas. Con muchos pedidos al día, crea una cuenta gratuita en un proveedor (MapTiler, Stadia Maps…) y pon su dirección de teselas con tu llave en `MAP_TILE_URL` y su atribución en `MAP_TILE_ATTRIBUTION`.
 
+### Google: que encuentren a Pedify
+
+La portada ya lleva su dirección oficial (canónica, con `APP_URL`), la imagen para compartir (`/assets/images/og-pedify.jpg`, 1200 × 630) y la descripción de Pedify con los precios de los planes (datos estructurados de schema.org, tomados de `plans.ts`). `/sitemap.xml` lista las páginas públicas y las tiendas activas, y `robots.txt` lo anuncia y deja fuera el panel, `/admin` y la API. En el entorno de pruebas no se indexa nada.
+
+1. En [Google Search Console](https://search.google.com/search-console) agrega la propiedad con tu dominio. Lo más sencillo es verificarla con el registro TXT que te da Google en el DNS; si prefieres la «Etiqueta HTML», copia solo el valor de `content="…"` en `GOOGLE_SITE_VERIFICATION` y reinicia la app.
+2. En Search Console → Sitemaps, envía `https://tu-dominio/sitemap.xml`.
+3. Crea el [Perfil de Empresa en Google](https://www.google.com/business/) de Pedify (Sincelejo), con el enlace a tu dominio.
+4. Para anunciar en Google Ads, la portada debe estar publicada con HTTPS y con los datos legales llenos (`/admin` → Datos legales). Medir los registros de los anuncios necesita la etiqueta de Google y un aviso de cookies: se agrega cuando tengas la cuenta de Ads.
+
 ## 7. Entorno de pruebas
 
 Es una copia completa en **otro servidor**, con su propia base, sus propios buckets y `APP_ENV=staging`. Repite los pasos 2 a 6 con los valores de la columna «Pruebas». En ese entorno:
