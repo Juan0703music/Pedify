@@ -1,8 +1,12 @@
 // Portada: demostración interactiva del teléfono (pedido → seguimiento del cliente → comanda en el panel), fotos que siguen al mouse y aparición de las
 // secciones al bajar. Sin JavaScript la página se ve completa (con la
 // demostración ya terminada); con "reducir movimiento" no hay animaciones automáticas.
+import { playIntro } from "./intro.js";
+
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
+/** La intro (una vez por visita): lo que se anima al aparecer espera a que la cortina suba. */
+const introDone = playIntro();
 
 // ───────────────────────────── Aparición al bajar ─────────────────────────────
 
@@ -18,7 +22,7 @@ if (!reduceMotion && "IntersectionObserver" in window) {
     },
     { rootMargin: "0px 0px -8% 0px" },
   );
-  document.querySelectorAll("[data-reveal]").forEach((element) => observer.observe(element));
+  void introDone.then(() => document.querySelectorAll("[data-reveal]").forEach((element) => observer.observe(element)));
 }
 
 // ───────────────────────────── Fotos que siguen al mouse ─────────────────────────────
@@ -160,6 +164,6 @@ if (demo) {
       },
       { threshold: 0.45 },
     );
-    watcher.observe(demo);
+    void introDone.then(() => watcher.observe(demo));
   }
 }

@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script src="/js/intro-gate.js"></script>
     <title>Pedify · Tu tienda en un enlace, tus pedidos en orden</title>
     <meta
       name="description"
@@ -30,6 +31,45 @@
     <script type="module" src="/js/landing.js"></script>
   </head>
   <body class="bg-paper">
+    <!-- Intro (public/js/intro.js): una vez por visita; sin JavaScript o con «reducir movimiento» no aparece. -->
+    <div class="intro" data-intro>
+      <div class="intro-pattern" aria-hidden="true"></div>
+      <p class="intro-ghost display" aria-hidden="true">Pedify</p>
+      <div class="intro-product" aria-hidden="true">
+        <svg class="intro-steam" viewBox="0 0 80 60">
+          <path d="M18 58c-9-11 9-17 0-28c-6-8 5-13 0-21" />
+          <path d="M40 58c-9-11 9-17 0-28c-6-8 5-13 0-21" />
+          <path d="M62 58c-9-11 9-17 0-28c-6-8 5-13 0-21" />
+        </svg>
+        <svg class="intro-burger" viewBox="0 0 320 260" overflow="visible">
+          <ellipse cx="160" cy="246" rx="120" ry="9" fill="#17161c" opacity=".18" />
+          <path d="M46 200H274C276 226 260 236 236 236H84C60 236 44 226 46 200Z" fill="#e7a045" stroke="#17161c" stroke-width="4" stroke-linejoin="round" />
+          <rect x="40" y="170" width="240" height="32" rx="16" fill="#6b3a22" stroke="#17161c" stroke-width="4" />
+          <path d="M74 182h20M136 189h24M206 181h20" stroke="#17161c" stroke-opacity=".3" stroke-width="4" stroke-linecap="round" />
+          <path d="M30 168q13-14 26 0t26 0t26 0t26 0t26 0t26 0t26 0t26 0t26 0t26 0l2 10H28z" fill="#77b843" stroke="#17161c" stroke-width="4" stroke-linejoin="round" />
+          <path d="M36 150H284L272 166H252L240 184L228 166H128L114 178L100 166H50Z" fill="#ffc72c" stroke="#17161c" stroke-width="4" stroke-linejoin="round" />
+          <g data-strands></g>
+          <g data-lid>
+            <path d="M34 148C34 64 96 36 160 36S286 64 286 148Z" fill="#e7a045" stroke="#17161c" stroke-width="4" stroke-linejoin="round" />
+            <path d="M70 96C84 66 112 52 140 48" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="8" stroke-linecap="round" />
+            <ellipse cx="110" cy="82" rx="6" ry="3.4" fill="#fff3d6" transform="rotate(-20 110 82)" />
+            <ellipse cx="150" cy="62" rx="6" ry="3.4" fill="#fff3d6" transform="rotate(10 150 62)" />
+            <ellipse cx="196" cy="76" rx="6" ry="3.4" fill="#fff3d6" transform="rotate(30 196 76)" />
+            <ellipse cx="234" cy="102" rx="6" ry="3.4" fill="#fff3d6" transform="rotate(-10 234 102)" />
+            <ellipse cx="88" cy="112" rx="6" ry="3.4" fill="#fff3d6" transform="rotate(25 88 112)" />
+            <ellipse cx="172" cy="98" rx="6" ry="3.4" fill="#fff3d6" transform="rotate(-30 172 98)" />
+            <ellipse cx="130" cy="106" rx="6" ry="3.4" fill="#fff3d6" transform="rotate(5 130 106)" />
+          </g>
+        </svg>
+      </div>
+      <svg class="intro-curtain" viewBox="0 0 1000 1350" preserveAspectRatio="none" aria-hidden="true"><path data-intro-drip /></svg>
+      <div class="intro-brand" aria-hidden="true">
+        <img src="/assets/icons/logo.svg" alt="" width="96" height="96" />
+        <span>Pedify</span>
+      </div>
+      <button type="button" class="intro-skip" data-intro-skip>Saltar intro</button>
+    </div>
+
     <!-- ═══════════════════════════ PORTADA (tinta, de noche) ═══════════════════════════ -->
     <div class="glow-mustard relative isolate overflow-hidden text-paper" data-hero>
       <div class="dots-mustard pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" aria-hidden="true"></div>
@@ -48,7 +88,7 @@
       </header>
 
       <section class="mx-auto grid max-w-[80rem] items-center gap-14 px-4 pt-6 pb-10 sm:px-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-6 lg:pt-10 lg:pb-16" aria-labelledby="hero-title">
-        <div class="grid gap-8">
+        <div class="grid gap-8" data-intro-rise>
           <h1 id="hero-title" class="display text-[clamp(3.6rem,9vw,8rem)] leading-[0.86]">
             <span class="block">Tu tienda en</span>
             <span class="block">un <span class="text-mustard">enlace.</span></span>
