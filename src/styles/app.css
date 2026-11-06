@@ -1732,6 +1732,17 @@
     }
   }
 
+  /* ─── Título de la portada: cada una de sus cuatro líneas cabe en su columna ───
+     La más ancha («Tus pedidos,») mide unas 5,2 veces el tamaño de la letra; con 18,8 % del ancho de la
+     columna nunca se parte. El tamaño de antes (9vw, hasta 8rem) queda para los navegadores sin cqi. */
+  .hero-copy {
+    container-type: inline-size;
+  }
+  .hero-title {
+    font-size: clamp(3.6rem, 9vw, 8rem);
+    font-size: clamp(3.6rem, min(9vw, 18.8cqi), 8rem);
+  }
+
   /* ─── Intro de la portada (public/js/intro.js; intro-gate.js decide si sale) ─── */
   .intro {
     display: none;
