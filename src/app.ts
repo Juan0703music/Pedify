@@ -248,7 +248,8 @@ export function createApp() {
     if (appQr?.url !== url) {
       appQr = { url, svg: await QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#17161c", light: "#ffffff" } }) };
     }
-    res.set("Cache-Control", "public, max-age=86400").type("image/svg+xml").send(appQr.svg);
+    // Sin caché larga: si cambia la dirección del sitio (p. ej., el túnel de pruebas), el QR cambia.
+    res.set("Cache-Control", "no-cache").type("image/svg+xml").send(appQr.svg);
   });
 
   // Tienda pública de cada negocio (las etiquetas para compartir se generan en el servidor).
