@@ -20,7 +20,7 @@ import { analyticsRoutes } from "./modules/analytics/analytics.routes.js";
 import { customersRoutes } from "./modules/customers/customers.routes.js";
 import { LEGAL_PAGES, legalService } from "./modules/legal/legal.service.js";
 import { ordersRoutes, storeOrderRoutes } from "./modules/orders/orders.routes.js";
-import { siteService } from "./modules/site/site.service.js";
+import { SITE_PAGES, siteService } from "./modules/site/site.service.js";
 import { publicSupportRoutes, supportRoutes } from "./modules/support/support.routes.js";
 import { categoriesRoutes, productsRoutes } from "./modules/products/products.routes.js";
 import { storeController } from "./modules/products/store.controller.js";
@@ -52,8 +52,6 @@ const PUBLIC_PAGES: Record<string, string> = {
   "/domicilio": "pages/courier/index.html",
   // Soporte y PQRS para cualquier persona, sin cuenta (el caso se sigue con el enlace del correo).
   "/soporte": "pages/support/index.html",
-  // Instalar Pedify como app en el celular y en el computador.
-  "/app": "pages/app/index.html",
 };
 
 /** Páginas del panel: requieren cookie de sesión (la API valida la sesión en cada llamada). */
@@ -200,10 +198,13 @@ export function createApp() {
   app.use("/api", apiNotFound);
 
   // ─── Páginas ───
-  // Portada: con su dirección oficial, los datos para Google y la imagen para compartir.
-  app.get("/", async (_req, res) => {
-    res.set("Cache-Control", "no-cache").type("html").send(await siteService.landing());
-  });
+  // Páginas públicas (portada, cómo funciona, funciones, planes y la app) con el menú, el cierre y el pie
+  // compartidos; la portada lleva además los datos para Google.
+  for (const [route, [file, nav]] of Object.entries(SITE_PAGES)) {
+    app.get(route, async (_req, res) => {
+      res.set("Cache-Control", "no-cache").type("html").send(await siteService.page(file, nav));
+    });
+  }
   app.get("/index.html", (_req, res) => res.redirect(301, "/"));
   // Política de datos y Términos y condiciones, con los datos de Pedify del panel central.
   for (const [route, file] of Object.entries(LEGAL_PAGES)) {

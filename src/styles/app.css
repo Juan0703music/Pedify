@@ -1732,6 +1732,50 @@
     }
   }
 
+  /* ─── Menú de las páginas públicas (public/partials/site-header.html) ─── */
+  .site-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 0.875rem;
+    border-radius: var(--radius-control);
+    font-weight: 620;
+    color: rgb(255 255 255 / 0.78);
+    text-decoration: none;
+    transition:
+      background-color 150ms var(--ease-out-expo),
+      color 150ms var(--ease-out-expo);
+  }
+  .site-link:hover {
+    background: var(--color-ink-3);
+    color: var(--color-paper);
+  }
+  .site-link[aria-current="page"] {
+    color: var(--color-mustard);
+  }
+  .site-menu > summary {
+    list-style: none;
+  }
+  .site-menu > summary::-webkit-details-marker {
+    display: none;
+  }
+  .site-menu-panel {
+    position: absolute;
+    top: calc(100% - 0.25rem);
+    right: 1rem;
+    z-index: 40;
+    display: grid;
+    width: min(18rem, calc(100vw - 2rem));
+    padding: 0.5rem;
+    border-radius: var(--radius-panel);
+    background: var(--color-ink-2);
+    box-shadow: var(--shadow-pop);
+    outline: 1px solid rgb(255 255 255 / 0.08);
+  }
+  .site-menu-panel .site-link {
+    min-height: 3rem;
+  }
+
   /* ─── Título de la portada: cada una de sus cuatro líneas cabe en su columna ───
      La más ancha («Tus pedidos,») mide unas 5,2 veces el tamaño de la letra; con 18,8 % del ancho de la
      columna nunca se parte. El tamaño de antes (9vw, hasta 8rem) queda para los navegadores sin cqi. */

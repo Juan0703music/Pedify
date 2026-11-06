@@ -3,6 +3,10 @@
 // demostración ya terminada); con "reducir movimiento" no hay animaciones automáticas.
 import { playIntro } from "./intro.js";
 
+// Enlaces viejos a secciones de la portada que ahora son páginas propias.
+const MOVED = { "#planes": "/planes", "#como-funciona": "/como-funciona" };
+if (location.pathname === "/" && MOVED[location.hash]) location.replace(MOVED[location.hash]);
+
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
 /** La intro (una vez por visita): lo que se anima al aparecer espera a que la cortina suba. */

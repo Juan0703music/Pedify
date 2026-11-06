@@ -9,6 +9,7 @@
       content="Instala Pedify gratis en tu celular (Android o iPhone) y en tu computador (Windows o Mac). Tus pedidos llegan en vivo a todos tus equipos al mismo tiempo."
     />
     <meta name="theme-color" content="#17161c" />
+    <link rel="canonical" href="{{site.url}}/app" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="La app de Pedify · En tu celular y en tu computador" />
     <meta property="og:description" content="Tus pedidos en vivo en todos tus equipos al mismo tiempo. Gratis, sin tiendas de apps." />
@@ -27,16 +28,7 @@
     <div class="glow-mustard relative isolate overflow-hidden text-paper">
       <div class="dots-mustard pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" aria-hidden="true"></div>
 
-      <header class="mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-6">
-        <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="Pedify, inicio">
-          <img src="/assets/icons/logo.svg" alt="" class="h-9 w-9" width="32" height="32" />
-          <span class="text-[1.6rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
-        </a>
-        <nav class="flex items-center gap-1 sm:gap-2" aria-label="Cuenta">
-          <a href="/login" class="btn btn-quiet px-3 text-paper hover:bg-ink-3 sm:px-4">Iniciar sesión</a>
-          <a href="/registro" class="btn btn-primary hidden sm:inline-flex">Crear mi tienda</a>
-        </nav>
-      </header>
+      {{site.header}}
 
       <section class="mx-auto grid max-w-[80rem] items-center gap-14 px-4 pt-6 pb-20 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:pt-10 lg:pb-28" aria-labelledby="app-title">
         <div class="grid gap-7">
@@ -186,7 +178,7 @@
           </div>
           <div class="border-t-2 border-ink py-5">
             <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Tu plan</dt>
-            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-muted">Págalo desde cualquier equipo con Wompi (tarjeta, PSE, Nequi o Bancolombia) y queda activo en todos al momento.</dd>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-muted">Págalo desde cualquier equipo por Nequi o llave Bre-B, sube el comprobante y queda activo en todos apenas lo confirmamos.</dd>
           </div>
         </dl>
         <div class="flex flex-wrap gap-3">
@@ -196,19 +188,6 @@
       </div>
     </section>
 
-    <footer class="bg-ink px-4 py-10 text-ink-soft sm:px-8">
-      <div class="mx-auto flex max-w-[80rem] flex-wrap items-center justify-between gap-6">
-        <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="Pedify, inicio">
-          <img src="/assets/icons/logo.svg" alt="" class="h-8 w-8" width="32" height="32" />
-          <span class="text-[1.4rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
-        </a>
-        <p class="text-sm">Pedidos digitales para negocios de comida en Colombia.</p>
-        <nav class="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold" aria-label="Pie de página">
-          <a href="/login" class="text-paper hover:text-mustard">Iniciar sesión</a>
-          <a href="/registro" class="text-paper hover:text-mustard">Registrar negocio</a>
-          <a href="/privacidad" class="text-paper hover:text-mustard">Tratamiento de datos</a>
-        </nav>
-      </div>
-    </footer>
+    {{site.footer}}
   </body>
 </html>

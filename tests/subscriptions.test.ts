@@ -259,7 +259,7 @@ describe("Portada", () => {
     const { readFileSync } = await import("node:fs");
     const { PLANS } = await import("../src/modules/subscriptions/plans.js");
     const { formatCOP } = await import("../src/utils/currency.js");
-    const html = readFileSync("public/index.html", "utf8");
+    const html = readFileSync("public/pages/site/plans.html", "utf8");
     for (const plan of Object.values(PLANS)) {
       expect(html).toContain(`>${plan.name}</h3>`);
       expect(html).toContain(`${formatCOP(plan.priceMonthly)} <span`);

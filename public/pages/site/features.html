@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Funciones de Pedify · Menú con fotos y pedidos en un tablero</title>
+    <meta name="description" content="Un menú digital con fotos que abre el apetito y un tablero donde atiendes cada pedido en vivo: nuevos, en cocina y en camino." />
+    <meta name="theme-color" content="#17161c" />
+    <link rel="canonical" href="{{site.url}}/funciones" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Pedify" />
+    <meta property="og:locale" content="es_CO" />
+    <meta property="og:url" content="{{site.url}}/funciones" />
+    <meta property="og:title" content="Funciones de Pedify · Menú con fotos y pedidos en un tablero" />
+    <meta property="og:description" content="Un menú digital con fotos que abre el apetito y un tablero donde atiendes cada pedido en vivo: nuevos, en cocina y en camino." />
+    <meta property="og:image" content="{{site.url}}/assets/images/og-pedify.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/assets/icons/logo.svg" type="image/svg+xml" />
+    <link rel="preload" href="/assets/fonts/archivo-latin-wdth.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/error-report.js"></script>
+    <script type="module" src="/js/landing.js"></script>
+  </head>
+  <body class="bg-paper">
+    <div class="on-ink bg-ink text-paper">
+      {{site.header}}
+    </div>
+
+    <!-- ═══════════════════════════ FOTOS QUE VENDEN ═══════════════════════════ -->
+    <section class="dots overflow-hidden bg-mustard px-4 py-24 sm:px-8 lg:py-32" aria-labelledby="photos-title">
+      <div class="mx-auto grid max-w-[80rem] items-center gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <!-- Abanico de fotos -->
+        <div class="relative mx-auto h-[24rem] w-full max-w-[30rem] sm:h-[30rem]" data-reveal aria-hidden="true">
+          <div class="photo absolute top-8 left-0 h-[70%] w-[58%] -rotate-[9deg] rounded-[28px] shadow-[var(--shadow-pop)] ring-8 ring-paper">
+            <img src="/assets/images/food/pizza-slices-480.webp" alt="" width="480" height="320" loading="lazy" decoding="async" />
+          </div>
+          <div class="photo absolute top-14 right-0 h-[70%] w-[58%] rotate-[8deg] rounded-[28px] shadow-[var(--shadow-pop)] ring-8 ring-paper">
+            <img src="/assets/images/food/hotdog-classic-480.webp" alt="" width="480" height="319" loading="lazy" decoding="async" />
+          </div>
+          <div class="photo absolute top-0 left-[18%] z-10 h-[82%] w-[64%] rounded-[30px] shadow-[var(--shadow-pop)] ring-8 ring-paper">
+            <img src="/assets/images/food/burger-classic-960.webp" srcset="/assets/images/food/burger-classic-480.webp 480w, /assets/images/food/burger-classic-960.webp 960w" sizes="320px" alt="" width="960" height="628" loading="lazy" decoding="async" />
+            <span class="absolute right-3 bottom-3 left-3 flex items-center justify-between rounded-[14px] bg-paper/95 px-3.5 py-2.5 text-ink">
+              <span><span class="block text-[0.875rem] font-[760]">Hamburguesa sencilla</span><span class="num block text-[0.875rem] font-[800]">$13.000</span></span>
+              <span class="grid h-9 w-9 place-items-center rounded-full bg-ink text-mustard"><svg class="icon h-4 w-4"><use href="/assets/icons/sprite.svg#i-plus"></use></svg></span>
+            </span>
+          </div>
+          <span class="display absolute -top-4 right-2 z-20 grid h-24 w-24 rotate-12 place-items-center rounded-full bg-ink text-center text-[1.2rem] leading-[0.9] text-mustard shadow-[var(--shadow-pop)]">Los más<br />pedidos</span>
+        </div>
+
+        <div class="grid content-start gap-7" data-reveal>
+          <h1 id="photos-title" class="display text-[clamp(2.75rem,6vw,5.25rem)] leading-[0.88]">Un menú que <span class="text-outline-ink">abre el apetito</span></h1>
+          <p class="max-w-[32rem] text-[1.125rem] leading-relaxed text-ink/80">
+            Tu cliente ve cada producto con foto, precio y lo que se agotó. Al tocarlo, la foto se abre en grande. Lo que más se vende sale
+            primero.
+          </p>
+          <ul class="grid max-w-[32rem] gap-5 text-[1rem]">
+            <li class="flex gap-4">
+              <span class="grid h-12 w-12 flex-none place-items-center rounded-[16px] bg-ink text-mustard"><svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-camera"></use></svg></span>
+              <span><span class="block text-[1.0625rem] font-[780]">Fotos del celular, listas para vender</span><span class="text-ink/75">Pedify las endereza, las reduce y les quita la ubicación. Cargan rápido hasta con datos.</span></span>
+            </li>
+            <li class="flex gap-4">
+              <span class="grid h-12 w-12 flex-none place-items-center rounded-[16px] bg-ink text-mustard"><svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-flame"></use></svg></span>
+              <span><span class="block text-[1.0625rem] font-[780]">Los más pedidos, arriba</span><span class="text-ink/75">Un carrusel con lo que más venden tus clientes en el último mes.</span></span>
+            </li>
+            <li class="flex gap-4">
+              <span class="grid h-12 w-12 flex-none place-items-center rounded-[16px] bg-ink text-mustard"><svg class="icon h-6 w-6" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-qr-code"></use></svg></span>
+              <span><span class="block text-[1.0625rem] font-[780]">Tu enlace y tu código QR</span><span class="text-ink/75">Para los estados de WhatsApp, Instagram, el mostrador y las mesas.</span></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════ EL TABLERO ═══════════════════════════ -->
+    <section class="glow-mustard relative overflow-hidden px-4 py-24 text-paper sm:px-8 lg:py-32" aria-labelledby="board-title">
+      <div class="mx-auto grid max-w-[80rem] gap-14">
+        <div class="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-end" data-reveal>
+          <h2 id="board-title" class="display text-[clamp(2.75rem,6.5vw,5.75rem)] leading-[0.88]">Todo tu negocio en <span class="text-mustard">un tablero</span></h2>
+          <div class="grid gap-5 lg:justify-self-end">
+            <p class="max-w-[30rem] text-[1.0625rem] leading-relaxed text-paper/70">
+              Desde el celular o el computador de la caja. Cada pedido llega con sonido y lo avanzas con un toque. Tú y tus empleados, cada
+              uno con su cuenta.
+            </p>
+            <a href="/registro" class="btn btn-primary w-fit">Crear mi tienda gratis</a>
+          </div>
+        </div>
+
+        <!-- Tablero de pedidos (ilustrativo) -->
+        <figure class="overflow-hidden rounded-[22px] bg-ink-2 shadow-[0_50px_100px_-30px_rgb(0_0_0/0.8)] ring-1 ring-paper/10" data-reveal>
+          <div class="flex items-center gap-2 border-b border-paper/10 px-4 py-3" aria-hidden="true">
+            <span class="h-3 w-3 rounded-full bg-tomato"></span><span class="h-3 w-3 rounded-full bg-mustard"></span><span class="h-3 w-3 rounded-full bg-leaf"></span>
+            <span class="ml-3 truncate rounded-full bg-ink px-3 py-1 text-[0.75rem] text-paper/60">pedify.com/panel/pedidos</span>
+            <span class="ml-auto hidden items-center gap-1.5 text-[0.75rem] font-[650] text-leaf sm:flex"><span class="h-2 w-2 rounded-full bg-leaf"></span>En vivo</span>
+          </div>
+          <div class="no-scrollbar grid auto-cols-[16rem] grid-flow-col gap-4 overflow-x-auto p-4 sm:auto-cols-[minmax(0,1fr)] sm:p-6" aria-hidden="true">
+            <div class="grid content-start gap-3">
+              <p class="flex items-center gap-2 text-sm font-[750]"><span class="h-2.5 w-2.5 rounded-full bg-mustard"></span>Nuevos <span class="text-paper/50">2</span></p>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                <div class="flex items-center justify-between"><span class="text-[1.15rem] font-[820] [font-stretch:75%]">#128</span><span class="text-xs font-[700] text-tomato">hace 1 min</span></div>
+                <p class="text-muted">Laura V. · Domicilio</p><hr class="ticket-rule my-2" />
+                <p>1× Hamburguesa especial<br />1× Salchipapa especial<br />2× Jugo natural</p>
+                <div class="num mt-2 flex justify-between font-[780]"><span>Total</span><span>$56.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-xs font-bold">Confirmar pedido</div>
+              </div></div>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                <div class="flex items-center justify-between"><span class="text-[1.15rem] font-[820] [font-stretch:75%]">#127</span><span class="text-xs text-muted">hace 3 min</span></div>
+                <p class="text-muted">Andrés M. · Recoger</p><hr class="ticket-rule my-2" />
+                <p>2× Perro especial</p>
+                <div class="num mt-2 flex justify-between font-[780]"><span>Total</span><span>$28.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-mustard py-2 text-center text-xs font-bold">Confirmar pedido</div>
+              </div></div>
+            </div>
+            <div class="grid content-start gap-3">
+              <p class="flex items-center gap-2 text-sm font-[750]"><span class="h-2.5 w-2.5 rounded-full bg-sky"></span>En cocina <span class="text-paper/50">1</span></p>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                <div class="flex items-center justify-between"><span class="text-[1.15rem] font-[820] [font-stretch:75%]">#126</span><span class="text-xs text-muted">hace 9 min</span></div>
+                <p class="text-muted">Camila O. · Domicilio</p><hr class="ticket-rule my-2" />
+                <p>1× Pizza familiar<br />1× Gaseosa 1,5 L</p>
+                <div class="num mt-2 flex justify-between font-[780]"><span>Total</span><span>$46.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-ink py-2 text-center text-xs font-bold text-paper">Marcar como listo</div>
+              </div></div>
+            </div>
+            <div class="grid content-start gap-3">
+              <p class="flex items-center gap-2 text-sm font-[750]"><span class="h-2.5 w-2.5 rounded-full bg-leaf"></span>Listos y en camino <span class="text-paper/50">1</span></p>
+              <div class="ticket-shadow"><div class="ticket rounded-t-[10px] px-4 pt-3.5 text-[0.8125rem] text-ink">
+                <div class="flex items-center justify-between"><span class="text-[1.15rem] font-[820] [font-stretch:75%]">#125</span><span class="badge bg-leaf-soft text-[0.625rem] text-leaf">En camino</span></div>
+                <p class="text-muted">Jorge S. · Domicilio</p><hr class="ticket-rule my-2" />
+                <p>3× Hamburguesa sencilla<br />1× Porción de papas</p>
+                <div class="num mt-2 flex justify-between font-[780]"><span>Total</span><span>$49.000</span></div>
+                <div class="mt-2.5 rounded-[8px] bg-ink py-2 text-center text-xs font-bold text-paper">Marcar como entregado</div>
+              </div></div>
+            </div>
+            <div class="grid content-start gap-3">
+              <p class="flex items-center gap-2 text-sm font-[750]"><svg class="icon h-4 w-4 text-mustard"><use href="/assets/icons/sprite.svg#i-chart-column"></use></svg>Hoy</p>
+              <div class="grid gap-3 rounded-[14px] bg-ink p-4">
+                <p class="text-xs text-paper/60">Ventas del día</p>
+                <p class="num text-[2rem] leading-none font-[840] [font-stretch:80%] text-mustard">$1.284.000</p>
+                <div class="flex h-20 items-end gap-1.5 pt-2">
+                  <span class="h-[30%] flex-1 rounded-t-[4px] bg-paper/15"></span><span class="h-[45%] flex-1 rounded-t-[4px] bg-paper/15"></span>
+                  <span class="h-[38%] flex-1 rounded-t-[4px] bg-paper/15"></span><span class="h-[62%] flex-1 rounded-t-[4px] bg-paper/15"></span>
+                  <span class="h-[100%] flex-1 rounded-t-[4px] bg-mustard"></span><span class="h-[78%] flex-1 rounded-t-[4px] bg-paper/15"></span>
+                  <span class="h-[55%] flex-1 rounded-t-[4px] bg-paper/15"></span>
+                </div>
+                <p class="text-xs text-paper/60">Hora pico: 7:00 p. m.</p>
+              </div>
+            </div>
+          </div>
+          <figcaption class="border-t border-paper/10 px-4 py-2.5 text-[0.75rem] text-paper/50">Ejemplo ilustrativo del panel de pedidos.</figcaption>
+        </figure>
+
+        <dl class="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-4" data-reveal>
+          <div class="border-t border-ink-3 py-5">
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%] text-mustard">Menú y categorías</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Crea, ordena y marca agotados. Eliges qué productos van en cada categoría con un toque.</dd>
+          </div>
+          <div class="border-t border-ink-3 py-5">
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Clientes</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Sus datos de entrega y su historial de pedidos, para atenderlos mejor.</dd>
+          </div>
+          <div class="border-t border-ink-3 py-5">
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Analíticas</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Ventas, ticket promedio, horas pico y lo que más se vende, en hora de Colombia.</dd>
+          </div>
+          <div class="border-t border-ink-3 py-5">
+            <dt class="text-[1.4rem] leading-none font-[840] uppercase [font-stretch:68%]">Tu configuración</dt>
+            <dd class="mt-2 text-[0.9375rem] leading-relaxed text-paper/65">Horario, domicilio, pedido mínimo y pagos: efectivo, Nequi, Daviplata, transferencia, llave Bre-B o datáfono.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    {{site.cta}}
+
+    {{site.footer}}
+  </body>
+</html>

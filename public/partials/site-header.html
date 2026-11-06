@@ -1,0 +1,31 @@
+<!-- Menú de las páginas públicas (siteService.page, la marca site.header): la página abierta se marca con aria-current. -->
+<header class="site-header relative z-20 mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-6">
+  <a href="/" class="inline-flex items-center gap-2 rounded-md no-underline" aria-label="Pedify, inicio">
+    <img src="/assets/icons/logo.svg" alt="" class="h-9 w-9" width="32" height="32" />
+    <span class="text-[1.6rem] leading-none font-[850] tracking-tight text-paper [font-stretch:72%]">Pedify</span>
+  </a>
+  <nav class="hidden items-center gap-1 lg:flex" aria-label="Secciones">
+    <a href="/" class="site-link" data-nav="inicio">Inicio</a>
+    <a href="/como-funciona" class="site-link" data-nav="como-funciona">Cómo funciona</a>
+    <a href="/funciones" class="site-link" data-nav="funciones">Funciones</a>
+    <a href="/planes" class="site-link" data-nav="planes">Planes</a>
+    <a href="/app" class="site-link" data-nav="app">La app</a>
+  </nav>
+  <div class="flex items-center gap-1 sm:gap-2">
+    <a href="/login" class="btn btn-quiet px-3 text-paper hover:bg-ink-3 sm:px-4">Iniciar sesión</a>
+    <a href="/registro" class="btn btn-primary hidden sm:inline-flex">Crear mi tienda</a>
+    <details class="site-menu lg:hidden">
+      <summary class="btn btn-quiet btn-icon text-paper hover:bg-ink-3" aria-label="Menú de secciones">
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-menu"></use></svg>
+      </summary>
+      <nav class="site-menu-panel" aria-label="Secciones">
+        <a href="/" class="site-link" data-nav="inicio">Inicio</a>
+        <a href="/como-funciona" class="site-link" data-nav="como-funciona">Cómo funciona</a>
+        <a href="/funciones" class="site-link" data-nav="funciones">Funciones</a>
+        <a href="/planes" class="site-link" data-nav="planes">Planes</a>
+        <a href="/app" class="site-link" data-nav="app">La app</a>
+        <a href="/registro" class="btn btn-primary mt-2 sm:hidden">Crear mi tienda</a>
+      </nav>
+    </details>
+  </div>
+</header>

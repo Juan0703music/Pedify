@@ -524,7 +524,11 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 
 | Ruta | Archivo |
 |---|---|
-| `/` | `public/index.html` |
+| `/` | `public/index.html` (Inicio) |
+| `/como-funciona` | `public/pages/site/how.html` |
+| `/funciones` | `public/pages/site/features.html` |
+| `/planes` | `public/pages/site/plans.html` |
+| `/app` | `public/pages/app/index.html` (instalar la app) |
 | `/login` | `public/pages/auth/login.html` |
 | `/registro` | `public/pages/auth/register.html` |
 | `/panel` | `public/pages/dashboard/index.html` (sin cookie → `/login?next=…`) |
@@ -542,4 +546,7 @@ Sesión de un usuario con `is_platform_admin` (403 `ADMIN_REQUIRED` si no).
 | `/soporte` | `public/pages/support/index.html` (Soporte y PQRS sin cuenta; el caso se sigue con `#<id>.<clave>`) |
 | `/panel/soporte` | `public/pages/dashboard/support.html` (Soporte y PQRS del negocio) |
 | `/tienda/:slug` | `public/pages/store/index.html` con las etiquetas Open Graph del negocio (404 si no existe; mayúsculas → redirección 301) |
+| `/index.html` | Redirección 301 a `/` |
 | `/uploads/…` | Imágenes con `STORAGE_DRIVER=local` |
+
+Las páginas del sitio público (Inicio, Cómo funciona, Funciones, Planes y La app) las arma `siteService.page`: inserta el menú, el cierre y el pie de `public/partials/` (`{{site.header}}`, `{{site.cta}}`, `{{site.footer}}`), marca en el menú la página abierta y pone la dirección del sitio.
