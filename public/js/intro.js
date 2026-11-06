@@ -109,11 +109,6 @@ export function playIntro() {
         root.remove();
         html.classList.remove("intro-on", "intro-playing");
         html.classList.add("intro-off", "intro-reveal");
-        try {
-          sessionStorage.setItem("pedify:intro", "vista");
-        } catch {
-          // Sin almacenamiento: la intro vuelve a salir en la próxima visita.
-        }
         resolve();
       };
       if (!quick) return done();
